@@ -1,0 +1,379 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1900" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <!-- Arrow markers -->
+    <marker id="arrow-content" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1f4e79"/>
+    </marker>
+    <marker id="arrow-metadata" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2d8f79"/>
+    </marker>
+    <marker id="arrow-pull" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#c76a0c"/>
+    </marker>
+    <marker id="arrow-inbound" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b1538"/>
+    </marker>
+    <marker id="arrow-mixed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5b3886"/>
+    </marker>
+
+    <!-- Soft node shadow -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.15"/>
+    </filter>
+
+    <!-- Node gradients -->
+    <linearGradient id="grad-source" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f5f2ec"/>
+    </linearGradient>
+    <linearGradient id="grad-ta" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#eef5f9"/>
+    </linearGradient>
+    <linearGradient id="grad-nyt" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f3efe9"/>
+    </linearGradient>
+    <linearGradient id="grad-pubp" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fefcf5"/>
+      <stop offset="100%" stop-color="#f0e6c8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1800" height="1900" fill="#fafaf7"/>
+
+  <!-- ============ HEADER ============ -->
+  <text x="60" y="60" font-size="30" font-weight="700" fill="#111827">TA Article Destinations: Topology</text>
+  <text x="60" y="90" font-size="15" fill="#4b5563">Where content and metadata travel. Formats, protocols, and endpoints annotated per edge.</text>
+
+  <!-- Legend -->
+  <g transform="translate(60, 115)">
+    <rect x="0" y="0" width="1680" height="70" fill="#ffffff" stroke="#d1d5db" rx="8"/>
+    <text x="20" y="26" font-size="13" font-weight="600" fill="#374151">Legend</text>
+
+    <!-- Content -->
+    <line x1="100" y1="40" x2="150" y2="40" stroke="#1f4e79" stroke-width="3" marker-end="url(#arrow-content)"/>
+    <text x="160" y="45" font-size="13" fill="#111827">Content (body / HTML / full payload)</text>
+
+    <!-- Metadata -->
+    <line x1="450" y1="40" x2="500" y2="40" stroke="#2d8f79" stroke-width="3" stroke-dasharray="8 5" marker-end="url(#arrow-metadata)"/>
+    <text x="510" y="45" font-size="13" fill="#111827">Metadata only (IDs, tags, keywords)</text>
+
+    <!-- Mixed -->
+    <line x1="810" y1="40" x2="860" y2="40" stroke="#5b3886" stroke-width="3" marker-end="url(#arrow-mixed)"/>
+    <text x="870" y="45" font-size="13" fill="#111827">Both (content + metadata)</text>
+
+    <!-- Pull -->
+    <line x1="1080" y1="40" x2="1130" y2="40" stroke="#c76a0c" stroke-width="3" stroke-dasharray="2 4" marker-end="url(#arrow-pull)"/>
+    <text x="1140" y="45" font-size="13" fill="#111827">Pull (consumer fetches)</text>
+
+    <!-- Inbound -->
+    <line x1="1340" y1="40" x2="1390" y2="40" stroke="#8b1538" stroke-width="3" marker-end="url(#arrow-inbound)"/>
+    <text x="1400" y="45" font-size="13" fill="#111827">Inbound webhook</text>
+  </g>
+
+  <!-- ============ PUSH DESTINATIONS SECTION ============ -->
+  <text x="60" y="235" font-size="20" font-weight="700" fill="#111827">1. Push destinations (TA → outside)</text>
+  <line x1="60" y1="245" x2="1740" y2="245" stroke="#d1d5db" stroke-width="1"/>
+
+  <!-- Source node (WordPress publish) -->
+  <g transform="translate(760, 280)" filter="url(#shadow)">
+    <rect x="0" y="0" width="280" height="70" fill="url(#grad-source)" stroke="#6b4e00" stroke-width="2" rx="10"/>
+    <text x="140" y="28" font-size="16" font-weight="700" fill="#111827" text-anchor="middle">WordPress publish</text>
+    <text x="140" y="50" font-size="12" fill="#4b5563" text-anchor="middle">save_post / transition_post_status hooks</text>
+  </g>
+
+  <!-- TA OpenSearch -->
+  <g transform="translate(100, 420)" filter="url(#shadow)">
+    <rect x="0" y="0" width="240" height="120" fill="url(#grad-ta)" stroke="#1f4e79" stroke-width="1.5" rx="10"/>
+    <text x="120" y="26" font-size="15" font-weight="700" fill="#111827" text-anchor="middle">TA OpenSearch</text>
+    <text x="120" y="46" font-size="11" fill="#6b7280" text-anchor="middle">(TA's own search index)</text>
+    <line x1="20" y1="58" x2="220" y2="58" stroke="#e5e7eb"/>
+    <text x="20" y="78" font-size="11" font-weight="600" fill="#374151">Receives:</text>
+    <text x="80" y="78" font-size="11" fill="#111827">body + expanded HTML + meta</text>
+    <text x="20" y="96" font-size="11" font-weight="600" fill="#374151">Format:</text>
+    <text x="80" y="96" font-size="11" fill="#111827">JSON (bulk upsert)</text>
+    <text x="20" y="114" font-size="11" font-weight="600" fill="#374151">Endpoint:</text>
+    <text x="80" y="114" font-size="11" fill="#111827">ELASTIC_SEARCH_ENDPOINT</text>
+  </g>
+
+  <!-- Alice Pub/Sub -->
+  <g transform="translate(370, 420)" filter="url(#shadow)">
+    <rect x="0" y="0" width="240" height="120" fill="url(#grad-ta)" stroke="#2d8f79" stroke-width="1.5" rx="10"/>
+    <text x="120" y="26" font-size="15" font-weight="700" fill="#111827" text-anchor="middle">Alice (NYT ad targeting)</text>
+    <text x="120" y="46" font-size="11" fill="#6b7280" text-anchor="middle">NYT DAP, ad segmentation</text>
+    <line x1="20" y1="58" x2="220" y2="58" stroke="#e5e7eb"/>
+    <text x="20" y="78" font-size="11" font-weight="600" fill="#374151">Receives:</text>
+    <text x="80" y="78" font-size="11" fill="#111827">metadata + body (uses meta)</text>
+    <text x="20" y="96" font-size="11" font-weight="600" fill="#374151">Format:</text>
+    <text x="80" y="96" font-size="11" fill="#111827">JSON</text>
+    <text x="20" y="114" font-size="11" font-weight="600" fill="#374151">Endpoint:</text>
+    <text x="80" y="114" font-size="11" fill="#111827">Pub/Sub: ta-asset-grapeshot</text>
+  </g>
+
+  <!-- TA Kafka -->
+  <g transform="translate(640, 420)" filter="url(#shadow)">
+    <rect x="0" y="0" width="240" height="120" fill="url(#grad-ta)" stroke="#5b3886" stroke-width="1.5" rx="10"/>
+    <text x="120" y="26" font-size="15" font-weight="700" fill="#111827" text-anchor="middle">TA Kafka</text>
+    <text x="120" y="46" font-size="11" fill="#6b7280" text-anchor="middle">article publish events</text>
+    <line x1="20" y1="58" x2="220" y2="58" stroke="#e5e7eb"/>
+    <text x="20" y="78" font-size="11" font-weight="600" fill="#374151">Receives:</text>
+    <text x="80" y="78" font-size="11" fill="#111827">event envelope</text>
+    <text x="20" y="96" font-size="11" font-weight="600" fill="#374151">Format:</text>
+    <text x="80" y="96" font-size="11" fill="#111827">JSON</text>
+    <text x="20" y="114" font-size="11" font-weight="600" fill="#374151">Topic:</text>
+    <text x="80" y="114" font-size="11" fill="#111827">article publish topic</text>
+  </g>
+
+  <!-- NYT CMS REST (print) -->
+  <g transform="translate(910, 420)" filter="url(#shadow)">
+    <rect x="0" y="0" width="240" height="120" fill="url(#grad-nyt)" stroke="#5b3886" stroke-width="1.5" rx="10"/>
+    <text x="120" y="26" font-size="15" font-weight="700" fill="#111827" text-anchor="middle">NYT CMS REST (print)</text>
+    <text x="120" y="46" font-size="11" fill="#6b7280" text-anchor="middle">print workflows</text>
+    <line x1="20" y1="58" x2="220" y2="58" stroke="#e5e7eb"/>
+    <text x="20" y="78" font-size="11" font-weight="600" fill="#374151">Receives:</text>
+    <text x="80" y="78" font-size="11" fill="#111827">article body + metadata</text>
+    <text x="20" y="96" font-size="11" font-weight="600" fill="#374151">Format:</text>
+    <text x="80" y="96" font-size="11" fill="#111827">REST JSON (Bearer + x-api-key)</text>
+    <text x="20" y="114" font-size="11" font-weight="600" fill="#374151">Endpoint:</text>
+    <text x="80" y="114" font-size="11" fill="#111827">/resources/v4/app/content/article</text>
+  </g>
+
+  <!-- FlatPlan -->
+  <g transform="translate(1180, 420)" filter="url(#shadow)">
+    <rect x="0" y="0" width="240" height="120" fill="url(#grad-nyt)" stroke="#c76a0c" stroke-width="1.5" rx="10"/>
+    <text x="120" y="26" font-size="15" font-weight="700" fill="#111827" text-anchor="middle">FlatPlan → Apple News</text>
+    <text x="120" y="46" font-size="11" fill="#6b7280" text-anchor="middle">3rd-party publisher</text>
+    <line x1="20" y1="58" x2="220" y2="58" stroke="#e5e7eb"/>
+    <text x="20" y="78" font-size="11" font-weight="600" fill="#374151">Receives:</text>
+    <text x="80" y="78" font-size="11" fill="#111827">full article body + meta</text>
+    <text x="20" y="96" font-size="11" font-weight="600" fill="#374151">Format:</text>
+    <text x="80" y="96" font-size="11" fill="#111827">Atom / RSS XML (pull)</text>
+    <text x="20" y="114" font-size="11" font-weight="600" fill="#374151">Endpoint:</text>
+    <text x="80" y="114" font-size="11" fill="#111827">/rss/flatplan/articles/</text>
+  </g>
+
+  <!-- Arrows from WordPress to direct destinations -->
+  <path d="M 820 350 Q 680 380 220 420" stroke="#5b3886" stroke-width="2" fill="none" marker-end="url(#arrow-mixed)"/>
+  <path d="M 860 350 Q 780 380 490 420" stroke="#2d8f79" stroke-width="2" fill="none" stroke-dasharray="8 5" marker-end="url(#arrow-metadata)"/>
+  <path d="M 900 350 L 760 420" stroke="#5b3886" stroke-width="2" fill="none" marker-end="url(#arrow-mixed)"/>
+  <path d="M 940 350 L 1030 420" stroke="#5b3886" stroke-width="2" fill="none" marker-end="url(#arrow-mixed)"/>
+  <path d="M 980 350 Q 1100 380 1300 420" stroke="#c76a0c" stroke-width="2" fill="none" stroke-dasharray="2 4" marker-end="url(#arrow-pull)"/>
+
+  <!-- Apollo consumer -->
+  <g transform="translate(640, 600)" filter="url(#shadow)">
+    <rect x="0" y="0" width="240" height="64" fill="url(#grad-ta)" stroke="#6b7280" stroke-width="1.5" rx="10"/>
+    <text x="120" y="26" font-size="14" font-weight="600" fill="#111827" text-anchor="middle">Apollo Kafka consumer</text>
+    <text x="120" y="48" font-size="11" fill="#6b7280" text-anchor="middle">theathletic-apollo-express</text>
+  </g>
+  <line x1="760" y1="540" x2="760" y2="600" stroke="#5b3886" stroke-width="2" marker-end="url(#arrow-mixed)"/>
+
+  <!-- PubP Gateway -->
+  <g transform="translate(620, 720)" filter="url(#shadow)">
+    <rect x="0" y="0" width="280" height="90" fill="url(#grad-pubp)" stroke="#8a6d00" stroke-width="2" rx="12"/>
+    <text x="140" y="30" font-size="16" font-weight="700" fill="#111827" text-anchor="middle">PubP Gateway</text>
+    <text x="140" y="52" font-size="11" fill="#6b7280" text-anchor="middle">gRPC + JWT, TLS</text>
+    <text x="140" y="72" font-size="11" fill="#374151" text-anchor="middle">AthleticArticle protobuf · Gateway.publish</text>
+  </g>
+  <line x1="760" y1="664" x2="760" y2="720" stroke="#5b3886" stroke-width="2" marker-end="url(#arrow-mixed)"/>
+  <text x="770" y="700" font-size="11" fill="#6b7280" font-style="italic">(body stripped to plain text before send)</text>
+
+  <!-- PubP Monolog -->
+  <g transform="translate(620, 860)" filter="url(#shadow)">
+    <rect x="0" y="0" width="280" height="60" fill="url(#grad-pubp)" stroke="#8a6d00" stroke-width="1.5" rx="10"/>
+    <text x="140" y="28" font-size="14" font-weight="700" fill="#111827" text-anchor="middle">PubP Kafka Monolog</text>
+    <text x="140" y="48" font-size="11" fill="#6b7280" text-anchor="middle">event log, total ordering</text>
+  </g>
+  <line x1="760" y1="810" x2="760" y2="860" stroke="#5b3886" stroke-width="2" marker-end="url(#arrow-mixed)"/>
+
+  <!-- ============ PUBP FAN-OUT SECTION ============ -->
+  <text x="60" y="985" font-size="20" font-weight="700" fill="#111827">2. PubP fan-out (NYT-side consumers of the monolog)</text>
+  <line x1="60" y1="995" x2="1740" y2="995" stroke="#d1d5db" stroke-width="1"/>
+
+  <!-- Apple News (NYT) -->
+  <g transform="translate(60, 1030)" filter="url(#shadow)">
+    <rect x="0" y="0" width="256" height="110" fill="url(#grad-nyt)" stroke="#5b3886" stroke-width="1.5" rx="10"/>
+    <text x="128" y="26" font-size="14" font-weight="700" fill="#111827" text-anchor="middle">Apple News (NYT)</text>
+    <text x="128" y="46" font-size="11" fill="#6b7280" text-anchor="middle">nytm/cms-applenews</text>
+    <line x1="20" y1="58" x2="236" y2="58" stroke="#e5e7eb"/>
+    <text x="20" y="76" font-size="11" font-weight="600" fill="#374151">Gets:</text>
+    <text x="65" y="76" font-size="11" fill="#111827">plain-text body + all meta</text>
+    <text x="20" y="92" font-size="11" font-weight="600" fill="#374151">Via:</text>
+    <text x="65" y="92" font-size="11" fill="#111827">Kafka consumer on monolog</text>
+    <text x="20" y="105" font-size="10" font-style="italic" fill="#a16207">note: overlap with FlatPlan path?</text>
+  </g>
+
+  <!-- Content Search -->
+  <g transform="translate(340, 1030)" filter="url(#shadow)">
+    <rect x="0" y="0" width="256" height="110" fill="url(#grad-nyt)" stroke="#1f4e79" stroke-width="1.5" rx="10"/>
+    <text x="128" y="26" font-size="14" font-weight="700" fill="#111827" text-anchor="middle">Content Search (NYT)</text>
+    <text x="128" y="46" font-size="11" fill="#6b7280" text-anchor="middle">NYT Elasticsearch + Samizdat</text>
+    <line x1="20" y1="58" x2="236" y2="58" stroke="#e5e7eb"/>
+    <text x="20" y="76" font-size="11" font-weight="600" fill="#374151">Gets:</text>
+    <text x="65" y="76" font-size="11" fill="#111827">plain-text body + all meta</text>
+    <text x="20" y="92" font-size="11" font-weight="600" fill="#374151">Via:</text>
+    <text x="65" y="92" font-size="11" fill="#111827">Denormalizer → ES index</text>
+  </g>
+
+  <!-- Alice Assets Consumer -->
+  <g transform="translate(620, 1030)" filter="url(#shadow)">
+    <rect x="0" y="0" width="256" height="110" fill="url(#grad-nyt)" stroke="#2d8f79" stroke-width="1.5" rx="10"/>
+    <text x="128" y="26" font-size="14" font-weight="700" fill="#111827" text-anchor="middle">Alice Assets Consumer</text>
+    <text x="128" y="46" font-size="11" fill="#6b7280" text-anchor="middle">DAP ad segmentation</text>
+    <line x1="20" y1="58" x2="236" y2="58" stroke="#e5e7eb"/>
+    <text x="20" y="76" font-size="11" font-weight="600" fill="#374151">Gets:</text>
+    <text x="65" y="76" font-size="11" fill="#111827">metadata only (tags, section)</text>
+    <text x="20" y="92" font-size="11" font-weight="600" fill="#374151">Via:</text>
+    <text x="65" y="92" font-size="11" fill="#111827">PubP replay → Kafka</text>
+  </g>
+
+  <!-- Bodega -->
+  <g transform="translate(900, 1030)" filter="url(#shadow)">
+    <rect x="0" y="0" width="256" height="110" fill="url(#grad-nyt)" stroke="#5b3886" stroke-width="1.5" rx="10"/>
+    <text x="128" y="26" font-size="14" font-weight="700" fill="#111827" text-anchor="middle">Bodega</text>
+    <text x="128" y="46" font-size="11" fill="#6b7280" text-anchor="middle">GCS + Memcached cache</text>
+    <line x1="20" y1="58" x2="236" y2="58" stroke="#e5e7eb"/>
+    <text x="20" y="76" font-size="11" font-weight="600" fill="#374151">Gets:</text>
+    <text x="65" y="76" font-size="11" fill="#111827">full AthleticArticle proto</text>
+    <text x="20" y="92" font-size="11" font-weight="600" fill="#374151">Via:</text>
+    <text x="65" y="92" font-size="11" fill="#111827">gRPC from monolog</text>
+  </g>
+
+  <!-- Samizdat -->
+  <g transform="translate(1180, 1030)" filter="url(#shadow)">
+    <rect x="0" y="0" width="256" height="110" fill="url(#grad-nyt)" stroke="#5b3886" stroke-width="1.5" rx="10"/>
+    <text x="128" y="26" font-size="14" font-weight="700" fill="#111827" text-anchor="middle">Samizdat</text>
+    <text x="128" y="46" font-size="11" fill="#6b7280" text-anchor="middle">NYT-wide GraphQL API</text>
+    <line x1="20" y1="58" x2="236" y2="58" stroke="#e5e7eb"/>
+    <text x="20" y="76" font-size="11" font-weight="600" fill="#374151">Gets:</text>
+    <text x="65" y="76" font-size="11" fill="#111827">full AthleticArticle</text>
+    <text x="20" y="92" font-size="11" font-weight="600" fill="#374151">Via:</text>
+    <text x="65" y="92" font-size="11" fill="#111827">Bodega reads</text>
+  </g>
+
+  <!-- BigQuery -->
+  <g transform="translate(1460, 1030)" filter="url(#shadow)">
+    <rect x="0" y="0" width="256" height="110" fill="url(#grad-nyt)" stroke="#5b3886" stroke-width="1.5" rx="10"/>
+    <text x="128" y="26" font-size="14" font-weight="700" fill="#111827" text-anchor="middle">BigQuery</text>
+    <text x="128" y="46" font-size="11" fill="#6b7280" text-anchor="middle">analytics / data warehouse</text>
+    <line x1="20" y1="58" x2="236" y2="58" stroke="#e5e7eb"/>
+    <text x="20" y="76" font-size="11" font-weight="600" fill="#374151">Gets:</text>
+    <text x="65" y="76" font-size="11" fill="#111827">full event + binaries</text>
+    <text x="20" y="92" font-size="11" font-weight="600" fill="#374151">Via:</text>
+    <text x="65" y="92" font-size="11" fill="#111827">Dataflow → Pub/Sub → BQ</text>
+  </g>
+
+  <!-- Fan-out arrows from monolog to consumers -->
+  <path d="M 680 920 Q 400 970 190 1030" stroke="#5b3886" stroke-width="1.8" fill="none" marker-end="url(#arrow-mixed)"/>
+  <path d="M 720 920 Q 600 970 470 1030" stroke="#5b3886" stroke-width="1.8" fill="none" marker-end="url(#arrow-mixed)"/>
+  <path d="M 760 920 L 750 1030" stroke="#2d8f79" stroke-width="1.8" fill="none" stroke-dasharray="8 5" marker-end="url(#arrow-metadata)"/>
+  <path d="M 800 920 L 1020 1030" stroke="#5b3886" stroke-width="1.8" fill="none" marker-end="url(#arrow-mixed)"/>
+  <path d="M 840 920 Q 980 970 1300 1030" stroke="#5b3886" stroke-width="1.8" fill="none" marker-end="url(#arrow-mixed)"/>
+  <path d="M 880 920 Q 1180 970 1580 1030" stroke="#5b3886" stroke-width="1.8" fill="none" marker-end="url(#arrow-mixed)"/>
+
+  <!-- ============ PULL-BASED SECTION ============ -->
+  <text x="60" y="1220" font-size="20" font-weight="700" fill="#111827">3. Pull-based destinations (consumers reach into TA)</text>
+  <line x1="60" y1="1230" x2="1740" y2="1230" stroke="#d1d5db" stroke-width="1"/>
+
+  <!-- TA Public surface node -->
+  <g transform="translate(60, 1260)" filter="url(#shadow)">
+    <rect x="0" y="0" width="300" height="380" fill="url(#grad-ta)" stroke="#c76a0c" stroke-width="1.5" rx="12"/>
+    <text x="150" y="30" font-size="15" font-weight="700" fill="#111827" text-anchor="middle">TA Public Surface</text>
+    <text x="150" y="48" font-size="11" fill="#6b7280" text-anchor="middle">the-athletic monolith (WordPress + api.php)</text>
+    <line x1="20" y1="62" x2="280" y2="62" stroke="#e5e7eb"/>
+
+    <text x="20" y="84" font-size="12" font-weight="700" fill="#374151">RSS Feeds (Atom XML)</text>
+    <text x="20" y="102" font-size="11" fill="#111827">/rss/  · homepage (body + meta)</text>
+    <text x="20" y="118" font-size="11" fill="#111827">/feeds/rss/news  · 90-item newsfeed</text>
+    <text x="20" y="134" font-size="11" fill="#111827">/feeds/rss/astro  · partner feed</text>
+    <text x="20" y="150" font-size="11" fill="#111827">/feeds/rss/feed-no-paywall.php</text>
+
+    <text x="20" y="180" font-size="12" font-weight="700" fill="#374151">XML Sitemaps (URLs + lastmod)</text>
+    <text x="20" y="198" font-size="11" fill="#111827">/sitemap-{authors,tags,news,teams,...}</text>
+
+    <text x="20" y="228" font-size="12" font-weight="700" fill="#374151">Public REST API (api.php, auth-gated)</text>
+    <text x="20" y="246" font-size="11" fill="#111827">SERVERLESS_API_KEY · /articles, /search</text>
+    <text x="20" y="262" font-size="11" fill="#111827">ITERABLE_FEED_API_KEY · /evergreen</text>
+    <text x="20" y="278" font-size="11" fill="#111827">NYT_API_TOKEN · /get_entitlements_*</text>
+    <text x="20" y="294" font-size="11" fill="#111827">NYT Print · /add_image, /loupe</text>
+    <text x="20" y="310" font-size="11" fill="#111827">NYT Identity · /validate_access_token</text>
+
+    <text x="20" y="340" font-size="12" font-weight="700" fill="#374151">Apollo GraphQL subgraph</text>
+    <text x="20" y="358" font-size="11" fill="#111827">port 4444 /monolith (dormant?)</text>
+  </g>
+
+  <!-- External consumer boxes (right side) -->
+  <g transform="translate(520, 1260)">
+    <g transform="translate(0, 0)" filter="url(#shadow)">
+      <rect x="0" y="0" width="240" height="60" fill="#ffffff" stroke="#c76a0c" stroke-width="1.5" rx="8"/>
+      <text x="120" y="24" font-size="13" font-weight="600" fill="#111827" text-anchor="middle">FlatPlan</text>
+      <text x="120" y="44" font-size="11" fill="#6b7280" text-anchor="middle">Apple News publisher</text>
+    </g>
+    <g transform="translate(260, 0)" filter="url(#shadow)">
+      <rect x="0" y="0" width="240" height="60" fill="#ffffff" stroke="#c76a0c" stroke-width="1.5" rx="8"/>
+      <text x="120" y="24" font-size="13" font-weight="600" fill="#111827" text-anchor="middle">Google / Bing bots</text>
+      <text x="120" y="44" font-size="11" fill="#6b7280" text-anchor="middle">SEO indexing</text>
+    </g>
+    <g transform="translate(520, 0)" filter="url(#shadow)">
+      <rect x="0" y="0" width="240" height="60" fill="#ffffff" stroke="#c76a0c" stroke-width="1.5" rx="8"/>
+      <text x="120" y="24" font-size="13" font-weight="600" fill="#111827" text-anchor="middle">Astro</text>
+      <text x="120" y="44" font-size="11" fill="#6b7280" text-anchor="middle">partnership feed</text>
+    </g>
+    <g transform="translate(780, 0)" filter="url(#shadow)">
+      <rect x="0" y="0" width="240" height="60" fill="#ffffff" stroke="#c76a0c" stroke-width="1.5" rx="8"/>
+      <text x="120" y="24" font-size="13" font-weight="600" fill="#111827" text-anchor="middle">Iterable</text>
+      <text x="120" y="44" font-size="11" fill="#6b7280" text-anchor="middle">email campaigns</text>
+    </g>
+
+    <g transform="translate(0, 90)" filter="url(#shadow)">
+      <rect x="0" y="0" width="240" height="60" fill="#ffffff" stroke="#c76a0c" stroke-width="1.5" rx="8"/>
+      <text x="120" y="24" font-size="13" font-weight="600" fill="#111827" text-anchor="middle">NYT Print</text>
+      <text x="120" y="44" font-size="11" fill="#6b7280" text-anchor="middle">asset management / Loupe</text>
+    </g>
+    <g transform="translate(260, 90)" filter="url(#shadow)">
+      <rect x="0" y="0" width="240" height="60" fill="#ffffff" stroke="#c76a0c" stroke-width="1.5" rx="8"/>
+      <text x="120" y="24" font-size="13" font-weight="600" fill="#111827" text-anchor="middle">NYT Identity (Lire)</text>
+      <text x="120" y="44" font-size="11" fill="#6b7280" text-anchor="middle">token validation / entitlements</text>
+    </g>
+    <g transform="translate(520, 90)" filter="url(#shadow)">
+      <rect x="0" y="0" width="240" height="60" fill="#ffffff" stroke="#c76a0c" stroke-width="1.5" rx="8" stroke-dasharray="4 4"/>
+      <text x="120" y="24" font-size="13" font-weight="600" fill="#111827" text-anchor="middle">NYT Apollo supergraph?</text>
+      <text x="120" y="44" font-size="11" fill="#a16207" text-anchor="middle">infrastructure only; unverified</text>
+    </g>
+    <g transform="translate(780, 90)" filter="url(#shadow)">
+      <rect x="0" y="0" width="240" height="60" fill="#ffffff" stroke="#c76a0c" stroke-width="1.5" rx="8"/>
+      <text x="120" y="24" font-size="13" font-weight="600" fill="#111827" text-anchor="middle">Serverless backoffice</text>
+      <text x="120" y="44" font-size="11" fill="#6b7280" text-anchor="middle">TA's own Apollo / workers</text>
+    </g>
+  </g>
+
+  <!-- Pull arrows -->
+  <path d="M 520 1290 Q 430 1290 360 1335" stroke="#c76a0c" stroke-width="2" fill="none" stroke-dasharray="2 4" marker-end="url(#arrow-pull)"/>
+  <path d="M 780 1290 Q 570 1290 360 1365" stroke="#c76a0c" stroke-width="2" fill="none" stroke-dasharray="2 4" marker-end="url(#arrow-pull)"/>
+  <path d="M 1040 1290 Q 700 1290 360 1395" stroke="#c76a0c" stroke-width="2" fill="none" stroke-dasharray="2 4" marker-end="url(#arrow-pull)"/>
+  <path d="M 1300 1290 Q 830 1290 360 1450" stroke="#c76a0c" stroke-width="2" fill="none" stroke-dasharray="2 4" marker-end="url(#arrow-pull)"/>
+  <path d="M 520 1380 Q 430 1380 360 1520" stroke="#c76a0c" stroke-width="2" fill="none" stroke-dasharray="2 4" marker-end="url(#arrow-pull)"/>
+  <path d="M 780 1380 Q 570 1380 360 1540" stroke="#c76a0c" stroke-width="2" fill="none" stroke-dasharray="2 4" marker-end="url(#arrow-pull)"/>
+  <path d="M 1040 1380 Q 700 1380 360 1580" stroke="#c76a0c" stroke-width="2" fill="none" stroke-dasharray="2 4" marker-end="url(#arrow-pull)"/>
+  <path d="M 1300 1380 Q 830 1380 360 1610" stroke="#c76a0c" stroke-width="2" fill="none" stroke-dasharray="2 4" marker-end="url(#arrow-pull)"/>
+
+  <!-- ============ INBOUND WEBHOOKS SECTION ============ -->
+  <text x="60" y="1720" font-size="20" font-weight="700" fill="#111827">4. Inbound webhooks (external → TA)</text>
+  <line x1="60" y1="1730" x2="1740" y2="1730" stroke="#d1d5db" stroke-width="1"/>
+
+  <g transform="translate(60, 1760)">
+    <rect x="0" y="0" width="1680" height="110" fill="#ffffff" stroke="#8b1538" stroke-width="1" rx="10"/>
+    <text x="20" y="28" font-size="13" font-weight="700" fill="#374151">NYT identity sync (api_domain=8)</text>
+    <text x="20" y="48" font-size="11" fill="#111827">POST /propagate_nyt_email_change_to_ta · /propagate_email_prefs_change_to_ta · /propagate_nyt_email_prefs_change_to_ta</text>
+
+    <line x1="20" y1="62" x2="1660" y2="62" stroke="#e5e7eb"/>
+    <text x="20" y="82" font-size="13" font-weight="700" fill="#374151">Payment provider webhooks (page-webhook-*.php)</text>
+    <text x="20" y="102" font-size="11" fill="#111827">Stripe · Google Play · Apple · Bango · Braintree · Chargehound · SendGrid · BetMGM (subscription lifecycle, logged to Kafka where relevant)</text>
+  </g>
+
+  <!-- Footer -->
+  <text x="60" y="1890" font-size="10" fill="#9ca3af">Sources: the-athletic (WP monolith), theathletic-apollo-express (pubp.js, pubpConverter.js, kafkaConsumer.js), theathletic-serverless (newsroom-stack, processPubpContentBackfill), nyt-docs (publishing/scoop-content, napp/search, ads/alice), Confluence (Apple News page 1992687633)</text>
+</svg>
