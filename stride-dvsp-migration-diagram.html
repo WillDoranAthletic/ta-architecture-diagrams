@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stride Migration: ECS → DVSP (Lettercase)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: #0f1117;
+    color: #e1e4e8;
+    padding: 40px 24px;
+    min-height: 100vh;
+  }
+  h1 {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #f0f3f6;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 14px;
+    color: #7d8590;
+    margin-bottom: 48px;
+  }
+  .container {
+    display: flex;
+    gap: 48px;
+    max-width: 1400px;
+    margin: 0 auto;
+    align-items: flex-start;
+  }
+  .panel {
+    flex: 1;
+    min-width: 0;
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #30363d;
+  }
+  .panel-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    padding: 4px 10px;
+    border-radius: 4px;
+  }
+  .label-current {
+    background: #da3633;
+    color: #fff;
+  }
+  .label-target {
+    background: #238636;
+    color: #fff;
+  }
+  .panel-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #f0f3f6;
+  }
+
+  /* Account boundaries */
+  .account {
+    border: 2px solid;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .account-ta {
+    border-color: #f0883e;
+    background: rgba(240, 136, 62, 0.04);
+  }
+  .account-awsma {
+    border-color: #58a6ff;
+    background: rgba(88, 166, 255, 0.04);
+  }
+  .account-label {
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 2px 10px;
+    border-radius: 4px;
+  }
+  .account-ta .account-label {
+    background: #f0883e;
+    color: #0f1117;
+  }
+  .account-awsma .account-label {
+    background: #58a6ff;
+    color: #0f1117;
+  }
+  .account-id {
+    font-size: 10px;
+    color: #7d8590;
+    font-family: 'SF Mono', Menlo, monospace;
+    margin-top: -4px;
+    margin-bottom: 16px;
+    padding-left: 2px;
+  }
+
+  /* Service nodes */
+  .node {
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    background: #161b22;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+  .node:hover {
+    border-color: #484f58;
+  }
+  .node-primary {
+    border-color: #8b949e;
+    background: #1c2129;
+    border-width: 2px;
+  }
+  .node-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .node-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .icon-compute { background: #da3633; }
+  .icon-kafka { background: #a371f7; }
+  .icon-storage { background: #f0883e; }
+  .icon-secrets { background: #d2a8ff; }
+  .icon-cicd { background: #3fb950; }
+  .icon-obs { background: #58a6ff; }
+  .icon-logs { background: #7ee787; }
+  .icon-registry { background: #79c0ff; }
+
+  .node-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e1e4e8;
+  }
+  .node-detail {
+    font-size: 12px;
+    color: #7d8590;
+    padding-left: 28px;
+  }
+  .node-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .badge-warn {
+    background: rgba(218, 54, 51, 0.2);
+    color: #f85149;
+    border: 1px solid rgba(218, 54, 51, 0.3);
+  }
+  .badge-ok {
+    background: rgba(35, 134, 54, 0.2);
+    color: #3fb950;
+    border: 1px solid rgba(35, 134, 54, 0.3);
+  }
+  .badge-new {
+    background: rgba(88, 166, 255, 0.2);
+    color: #58a6ff;
+    border: 1px solid rgba(88, 166, 255, 0.3);
+  }
+  .badge-unknown {
+    background: rgba(240, 136, 62, 0.2);
+    color: #f0883e;
+    border: 1px solid rgba(240, 136, 62, 0.3);
+  }
+
+  /* Connection arrows */
+  .connections {
+    padding: 8px 0 8px 28px;
+    margin-bottom: 8px;
+  }
+  .conn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #7d8590;
+    margin-bottom: 4px;
+  }
+  .conn-arrow {
+    color: #484f58;
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .conn-label {
+    color: #8b949e;
+  }
+
+  /* Cross-account indicator */
+  .cross-account {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    margin: 12px 0;
+    background: rgba(240, 136, 62, 0.08);
+    border: 1px dashed #f0883e;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #f0883e;
+  }
+  .cross-account-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  /* Section dividers */
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #484f58;
+    margin: 16px 0 8px 2px;
+  }
+
+  /* External services */
+  .external {
+    border: 1px dashed #30363d;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    background: transparent;
+  }
+
+  /* Comparison callout */
+  .callout {
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+    background: #161b22;
+  }
+  .callout-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #8b949e;
+    margin-bottom: 8px;
+  }
+  .callout-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 13px;
+    border-bottom: 1px solid #21262d;
+  }
+  .callout-row:last-child { border-bottom: none; }
+  .callout-key { color: #7d8590; }
+  .callout-val { color: #e1e4e8; font-weight: 500; }
+
+  /* Arrow between panels */
+  .migration-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-top: 120px;
+    flex-shrink: 0;
+  }
+  .migration-arrow svg {
+    width: 48px;
+    height: 48px;
+  }
+  .migration-arrow-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #484f58;
+    margin-top: 8px;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
+
+  /* Node groups */
+  .node-row {
+    display: flex;
+    gap: 10px;
+  }
+  .node-row .node {
+    flex: 1;
+  }
+
+  /* Responsive */
+  @media (max-width: 1100px) {
+    .container { flex-direction: column; }
+    .migration-arrow {
+      padding-top: 0;
+      flex-direction: row;
+      gap: 12px;
+    }
+    .migration-arrow svg { transform: rotate(90deg); }
+    .migration-arrow-label {
+      writing-mode: horizontal-tb;
+    }
+  }
+</style>
+</head>
+<body>
+
+<h1>Stride: ECS to DVSP Migration</h1>
+<p class="subtitle">Article Render Pipeline infrastructure — current state vs target state after DVSP (Lettercase) migration</p>
+
+<div class="container">
+
+  <!-- ============ CURRENT ============ -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-label label-current">Current</span>
+      <span class="panel-title">ECS Fargate</span>
+    </div>
+
+    <div class="account account-ta">
+      <span class="account-label">TA Account</span>
+      <div class="account-id">035875988818 &middot; us-west-2</div>
+
+      <div class="section-label">Compute</div>
+
+      <div class="node node-primary">
+        <div class="node-header">
+          <div class="node-icon icon-compute">S</div>
+          <span class="node-name">Stride (ECS Fargate)</span>
+        </div>
+        <div class="node-detail">2-container task: app + DD agent sidecar</div>
+        <div class="node-detail">IAM Task Role for MSK, S3, DynamoDB</div>
+        <div class="connections">
+          <div class="conn"><span class="conn-arrow">consume ←</span> <span class="conn-label">TA MSK <code>storytelling.article.published</code></span></div>
+          <div class="conn"><span class="conn-arrow">produce →</span> <span class="conn-label">TA MSK <code>storytelling.article.rendered</code></span></div>
+          <div class="conn"><span class="conn-arrow">produce →</span> <span class="conn-label">TA MSK <code>stride.progress</code>, <code>stride.dlq</code></span></div>
+          <div class="conn"><span class="conn-arrow">write&nbsp;&nbsp; →</span> <span class="conn-label">S3 <code>theathletic-stride-dev</code></span></div>
+          <div class="conn"><span class="conn-arrow">read/write →</span> <span class="conn-label">DynamoDB <code>stride-state-dev</code></span></div>
+        </div>
+      </div>
+
+      <div class="section-label">Messaging</div>
+
+      <div class="node">
+        <div class="node-header">
+          <div class="node-icon icon-kafka">K</div>
+          <span class="node-name">TA MSK</span>
+          <span class="node-badge badge-warn">Unstable</span>
+        </div>
+        <div class="node-detail">Cluster: <code>ta-events-dev</code></div>
+        <div class="node-detail">2 brokers, 2 AZs — JVM GC triggers leader elections</div>
+        <div class="node-detail">IAM SASL auth, same-account access</div>
+      </div>
+
+      <div class="section-label">Storage</div>
+
+      <div class="node-row">
+        <div class="node">
+          <div class="node-header">
+            <div class="node-icon icon-storage">S3</div>
+            <span class="node-name">S3 Bucket</span>
+          </div>
+          <div class="node-detail"><code>theathletic-stride-dev</code></div>
+          <div class="node-detail">Rendered article HTML</div>
+        </div>
+        <div class="node">
+          <div class="node-header">
+            <div class="node-icon icon-storage">D</div>
+            <span class="node-name">DynamoDB</span>
+          </div>
+          <div class="node-detail"><code>stride-state-dev</code></div>
+          <div class="node-detail">Idempotency guard, 7d TTL</div>
+        </div>
+      </div>
+
+      <div class="section-label">Secrets &amp; Config</div>
+
+      <div class="node-row">
+        <div class="node">
+          <div class="node-header">
+            <div class="node-icon icon-secrets">SM</div>
+            <span class="node-name">Secrets Manager</span>
+          </div>
+          <div class="node-detail">DD API key</div>
+        </div>
+        <div class="node">
+          <div class="node-header">
+            <div class="node-icon icon-secrets">P</div>
+            <span class="node-name">SSM Parameter</span>
+          </div>
+          <div class="node-detail">MSK bootstrap brokers</div>
+        </div>
+      </div>
+
+      <div class="section-label">Registry</div>
+
+      <div class="node">
+        <div class="node-header">
+          <div class="node-icon icon-registry">E</div>
+          <span class="node-name">ECR</span>
+        </div>
+        <div class="node-detail">Docker images (shared with target)</div>
+      </div>
+    </div>
+
+    <div class="section-label">External Services</div>
+
+    <div class="node external">
+      <div class="node-header">
+        <div class="node-icon icon-cicd">G</div>
+        <span class="node-name">GitHub Actions</span>
+      </div>
+      <div class="node-detail">CI/CD: test, build, deploy, terraform</div>
+      <div class="node-detail">OIDC auth to AWS</div>
+    </div>
+
+    <div class="node-row">
+      <div class="node external">
+        <div class="node-header">
+          <div class="node-icon icon-obs">D</div>
+          <span class="node-name">Datadog</span>
+        </div>
+        <div class="node-detail">APM, metrics, traces</div>
+      </div>
+      <div class="node external">
+        <div class="node-header">
+          <div class="node-icon icon-logs">C</div>
+          <span class="node-name">CloudWatch</span>
+        </div>
+        <div class="node-detail">Structured logs (pino)</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-title">Infrastructure Summary</div>
+      <div class="callout-row"><span class="callout-key">Compute</span><span class="callout-val">ECS Fargate (hand-rolled TF)</span></div>
+      <div class="callout-row"><span class="callout-key">Kafka</span><span class="callout-val">TA MSK — 2 brokers, 2 AZs</span></div>
+      <div class="callout-row"><span class="callout-key">Auth</span><span class="callout-val">IAM Task Role (same account)</span></div>
+      <div class="callout-row"><span class="callout-key">Secrets</span><span class="callout-val">Secrets Manager + SSM</span></div>
+      <div class="callout-row"><span class="callout-key">CI/CD</span><span class="callout-val">GitHub Actions + OIDC</span></div>
+      <div class="callout-row"><span class="callout-key">Logs</span><span class="callout-val">CloudWatch</span></div>
+      <div class="callout-row"><span class="callout-key">Owned TF</span><span class="callout-val">ECS, IAM, SGs, ECR, S3, DDB, SM</span></div>
+    </div>
+  </div>
+
+  <!-- ============ ARROW ============ -->
+  <div class="migration-arrow">
+    <svg viewBox="0 0 48 48" fill="none">
+      <path d="M8 24h28" stroke="#484f58" stroke-width="2" stroke-linecap="round"/>
+      <path d="M30 18l6 6-6 6" stroke="#484f58" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span class="migration-arrow-label">Migrate</span>
+  </div>
+
+  <!-- ============ TARGET ============ -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-label label-target">Target</span>
+      <span class="panel-title">DVSP / Lettercase</span>
+    </div>
+
+    <div class="account account-awsma">
+      <span class="account-label">AWSMA Account</span>
+      <div class="account-id">362533187159 &middot; us-west-2</div>
+
+      <div class="section-label">Compute (Lettercase / EKS)</div>
+
+      <div class="node node-primary">
+        <div class="node-header">
+          <div class="node-icon icon-compute">S</div>
+          <span class="node-name">Stride (Lettercase Pod)</span>
+          <span class="node-badge badge-new">New</span>
+        </div>
+        <div class="node-detail">Kustomize manifests, HPA (2-10 replicas)</div>
+        <div class="node-detail">IRSA ServiceAccount for MSK auth</div>
+        <div class="node-detail">Vault Agent sidecar for secrets</div>
+        <div class="connections">
+          <div class="conn"><span class="conn-arrow">consume ←</span> <span class="conn-label">AWSMA MSK <code>storytelling.article.published</code></span></div>
+          <div class="conn"><span class="conn-arrow">produce →</span> <span class="conn-label">AWSMA MSK <code>storytelling.article.rendered</code></span></div>
+          <div class="conn"><span class="conn-arrow">produce →</span> <span class="conn-label">AWSMA MSK <code>stride.progress</code>, <code>stride.dlq</code></span></div>
+          <div class="conn"><span class="conn-arrow">write&nbsp;&nbsp; →</span> <span class="conn-label">TA S3 <span class="node-badge badge-unknown" style="margin-left:2px">Cross-Account</span></span></div>
+          <div class="conn"><span class="conn-arrow">read/write →</span> <span class="conn-label">TA DynamoDB <span class="node-badge badge-unknown" style="margin-left:2px">Cross-Account</span></span></div>
+        </div>
+      </div>
+
+      <div class="section-label">Messaging</div>
+
+      <div class="node">
+        <div class="node-header">
+          <div class="node-icon icon-kafka">K</div>
+          <span class="node-name">AWSMA MSK</span>
+          <span class="node-badge badge-ok">Proven (POC)</span>
+        </div>
+        <div class="node-detail">Cluster: <code>ta-events-dev</code></div>
+        <div class="node-detail">3 brokers, 3 AZs — stable</div>
+        <div class="node-detail">IAM SASL auth, same-account from Lettercase</div>
+      </div>
+
+      <div class="section-label">Secrets</div>
+
+      <div class="node">
+        <div class="node-header">
+          <div class="node-icon icon-secrets">V</div>
+          <span class="node-name">Vault</span>
+          <span class="node-badge badge-new">New</span>
+        </div>
+        <div class="node-detail">DD API key injected via agent sidecar</div>
+        <div class="node-detail">Auto-provisioned via Nebula namespace</div>
+      </div>
+
+      <div class="section-label">CI/CD</div>
+
+      <div class="node-row">
+        <div class="node">
+          <div class="node-header">
+            <div class="node-icon icon-cicd">D</div>
+            <span class="node-name">Drone</span>
+            <span class="node-badge badge-new">New</span>
+          </div>
+          <div class="node-detail">Build, test, push to ECR</div>
+        </div>
+        <div class="node">
+          <div class="node-header">
+            <div class="node-icon icon-cicd">A</div>
+            <span class="node-name">ArgoCD</span>
+            <span class="node-badge badge-new">New</span>
+          </div>
+          <div class="node-detail">GitOps deploy + reconciliation</div>
+        </div>
+      </div>
+
+      <div class="section-label">Registry</div>
+
+      <div class="node">
+        <div class="node-header">
+          <div class="node-icon icon-registry">E</div>
+          <span class="node-name">ECR</span>
+        </div>
+        <div class="node-detail">Shared with current (or migrated)</div>
+      </div>
+    </div>
+
+    <!-- Cross-account indicator -->
+    <div class="cross-account">
+      <span class="cross-account-icon">&#x26A0;</span>
+      <span><strong>Cross-account IRSA role chain</strong> — Lettercase pod (AWSMA) assumes role in TA account for S3 + DynamoDB. <strong>Not yet validated.</strong> This is the critical path blocker.</span>
+    </div>
+
+    <div class="account account-ta" style="border-style: dashed; opacity: 0.85;">
+      <span class="account-label">TA Account (Remote)</span>
+      <div class="account-id">035875988818 &middot; us-west-2 &middot; cross-account access</div>
+
+      <div class="section-label">Storage (remains in TA account)</div>
+
+      <div class="node-row">
+        <div class="node">
+          <div class="node-header">
+            <div class="node-icon icon-storage">S3</div>
+            <span class="node-name">S3 Bucket</span>
+            <span class="node-badge badge-unknown">Validate</span>
+          </div>
+          <div class="node-detail"><code>theathletic-stride-dev</code></div>
+          <div class="node-detail">IAM trust policy for AWSMA role</div>
+        </div>
+        <div class="node">
+          <div class="node-header">
+            <div class="node-icon icon-storage">D</div>
+            <span class="node-name">DynamoDB</span>
+            <span class="node-badge badge-unknown">Validate</span>
+          </div>
+          <div class="node-detail"><code>stride-state-dev</code></div>
+          <div class="node-detail">IAM trust policy for AWSMA role</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">External Services</div>
+
+    <div class="node-row">
+      <div class="node external">
+        <div class="node-header">
+          <div class="node-icon icon-obs">D</div>
+          <span class="node-name">Datadog</span>
+        </div>
+        <div class="node-detail">APM, metrics (unchanged)</div>
+      </div>
+      <div class="node external">
+        <div class="node-header">
+          <div class="node-icon icon-logs">S</div>
+          <span class="node-name">Sumo Logic</span>
+          <span class="node-badge badge-new">New</span>
+        </div>
+        <div class="node-detail">Replaces CloudWatch logs</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-title">Infrastructure Summary</div>
+      <div class="callout-row"><span class="callout-key">Compute</span><span class="callout-val">Lettercase / EKS (platform-managed)</span></div>
+      <div class="callout-row"><span class="callout-key">Kafka</span><span class="callout-val">AWSMA MSK — 3 brokers, 3 AZs</span></div>
+      <div class="callout-row"><span class="callout-key">Auth (MSK)</span><span class="callout-val">IRSA (same account, proven)</span></div>
+      <div class="callout-row"><span class="callout-key">Auth (S3/DDB)</span><span class="callout-val">IRSA cross-account role chain</span></div>
+      <div class="callout-row"><span class="callout-key">Secrets</span><span class="callout-val">Vault (Nebula-provisioned)</span></div>
+      <div class="callout-row"><span class="callout-key">CI/CD</span><span class="callout-val">Drone + ArgoCD (GitOps)</span></div>
+      <div class="callout-row"><span class="callout-key">Logs</span><span class="callout-val">Sumo Logic (stdout capture)</span></div>
+      <div class="callout-row"><span class="callout-key">Owned TF</span><span class="callout-val">Kustomize manifests only</span></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Legend -->
+<div style="max-width: 1400px; margin: 48px auto 0; padding-top: 24px; border-top: 1px solid #21262d;">
+  <div style="display: flex; gap: 24px; flex-wrap: wrap; font-size: 12px; color: #7d8590;">
+    <div style="display:flex;align-items:center;gap:6px;"><span class="node-badge badge-ok">Proven</span> Validated by MSK POC (CC-2018)</div>
+    <div style="display:flex;align-items:center;gap:6px;"><span class="node-badge badge-new">New</span> Added by migration</div>
+    <div style="display:flex;align-items:center;gap:6px;"><span class="node-badge badge-unknown">Validate</span> Requires validation (critical path)</div>
+    <div style="display:flex;align-items:center;gap:6px;"><span class="node-badge badge-warn">Unstable</span> Known issue</div>
+    <div style="display:flex;align-items:center;gap:6px;"><span style="width:24px;height:2px;background:#f0883e;border-radius:1px;display:inline-block;"></span> TA Account boundary</div>
+    <div style="display:flex;align-items:center;gap:6px;"><span style="width:24px;height:2px;background:#58a6ff;border-radius:1px;display:inline-block;"></span> AWSMA Account boundary</div>
+  </div>
+  <p style="font-size: 11px; color: #484f58; margin-top: 16px;">Source: MSK POC Production Decision Report (CC-2018, David Haye, 2026-04-06) + Stride DVSP Migration Epic. Updated 2026-04-20.</p>
+</div>
+
+</body>
+</html>

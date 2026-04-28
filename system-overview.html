@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Publication Pipeline — System Overview</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #0a0e1a; color: #e2e8f0;
+    min-height: 100vh; padding: 24px 20px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+
+  .header { text-align: center; margin-bottom: 20px; }
+  .header h1 { font-size: 26px; font-weight: 700; letter-spacing: -1px; color: #e2e8f0; margin-bottom: 3px; }
+  .header p { font-size: 12px; color: #64748b; }
+
+  /* ======== GRID LAYOUT ======== */
+  .grid {
+    display: grid;
+    grid-template-columns: auto auto 240px 300px auto auto;
+    grid-template-rows: auto auto auto auto auto;
+    gap: 0 10px;
+    align-items: end;
+    justify-content: center;
+    max-width: 1100px;
+    width: 100%;
+  }
+
+  /* Row-specific alignment overrides */
+  .grid > .r3 { align-self: center; }
+  .grid > .r5 { align-self: start; }
+
+  /* ======== SYSTEM CARDS ======== */
+  .system-card {
+    border-radius: 12px; padding: 16px 14px;
+    transition: transform 0.2s;
+  }
+  .system-card:hover { transform: translateY(-2px); }
+  .card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .card-icon {
+    width: 30px; height: 30px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
+  }
+  .card-title { font-size: 13px; font-weight: 700; line-height: 1.2; }
+  .card-subtitle { font-size: 9px; color: #94a3b8; }
+  .card-body { font-size: 10px; color: #94a3b8; line-height: 1.4; margin-bottom: 8px; }
+
+  /* ======== EVENT PILLS ======== */
+  .event-pill {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 8px; border-radius: 12px; font-size: 9px; font-weight: 600;
+    font-family: 'SF Mono','Fira Code','Consolas',monospace; margin: 1px 0;
+  }
+  .event-pill.produces { background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.3); color: #a5b4fc; }
+  .event-pill.consumes { background: rgba(96,165,250,0.12); border: 1px solid rgba(96,165,250,0.3); color: #93c5fd; }
+  .event-pill .pill-arrow { font-size: 10px; }
+  .events-row { display: flex; flex-wrap: wrap; gap: 2px; }
+  .events-label { font-size: 8px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #475569; margin-bottom: 2px; }
+
+  /* ======== CARD COLOURS ======== */
+  .card-pitch { background: linear-gradient(135deg, #0a1f14, #0f291a); border: 1px solid #22c55e; box-shadow: 0 0 20px rgba(34,197,94,0.08); }
+  .card-pitch .card-icon { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .card-pitch .card-title { color: #bbf7d0; }
+
+  .card-dataskrive { background: linear-gradient(135deg, #1c1917, #1a1816); border: 1px solid #78716c; }
+  .card-dataskrive .card-icon { background: rgba(120,113,108,0.15); color: #a8a29e; }
+  .card-dataskrive .card-title { color: #d6d3d1; }
+
+  .card-vendor { background: linear-gradient(135deg, #1c1917, #1a1816); border: 1px solid #57534e; }
+  .card-vendor .card-icon { background: rgba(87,83,78,0.3); color: #a8a29e; }
+  .card-vendor .card-title { color: #d6d3d1; }
+
+  .card-stride {
+    background: linear-gradient(135deg, #0f2027, #0a1a2a); border: 1px solid #10b981;
+    box-shadow: 0 0 20px rgba(16,185,129,0.08); cursor: pointer; text-decoration: none; display: block; color: inherit;
+  }
+  .card-stride:hover { border-color: #34d399; box-shadow: 0 0 28px rgba(16,185,129,0.15); }
+  .card-stride .card-icon { background: rgba(16,185,129,0.15); color: #34d399; }
+  .card-stride .card-title { color: #a7f3d0; }
+
+  .card-bidir { background: linear-gradient(135deg, #1a1520, #1e1728); border: 1px solid #a855f7; box-shadow: 0 0 20px rgba(168,85,247,0.08); }
+  .card-bidir .card-icon { background: rgba(168,85,247,0.15); color: #c084fc; }
+  .card-bidir .card-title { color: #e9d5ff; }
+
+  .card-wp {
+    background: linear-gradient(135deg, #0c1a24, #112230);
+    border: 1px solid #21759b; box-shadow: 0 0 16px rgba(33,117,155,0.08);
+  }
+  .card-wp .card-icon { background: rgba(33,117,155,0.2); color: #3b9fc2; }
+  .card-wp .card-title { color: #7ecce6; }
+
+  .card-downstream {
+    background: linear-gradient(135deg, #0f1a2e, #132240);
+    border: 2px dashed #3b82f6; box-shadow: 0 0 20px rgba(59,130,246,0.08);
+  }
+  .card-downstream .card-icon { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .card-downstream .card-title { color: #93c5fd; }
+
+  /* ======== CLIENT CHIPS ======== */
+  .client-grid { display: flex; flex-wrap: wrap; gap: 4px; }
+  .client-chip {
+    padding: 3px 8px; border-radius: 8px; font-size: 9px; font-weight: 500;
+    background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.15); color: #93c5fd; white-space: nowrap;
+  }
+
+  /* ======== MINI PIPELINE ======== */
+  .mini-pipeline { display: flex; gap: 3px; flex-wrap: wrap; }
+  .mini-stage { padding: 2px 6px; border-radius: 5px; font-size: 8px; font-weight: 600; white-space: nowrap; }
+  .mini-stage.s-done { background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.25); }
+  .mini-stage.s-code-complete { background: rgba(13,148,136,0.12); color: #5eead4; border: 1px dashed rgba(16,185,129,0.3); }
+  .mini-stage.s-blocked { background: rgba(168,85,247,0.12); color: #c4b5fd; border: 1px solid rgba(168,85,247,0.25); }
+  .click-hint { font-size: 9px; color: #6ee7b7; margin-top: 8px; opacity: 0.7; }
+
+  /* ======== VERTICAL ARROWS ======== */
+  .v-arrow {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 0; width: 100%;
+  }
+  .v-arrow .arrow-line { width: 2px; height: 20px; background: repeating-linear-gradient(180deg, #475569 0px, #475569 3px, transparent 3px, transparent 6px); }
+  .v-arrow .arrow-head { color: #94a3b8; font-size: 12px; line-height: 1; margin: 0; padding: 0; }
+  .v-arrow .arrow-event {
+    font-size: 8px; font-weight: 600; font-family: 'SF Mono','Fira Code','Consolas',monospace;
+    color: #a5b4fc; background: rgba(99,102,241,0.1); padding: 1px 6px; border-radius: 8px;
+    border: 1px solid rgba(99,102,241,0.2); white-space: nowrap;
+  }
+
+  .h-arrow { display: flex; align-items: center; gap: 3px; }
+  .h-arrow .arrow-line { width: 20px; height: 2px; background: repeating-linear-gradient(90deg, #475569 0px, #475569 3px, transparent 3px, transparent 6px); }
+  .h-arrow .arrow-head { color: #64748b; font-size: 12px; line-height: 1; }
+
+  /* ======== EVENT STREAM ======== */
+  .event-stream-banner {
+    padding: 12px 20px; border-radius: 12px;
+    background: linear-gradient(135deg, #1a1a3e, #1e1b4b);
+    border: 1px solid #6366f1; box-shadow: 0 0 32px rgba(99,102,241,0.08); text-align: center;
+  }
+  .banner-title { font-size: 12px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #818cf8; margin-bottom: 2px; }
+  .banner-subtitle { font-size: 9px; color: #4338ca; }
+  .topics { display: flex; justify-content: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .topic-chip {
+    padding: 2px 9px; border-radius: 12px; font-size: 9px; font-weight: 600;
+    font-family: 'SF Mono','Fira Code','Consolas',monospace;
+    background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.2); color: #a5b4fc;
+  }
+
+  .ds-column { display: flex; flex-direction: column; align-items: center; gap: 0; }
+
+  .footer { margin-top: 24px; text-align: center; font-size: 10px; color: #334155; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Article Publication Pipeline</h1>
+  <p>Content flows from authoring systems through the Event Stream to rendering and distribution</p>
+</div>
+
+<div class="grid">
+
+  <!-- ====== ROW 1: Consumer cards ====== -->
+  <div class="system-card card-downstream" style="grid-column:3; grid-row:1;">
+    <div class="card-header">
+      <div class="card-icon">&#128225;</div>
+      <div><div class="card-title">Downstream</div><div class="card-subtitle">Distribution &amp; Consumption</div></div>
+    </div>
+    <div class="card-body" style="margin-bottom: 6px;">Rendered articles consumed by client platforms and services.</div>
+    <div class="events-label">Consumes</div>
+    <div class="events-row" style="margin-bottom: 8px;">
+      <div class="event-pill consumes"><span class="pill-arrow">&#8592;</span> storytelling.article.rendered</div>
+    </div>
+    <div class="events-label">Clients</div>
+    <div class="client-grid">
+      <div class="client-chip">&#128241; iOS</div>
+      <div class="client-chip">&#129302; Android</div>
+      <div class="client-chip">&#127760; Web</div>
+      <div class="client-chip">&#128187; Tablets</div>
+      <div class="client-chip">&#127823; Apple News</div>
+      <div class="client-chip">&#9000; Alexa</div>
+      <div class="client-chip">&#9201; Watch</div>
+      <div class="client-chip">&#128250; TV</div>
+      <div class="client-chip">&#128270; OpenSearch</div>
+      <div class="client-chip">&#9889; Cache</div>
+      <div class="client-chip">&#128466; Sitemap</div>
+      <div class="client-chip">&#128240; NYT PubP</div>
+    </div>
+  </div>
+
+  <a href="stride.html" class="system-card card-stride" style="grid-column:4; grid-row:1;">
+    <div class="card-header">
+      <div class="card-icon">&#9889;</div>
+      <div><div class="card-title">Stride</div><div class="card-subtitle">Article Render Pipeline (ECS Fargate)</div></div>
+    </div>
+    <div class="card-body" style="margin-bottom: 6px;">Consumes article events, renders HTML, writes to S3.</div>
+    <div class="events-label">Consumes</div>
+    <div class="events-row" style="margin-bottom: 4px;">
+      <div class="event-pill consumes"><span class="pill-arrow">&#8592;</span> storytelling.article.published</div>
+    </div>
+    <div class="events-label">Pipeline</div>
+    <div class="mini-pipeline">
+      <div class="mini-stage s-done">Consumer</div>
+      <div class="mini-stage s-code-complete">Embeds</div>
+      <div class="mini-stage s-done">Ads</div>
+      <div class="mini-stage s-blocked">ICM</div>
+      <div class="mini-stage s-code-complete">HTML</div>
+      <div class="mini-stage s-done">Publish</div>
+    </div>
+    <div class="events-label" style="margin-top: 6px;">Produces</div>
+    <div class="events-row">
+      <div class="event-pill produces"><span class="pill-arrow">&#8594;</span> storytelling.article.rendered</div>
+    </div>
+    <div class="click-hint">&#8599; Click for detailed view</div>
+  </a>
+
+  <!-- ====== ROW 2: Arrows between stream and consumers (bidirectional) ====== -->
+  <div style="grid-column:3; grid-row:2; display:flex; justify-content:center; gap:8px;">
+    <div class="v-arrow">
+      <div class="arrow-head">&#9650;</div>
+      <div class="arrow-line" style="height:40px;"></div>
+    </div>
+  </div>
+
+  <div style="grid-column:4; grid-row:2; display:flex; justify-content:center; gap:8px;">
+    <div class="v-arrow">
+      <div class="arrow-head">&#9650;</div>
+      <div class="arrow-line" style="height:40px;"></div>
+    </div>
+    <div class="v-arrow">
+      <div class="arrow-line" style="height:40px;"></div>
+      <div class="arrow-head">&#9660;</div>
+    </div>
+  </div>
+
+  <!-- ====== ROW 3: BiDir + h-arrow + Event Stream + h-arrow + DataSkrive ====== -->
+  <div class="system-card card-bidir" style="grid-column:1; grid-row:2/5; width: 190px; padding: 12px; align-self:center;">
+    <div class="card-header" style="margin-bottom: 4px;">
+      <div class="card-icon" style="width:26px;height:26px;font-size:13px;">&#8644;</div>
+      <div><div class="card-title" style="font-size:11px;">PM &#8596; HTML</div><div class="card-subtitle" style="font-size:8px;">ProseMirror Converter</div></div>
+    </div>
+    <div class="card-body" style="margin-bottom:4px;font-size:9px;">Bidirectional conversion between ProseMirror and HTML.</div>
+    <div class="events-label">Consumes</div>
+    <div class="events-row">
+      <div class="event-pill consumes" style="font-size:8px;"><span class="pill-arrow">&#8592;</span> storytelling.external-content.create</div>
+    </div>
+    <div class="events-label" style="margin-top:4px;">Produces</div>
+    <div class="events-row">
+      <div class="event-pill produces" style="font-size:8px;"><span class="pill-arrow">&#8594;</span> storytelling.external-content.transformed</div>
+    </div>
+  </div>
+
+  <div style="grid-column:2; grid-row:2/5; align-self:center; display:flex; flex-direction:column; gap:6px;">
+    <div class="h-arrow">
+      <div class="arrow-head">&#9664;</div>
+      <div class="arrow-line"></div>
+    </div>
+    <div class="h-arrow">
+      <div class="arrow-line"></div>
+      <div class="arrow-head">&#9654;</div>
+    </div>
+  </div>
+
+  <div class="event-stream-banner r3" style="grid-column:3/5; grid-row:3;">
+    <div class="banner-title">The Event Stream</div>
+    <div class="banner-subtitle">Apache Kafka (AWS MSK)</div>
+    <div class="topics">
+      <div class="topic-chip">storytelling.external-content.create</div>
+      <div class="topic-chip">storytelling.external-content.transformed</div>
+      <div class="topic-chip">storytelling.article.published</div>
+      <div class="topic-chip">storytelling.article.rendered</div>
+      <div class="topic-chip">storytelling.legacy-article.create</div>
+    </div>
+  </div>
+
+  <!-- Right side: SVG connectors + cards -->
+  <div style="grid-column:5/7; grid-row:2/5; align-self:center; position:relative; min-height:320px; min-width:300px;">
+
+    <!-- SVG dog-leg connectors -->
+    <svg style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:visible;" xmlns="http://www.w3.org/2000/svg">
+      <!-- WP dog-leg: from card left edge, horizontal left, down, horizontal left to Event Stream -->
+      <path d="M 90,50 L 40,50 L 40,140 L 0,140" fill="none" stroke="#475569" stroke-width="2" stroke-dasharray="4,3"/>
+      <polygon points="0,140 8,136 8,144" fill="#64748b"/>
+
+      <!-- DataSkrive dog-leg: from card left edge, horizontal left, up, horizontal left to Event Stream -->
+      <path d="M 90,230 L 50,230 L 50,160 L 0,160" fill="none" stroke="#475569" stroke-width="2" stroke-dasharray="4,3"/>
+      <polygon points="0,160 8,156 8,164" fill="#64748b"/>
+    </svg>
+
+    <!-- Legacy WP card -->
+    <div style="position:absolute; top:10px; left:90px;">
+      <div class="system-card card-wp" style="width:190px; padding:12px;">
+        <div class="card-header" style="margin-bottom:4px;">
+          <div class="card-icon" style="width:26px;height:26px;font-size:13px;">&#128220;</div>
+          <div><div class="card-title" style="font-size:11px;">Legacy WP Articles</div><div class="card-subtitle" style="font-size:8px;">WordPress (the-athletic)</div></div>
+        </div>
+        <div class="card-body" style="margin-bottom:4px;font-size:9px;">Existing article inventory. Pre-rendered HTML stored in S3 via current pipeline.</div>
+        <div class="events-label">Produces</div>
+        <div class="events-row">
+          <div class="event-pill produces" style="font-size:8px;"><span class="pill-arrow">&#8594;</span> storytelling.legacy-article.create</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DataSkrive Processor + Vendor (side by side) -->
+    <div style="position:absolute; top:180px; left:90px; display:flex; align-items:center; gap:0;">
+      <div class="system-card card-dataskrive" style="width:170px; padding:12px;">
+        <div class="card-header" style="margin-bottom:4px;">
+          <div class="card-icon" style="width:26px;height:26px;font-size:13px;">&#9881;</div>
+          <div><div class="card-title" style="font-size:11px;">DataSkrive Processor</div><div class="card-subtitle" style="font-size:8px;">Lambda (serverless)</div></div>
+        </div>
+        <div class="card-body" style="margin-bottom:4px;font-size:9px;">Receives webhook, maps fields, produces event.</div>
+        <div class="events-label">Produces</div>
+        <div class="events-row">
+          <div class="event-pill produces" style="font-size:8px;"><span class="pill-arrow">&#8594;</span> storytelling.external-content.create</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; padding:0 4px;">
+        <span style="color:#64748b; font-size:12px;">&#9664;</span>
+        <div style="width:16px; height:2px; background:repeating-linear-gradient(90deg, #475569 0px, #475569 3px, transparent 3px, transparent 6px);"></div>
+      </div>
+      <div class="system-card card-vendor" style="width:150px; padding:12px;">
+        <div class="card-header" style="margin-bottom:4px;">
+          <div class="card-icon" style="width:26px;height:26px;font-size:13px;">&#127919;</div>
+          <div><div class="card-title" style="font-size:11px;">DataSkrive</div><div class="card-subtitle" style="font-size:8px;">External Vendor</div></div>
+        </div>
+        <div class="card-body" style="margin-bottom:0;font-size:9px;">Automated game recaps, previews, box scores.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ====== ROW 4: Arrows from stream to Pitch ====== -->
+  <div style="grid-column:3/5; grid-row:4; display:flex; justify-content:center; gap:40px; width:100%; padding-left:40px;">
+    <div class="v-arrow">
+      <div class="arrow-line" style="height:40px;"></div>
+      <div class="arrow-head">&#9660;</div>
+    </div>
+    <div class="v-arrow">
+      <div class="arrow-head">&#9650;</div>
+      <div class="arrow-line" style="height:40px;"></div>
+    </div>
+  </div>
+
+  <!-- ====== ROW 5: Pitch ====== -->
+  <div class="system-card card-pitch r5" style="grid-column:3/5; grid-row:5; justify-self:stretch;">
+    <div class="card-header">
+      <div class="card-icon">&#9997;</div>
+      <div><div class="card-title">Pitch</div><div class="card-subtitle">NYT CMS (Scoop)</div></div>
+    </div>
+    <div class="card-body" style="margin-bottom:4px;">Editors write and publish articles. Structured ProseMirror content with entity metadata.</div>
+    <div class="events-label">Consumes</div>
+    <div class="events-row" style="margin-bottom:4px;">
+      <div class="event-pill consumes"><span class="pill-arrow">&#8592;</span> storytelling.external-content.transformed</div>
+    </div>
+    <div class="events-label">Produces</div>
+    <div class="events-row">
+      <div class="event-pill produces"><span class="pill-arrow">&#8594;</span> storytelling.article.published</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">April 2026 — The Athletic Engineering</div>
+
+</body>
+</html>
