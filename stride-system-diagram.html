@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stride — System Status</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #0a0e1a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 48px;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+
+  .header h1 {
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  .header p {
+    font-size: 16px;
+    color: #64748b;
+    font-weight: 400;
+  }
+
+  /* ---- Pipeline flow ---- */
+  .pipeline {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 64px;
+    flex-wrap: nowrap;
+  }
+
+  .stage-wrapper {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .arrow {
+    display: flex;
+    align-items: center;
+    height: 140px;
+    padding: 0 4px;
+    color: #334155;
+    font-size: 28px;
+    user-select: none;
+  }
+
+  .stage {
+    width: 180px;
+    border-radius: 16px;
+    padding: 24px 20px;
+    text-align: center;
+    position: relative;
+    transition: transform 0.2s;
+  }
+
+  .stage:hover { transform: translateY(-4px); }
+
+  .stage .icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .stage .name {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+
+  .stage .detail {
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.4;
+    margin-bottom: 14px;
+    min-height: 32px;
+  }
+
+  .stage .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* Status colors */
+  .done {
+    background: linear-gradient(135deg, #064e3b, #065f46);
+    border: 1px solid #10b981;
+    box-shadow: 0 0 24px rgba(16, 185, 129, 0.1);
+  }
+  .done .badge { background: #10b981; color: #022c22; }
+
+  .code-complete {
+    background: linear-gradient(135deg, #0c4a3e, #065f4680);
+    border: 1px solid #10b981;
+    border-style: dashed;
+    box-shadow: 0 0 24px rgba(16, 185, 129, 0.06);
+  }
+  .code-complete .badge { background: #0d9488; color: #f0fdfa; }
+
+  .in-progress {
+    background: linear-gradient(135deg, #1e3a5f, #1e40af20);
+    border: 1px solid #3b82f6;
+    box-shadow: 0 0 24px rgba(59, 130, 246, 0.1);
+  }
+  .in-progress .badge { background: #3b82f6; color: #fff; }
+
+  .blocked {
+    background: linear-gradient(135deg, #44204a, #6b21a820);
+    border: 1px solid #a855f7;
+    box-shadow: 0 0 24px rgba(168, 85, 247, 0.1);
+  }
+  .blocked .badge { background: #a855f7; color: #fff; }
+
+  .not-started {
+    background: linear-gradient(135deg, #1e293b, #1e293b);
+    border: 1px solid #334155;
+    box-shadow: none;
+  }
+  .not-started .badge { background: #475569; color: #cbd5e1; }
+
+  /* ---- Supporting systems row ---- */
+  .support-section {
+    margin-bottom: 48px;
+  }
+
+  .support-section h2 {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #475569;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .support-grid {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .support-card {
+    width: 200px;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .support-card .name {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .support-card .detail {
+    font-size: 11px;
+    color: #94a3b8;
+    line-height: 1.4;
+    margin-bottom: 12px;
+  }
+
+  .support-card .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* ---- Progress bar ---- */
+  .progress-container {
+    margin-top: 10px;
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s ease;
+  }
+
+  .progress-fill.green { background: #10b981; }
+  .progress-fill.blue { background: #3b82f6; }
+  .progress-fill.purple { background: #a855f7; }
+
+  /* ---- Legend ---- */
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-bottom: 48px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #94a3b8;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  /* ---- Overall progress ---- */
+  .overall {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  .overall-bar {
+    width: 480px;
+    height: 8px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 8px;
+    margin: 0 auto 12px;
+    overflow: hidden;
+  }
+
+  .overall-fill {
+    height: 100%;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #10b981, #3b82f6);
+    width: 72%;
+  }
+
+  .overall-label {
+    font-size: 14px;
+    color: #64748b;
+  }
+
+  .overall-label strong {
+    color: #e2e8f0;
+    font-weight: 600;
+  }
+
+  /* ---- Kafka input/output labels ---- */
+  .pipeline-context {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .context-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 140px;
+    padding: 0 16px;
+    text-align: center;
+  }
+
+  .context-label .topic {
+    font-size: 13px;
+    font-weight: 600;
+    color: #f59e0b;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    margin-bottom: 4px;
+  }
+
+  .context-label .sublabel {
+    font-size: 11px;
+    color: #64748b;
+  }
+
+  .context-arrow {
+    display: flex;
+    align-items: center;
+    height: 140px;
+    color: #f59e0b;
+    font-size: 24px;
+    padding: 0 6px;
+  }
+
+  a.stage-link, a.card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+  a.stage-link:hover .stage,
+  a.card-link:hover .support-card {
+    filter: brightness(1.15);
+    cursor: pointer;
+  }
+
+  /* Responsive */
+  @media (max-width: 1200px) {
+    .pipeline-context { flex-wrap: wrap; }
+    .stage { width: 150px; padding: 18px 14px; }
+    .context-label { height: auto; padding: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Mini system overview map -->
+<a href="system-overview.html" style="
+  position: fixed; top: 36px; left: 36px; z-index: 100; transform: scale(1.3); transform-origin: top left;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 10px 12px; border-radius: 10px;
+  background: linear-gradient(135deg, #111827, #0f172a);
+  border: 1px solid #334155; text-decoration: none; color: #94a3b8;
+  font-family: 'Inter', sans-serif; font-size: 7px; letter-spacing: 0.5px;
+  opacity: 0.8; transition: opacity 0.2s, border-color 0.2s;
+" onmouseover="this.style.opacity='1';this.style.borderColor='#6366f1'" onmouseout="this.style.opacity='0.8';this.style.borderColor='#334155'">
+  <div style="display:flex; gap:4px; align-items:flex-end;">
+    <div style="width:18px;height:14px;border-radius:3px;border:1px dashed #3b82f6;background:rgba(59,130,246,0.08);"></div>
+    <div style="width:22px;height:18px;border-radius:3px;border:1px solid #10b981;background:rgba(16,185,129,0.1);"></div>
+  </div>
+  <div style="width:50px;height:2px;background:#475569;margin:1px 0;"></div>
+  <div style="width:50px;height:10px;border-radius:3px;border:1px solid #6366f1;background:rgba(99,102,241,0.1);display:flex;align-items:center;justify-content:center;">
+    <span style="font-size:5px;color:#818cf8;font-weight:700;letter-spacing:1px;">EVENT STREAM</span>
+  </div>
+  <div style="width:50px;height:2px;background:#475569;margin:1px 0;"></div>
+  <div style="width:28px;height:14px;border-radius:3px;border:1px solid #22c55e;background:rgba(34,197,94,0.1);"></div>
+  <div style="margin-top:3px;font-weight:600;color:#64748b;text-transform:uppercase;">System Overview</div>
+</a>
+
+<div class="header">
+  <h1>Stride</h1>
+  <p>Article Render Pipeline — replaces WordPress for CMS-published articles</p>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div> Done</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#0d9488; border: 1px dashed #10b981"></div> Code Complete (not yet validated)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div> In Progress</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div> Blocked</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#475569"></div> Not Started</div>
+</div>
+
+<!-- Overall progress -->
+<div class="overall">
+  <div class="overall-bar"><div class="overall-fill" style="width:72%"></div></div>
+  <div class="overall-label"><strong>~72%</strong> complete — 4 of 6 stages done or code-complete, validation pending</div>
+</div>
+
+<!-- Main pipeline stages -->
+<div class="pipeline-context">
+
+  <div class="context-label">
+    <div class="topic">storytelling.article.published</div>
+    <div class="sublabel">Kafka (from Scoop)</div>
+  </div>
+
+  <div class="context-arrow">&#10132;</div>
+
+  <div class="pipeline">
+
+    <a class="stage-link" href="https://theathletic.atlassian.net/browse/CC-2393" target="_blank" rel="noopener">
+    <div class="stage-wrapper">
+      <div class="stage done">
+        <span class="icon">&#9889;</span>
+        <div class="name">Kafka Consumer</div>
+        <div class="detail">MSK IAM auth, manual offset commit, DLQ</div>
+        <span class="badge">Done</span>
+        <div class="progress-container"><div class="progress-fill green" style="width:100%"></div></div>
+      </div>
+    </div>
+    </a>
+
+    <div class="arrow">&#8594;</div>
+
+    <div class="stage-wrapper">
+      <div class="stage code-complete">
+        <span class="icon">&#128268;</span>
+        <div class="name">Embed Resolution</div>
+        <div class="detail">6 resolvers built. Awaiting validation against production articles</div>
+        <span class="badge">Code Complete</span>
+        <div class="progress-container"><div class="progress-fill green" style="width:85%"></div></div>
+      </div>
+    </div>
+
+    <div class="arrow">&#8594;</div>
+
+    <div class="stage-wrapper">
+      <div class="stage done">
+        <span class="icon">&#128230;</span>
+        <div class="name">Ad Sprinkling</div>
+        <div class="detail">NYT two-phase: dropzones + selection config</div>
+        <span class="badge">Done</span>
+        <div class="progress-container"><div class="progress-fill green" style="width:100%"></div></div>
+      </div>
+    </div>
+
+    <div class="arrow">&#8594;</div>
+
+    <div class="stage-wrapper">
+      <div class="stage blocked">
+        <span class="icon">&#128200;</span>
+        <div class="name">ICM Injection</div>
+        <div class="detail">In-content modules. Stubbed, awaiting product rules</div>
+        <span class="badge">Blocked</span>
+        <div class="progress-container"><div class="progress-fill purple" style="width:10%"></div></div>
+      </div>
+    </div>
+
+    <div class="arrow">&#8594;</div>
+
+    <div class="stage-wrapper">
+      <div class="stage code-complete">
+        <span class="icon">&#128196;</span>
+        <div class="name">HTML Assembly</div>
+        <div class="detail">3 output variants built. Awaiting validation against WordPress output</div>
+        <span class="badge">Code Complete</span>
+        <div class="progress-container"><div class="progress-fill green" style="width:85%"></div></div>
+      </div>
+    </div>
+
+    <div class="arrow">&#8594;</div>
+
+    <div class="stage-wrapper">
+      <div class="stage done">
+        <span class="icon">&#128451;</span>
+        <div class="name">Store & Publish</div>
+        <div class="detail">S3 write, Kafka emit, DynamoDB idempotency</div>
+        <span class="badge">Done</span>
+        <div class="progress-container"><div class="progress-fill green" style="width:100%"></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="context-arrow">&#10132;</div>
+
+  <div class="context-label">
+    <div class="topic">storytelling.article.rendered</div>
+    <div class="sublabel">S3 + Kafka</div>
+  </div>
+
+</div>
+
+<!-- Supporting systems -->
+<div class="support-section">
+  <h2>Supporting Systems</h2>
+  <div class="support-grid">
+
+    <div class="support-card done">
+      <div class="name">Infrastructure</div>
+      <div class="detail">ECS Fargate, S3, DynamoDB, IAM, Secrets Manager, Terraform</div>
+      <span class="badge">~90%</span>
+      <div class="progress-container"><div class="progress-fill green" style="width:90%"></div></div>
+    </div>
+
+    <div class="support-card done">
+      <div class="name">CI/CD</div>
+      <div class="detail">4 GitHub Actions workflows, OIDC, Docker multi-stage</div>
+      <span class="badge">Done</span>
+      <div class="progress-container"><div class="progress-fill green" style="width:100%"></div></div>
+    </div>
+
+    <div class="support-card in-progress">
+      <div class="name">Validation</div>
+      <div class="detail">Contract tests, S3 compat, bridge fixtures (ADR-041)</div>
+      <span class="badge">~50%</span>
+      <div class="progress-container"><div class="progress-fill blue" style="width:50%"></div></div>
+    </div>
+
+    <div class="support-card in-progress">
+      <div class="name">Schema Compat</div>
+      <div class="detail">Scoop types aligned. Embed enum, hero scope remaining</div>
+      <span class="badge">~70%</span>
+      <div class="progress-container"><div class="progress-fill blue" style="width:70%"></div></div>
+    </div>
+
+    <div class="support-card not-started">
+      <div class="name">Integration</div>
+      <div class="detail">OpenSearch indexer, Apollo rewrite, feed cache bust</div>
+      <span class="badge">Not started</span>
+      <div class="progress-container"><div class="progress-fill blue" style="width:0%"></div></div>
+    </div>
+
+    <div class="support-card not-started">
+      <div class="name">Observability</div>
+      <div class="detail">Datadog dashboards, canary metrics, alerting</div>
+      <span class="badge">Not started</span>
+      <div class="progress-container"><div class="progress-fill blue" style="width:0%"></div></div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Article HTML Pipeline — Current System</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent-wp: #e06c75;
+    --accent-apollo: #61afef;
+    --accent-web: #98c379;
+    --accent-mobile: #c678dd;
+    --accent-warn: #e5c07b;
+    --accent-dim: #56b6c2;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 40px 20px;
+    line-height: 1.5;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 40px;
+  }
+  .legend {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+
+  /* Layer sections */
+  .layer {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .layer-header {
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .layer-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--bg);
+    flex-shrink: 0;
+  }
+  .layer-title {
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .layer-repo {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    margin-left: auto;
+  }
+  .layer-body { padding: 20px 24px; }
+
+  /* Pipeline steps */
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .step {
+    display: grid;
+    grid-template-columns: 200px 1fr 260px;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: start;
+  }
+  .step:last-child { border-bottom: none; }
+  .step-name {
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .step-desc {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .step-file {
+    font-size: 11px;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    color: var(--accent-dim);
+    text-align: right;
+    word-break: break-all;
+  }
+  .step-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--bg);
+    vertical-align: middle;
+  }
+
+  /* Arrow between layers */
+  .arrow-connector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+    color: var(--muted);
+  }
+  .arrow-connector svg { width: 24px; height: 24px; }
+
+  /* Sub-sections within a layer */
+  .sublayer {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 16px;
+  }
+  .sublayer:first-child { margin-top: 0; }
+  .sublayer-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tag {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .tag-write { background: rgba(224,108,117,0.2); color: var(--accent-wp); }
+  .tag-read { background: rgba(97,175,239,0.2); color: var(--accent-apollo); }
+  .tag-warn { background: rgba(229,192,123,0.2); color: var(--accent-warn); }
+  .tag-note { background: rgba(86,182,194,0.2); color: var(--accent-dim); }
+
+  /* Shortcode table */
+  .shortcode-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .shortcode-item {
+    font-size: 12px;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    padding: 4px 8px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 4px;
+    color: var(--muted);
+  }
+
+  /* Filter table */
+  .filter-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .filter-row {
+    border-radius: 6px;
+    background: rgba(255,255,255,0.03);
+    overflow: hidden;
+  }
+  .filter-summary {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 12px;
+    font-size: 12px;
+    padding: 8px 12px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .filter-summary:hover { background: rgba(255,255,255,0.05); }
+  .filter-name {
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    color: var(--text);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .filter-name::before {
+    content: "\25B6";
+    font-size: 8px;
+    color: var(--muted);
+    transition: transform 0.2s;
+    display: inline-block;
+  }
+  details[open] > .filter-summary .filter-name::before {
+    transform: rotate(90deg);
+  }
+  .filter-desc { color: var(--muted); }
+  .filter-detail {
+    padding: 8px 16px 14px 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .filter-detail code {
+    background: rgba(255,255,255,0.06);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  }
+  .filter-detail pre {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 8px 0;
+    overflow-x: auto;
+    font-size: 11px;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  .filter-detail .fd-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--accent-dim);
+    margin-top: 8px;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .filter-detail .fd-io {
+    display: grid;
+    grid-template-columns: 1fr 30px 1fr;
+    gap: 6px;
+    align-items: center;
+    margin: 6px 0;
+  }
+  .filter-detail .fd-arrow {
+    text-align: center;
+    color: var(--accent-warn);
+    font-size: 14px;
+  }
+
+  /* JSON example */
+  .json-example {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 16px;
+    overflow-x: auto;
+  }
+  .json-example pre {
+    font-size: 11px;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    line-height: 1.5;
+    color: var(--muted);
+    margin: 0;
+  }
+  .json-example .jk { color: var(--accent-apollo); }
+  .json-example .js { color: var(--accent-web); }
+  .json-example .jn { color: var(--accent-warn); }
+  .json-example .jb { color: var(--accent-wp); }
+  .json-example .jc { color: #555; font-style: italic; }
+
+  /* Callout boxes */
+  .callout {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-top: 16px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .callout-warn {
+    background: rgba(229,192,123,0.1);
+    border: 1px solid rgba(229,192,123,0.3);
+    color: var(--accent-warn);
+  }
+  .callout-info {
+    background: rgba(86,182,194,0.1);
+    border: 1px solid rgba(86,182,194,0.3);
+    color: var(--accent-dim);
+  }
+  .callout-icon { font-size: 16px; flex-shrink: 0; }
+
+  /* Mobile-specific section */
+  .mobile-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 12px;
+  }
+  .mobile-platform {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .mobile-platform h4 {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .mobile-platform ul {
+    list-style: none;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .mobile-platform li {
+    padding: 3px 0;
+    padding-left: 16px;
+    position: relative;
+  }
+  .mobile-platform li::before {
+    content: ">";
+    position: absolute;
+    left: 0;
+    color: var(--accent-dim);
+    font-family: monospace;
+  }
+
+  /* Section divider */
+  .section-label {
+    text-align: center;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    padding: 4px 0;
+  }
+
+  /* Not-in-body sidebar */
+  .not-in-body {
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 24px;
+    opacity: 0.7;
+  }
+  .not-in-body h3 {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--muted);
+  }
+  .not-in-body-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 4px;
+  }
+  .not-in-body-item {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 2px 0;
+  }
+
+  @media (max-width: 768px) {
+    .step { grid-template-columns: 1fr; gap: 4px; }
+    .step-file { text-align: left; }
+    .mobile-split { grid-template-columns: 1fr; }
+    .layer-repo { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Article HTML Pipeline</h1>
+<p class="subtitle">Every transformation between the WordPress editor and the reader's screen. Updated 2026-04-14.</p>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--accent-wp)"></div>WordPress PHP</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--accent-apollo)"></div>Apollo Express</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--accent-web)"></div>Web Frontend</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--accent-mobile)"></div>Mobile Apps</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- LAYER 1: WORDPRESS WRITE -->
+<!-- ============================================================ -->
+<div class="layer">
+  <div class="layer-header" style="background:rgba(224,108,117,0.08)">
+    <div class="layer-number" style="background:var(--accent-wp)">1</div>
+    <div>
+      <div class="layer-title">WordPress PHP — Write Path</div>
+      <div style="font-size:12px;color:var(--muted)">When a writer hits "Publish"</div>
+    </div>
+    <div class="layer-repo">the-athletic/web/app/themes/athletic/functions.php</div>
+  </div>
+  <div class="layer-body">
+    <div class="pipeline">
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-wp)">1.1</span> Raw Content</div>
+        <div class="step-desc">Editor HTML from WordPress Gutenberg/Classic editor. Contains raw shortcode tags like <code>[graphics id="X"]</code>, <code>[caption]</code>, plain text, and markup.</div>
+        <div class="step-file">get_the_content()</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-wp)">1.2</span> Autolinker Lambda</div>
+        <div class="step-desc">Calls <code>{stage}-autolinkerv4</code> Lambda. Uses AWS Comprehend to detect player/team entities, then injects <code>&lt;a class="ath_autolink"&gt;</code> links via fuzzy matching against the sports data graph.</div>
+        <div class="step-file">class.athAutolinker.inc.php<br>Lambda: autolinkerv4</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-wp)">1.3</span> Story Indexer Lambda</div>
+        <div class="step-desc">Calls <code>{stage}-storyIndexer</code> Lambda. Extracts h2-h6 headings, adds <code>id="sect0"</code>, <code>id="sect1"</code> anchors for table-of-contents navigation.</div>
+        <div class="step-file">class.athStoryIndexer.inc.php<br>Lambda: storyIndexer</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-wp)">1.4</span> Rel Attributes</div>
+        <div class="step-desc">Sets <code>rel=</code> attributes on links (noopener, noreferrer for external).</div>
+        <div class="step-file">modify_post_content_rel_attributes()</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-wp)">1.5</span> the_content Filters</div>
+        <div class="step-desc">WordPress's filter pipeline. <strong>10+ filters</strong> run in priority order (see detail below). This is where shortcodes expand, HTML gets cleaned, and media URLs get rewritten.</div>
+        <div class="step-file">apply_filters('the_content', ...) :7949</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-wp)">1.6</span> CDN URL Rewrite</div>
+        <div class="step-desc"><code>cdn.theathletic.com/app/uploads</code> &rarr; <code>static01.nyt.com/athletic/uploads/wp</code></div>
+        <div class="step-file">:7970-7971</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-wp)">1.7</span> Store to DB</div>
+        <div class="step-desc">Transformed HTML written to custom <code>posts</code> table. Content is <strong>already fully filtered</strong> at this point.</div>
+        <div class="step-file">add_post_to_posts_table() :7992</div>
+      </div>
+    </div>
+
+    <!-- the_content filter detail -->
+    <div class="sublayer" style="margin-top:20px">
+      <div class="sublayer-title">the_content filters <span class="tag tag-note">priority order &middot; click to expand</span></div>
+      <div class="filter-list">
+
+        <details class="filter-row">
+          <summary class="filter-summary"><div class="filter-name">ungreenbergify()</div><div class="filter-desc">Strips XML escaping artifacts, removes MS Word classes (yiv*, MsoNormal)</div></summary>
+          <div class="filter-detail">
+            <div class="fd-label">File</div>
+            <code>functions.php :6842-6856</code>
+            <div class="fd-label">Method</div>
+            4 direct <code>str_replace</code> calls. No regex.
+            <div class="fd-label">Exact replacements</div>
+<pre>]]&gt;          &rarr;  ]]&amp;gt;
+&lt;p class="p1"&gt;   &rarr;  &lt;p&gt;
+&lt;span class="s1"&gt; &rarr;  &lt;span&gt;
+yiv5226152217MsoNormal  &rarr;  (removed)</pre>
+            <div class="fd-label">Why</div>
+            MS Word and Outlook paste artifacts. The <code>p1</code>, <code>s1</code> classes and <code>yiv*MsoNormal</code> come from copy-pasting from Word/email into the editor.
+          </div>
+        </details>
+
+        <details class="filter-row">
+          <summary class="filter-summary"><div class="filter-name">dejunkify_html()</div><div class="filter-desc">Strips inline styles from spans, removes contenteditable attrs, unwraps [go-deeper] from wrapper tags</div></summary>
+          <div class="filter-detail">
+            <div class="fd-label">File</div>
+            <code>functions.php :6859-6870</code>
+            <div class="fd-label">Method</div>
+            7 <code>preg_replace</code> calls.
+            <div class="fd-label">Patterns</div>
+<pre><span style="color:var(--accent-dim)"># 1. Strip all inline styles from spans</span>
+/&lt;span style="[^\"]+">/ &rarr; &lt;span&gt;
+
+<span style="color:var(--accent-dim)"># 2-5. Unwrap [go-deeper] from span/p tags (4 variants: quoted/unquoted ID)</span>
+/&lt;span&gt;\[go-deeper id=(\d+)\]&lt;\/span&gt;/  &rarr;  [go-deeper id=$1]
+/&lt;span&gt;\[go-deeper id=\"(\d+)\"\]&lt;\/span&gt;/  &rarr;  [go-deeper id="$1"]
+/&lt;p&gt;\[go-deeper id=(\d+)\]&lt;\/p&gt;/  &rarr;  [go-deeper id=$1]
+/&lt;p&gt;\[go-deeper id=\"(\d+)\"\]&lt;\/p&gt;/  &rarr;  [go-deeper id="$1"]
+
+<span style="color:var(--accent-dim)"># 6-7. Remove contenteditable (two forms)</span>
+/contenteditable="true"/ &rarr; (removed)
+/contenteditable/ &rarr; (removed)</pre>
+            <div class="fd-label">Why</div>
+            The WordPress editor sometimes wraps shortcodes in <code>&lt;span&gt;</code> or <code>&lt;p&gt;</code> tags with styles. This breaks shortcode expansion. Also strips <code>contenteditable</code> from content pasted from rich text editors.
+          </div>
+        </details>
+
+        <details class="filter-row">
+          <summary class="filter-summary"><div class="filter-name">add_video_thumbnail()</div><div class="filter-desc">Adds poster thumbnail and &lt;source&gt; to [video mp4] shortcodes</div></summary>
+          <div class="filter-detail">
+            <div class="fd-label">File</div>
+            <code>functions.php :6872-6886</code>
+            <div class="fd-label">Pattern</div>
+<pre>/(\[video.*mp4=\")(https?:\/\/.*)(\")(.*])(\[\/video])/</pre>
+            <div class="fd-label">Transformation</div>
+<pre><span style="color:var(--accent-dim)"># Input:</span>
+[video mp4="https://cdn.example.com/clip.mp4" width="640"][/video]
+
+<span style="color:var(--accent-dim)"># Output:</span>
+[video mp4="https://cdn.example.com/clip.mp4" preload="none"
+  poster="https://cdn.example.com/clip.jpg" width="640"
+  &lt;source type="video/mp4" src="https://cdn.example.com/clip.mp4"/&gt;
+][/video]</pre>
+            <div class="fd-label">Why</div>
+            Poster image is derived by replacing <code>.mp4</code> with <code>.jpg</code> in the URL. The <code>preload="none"</code> prevents auto-downloading video data. The <code>&lt;source&gt;</code> tag provides the browser a media source.
+          </div>
+        </details>
+
+        <details class="filter-row">
+          <summary class="filter-summary"><div class="filter-name">formatTables()</div><div class="filter-desc">Wraps tables in <code>&lt;div class="table-responsive"&gt;</code>, adds Bootstrap table classes</div></summary>
+          <div class="filter-detail">
+            <div class="fd-label">File</div>
+            <code>functions.php :6888-6892</code>
+            <div class="fd-label">Regex</div>
+<pre>/#&lt;table(?! class="in-article)(.+?)&gt;(.+?)&lt;\/table&gt;#is/</pre>
+            <div class="fd-label">Transformation</div>
+<pre><span style="color:var(--accent-dim)"># Input:</span>
+&lt;table border="1"&gt;&lt;tr&gt;&lt;td&gt;data&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+
+<span style="color:var(--accent-dim)"># Output:</span>
+&lt;div class="table-responsive"&gt;
+  &lt;table class="table table-condensed table-bordered"&gt;
+    &lt;tr&gt;&lt;td&gt;data&lt;/td&gt;&lt;/tr&gt;
+  &lt;/table&gt;
+&lt;/div&gt;</pre>
+            <div class="fd-label">Why</div>
+            Negative lookahead <code>(?! class="in-article)</code> skips tables already wrapped by the <code>[table]</code> shortcode. Original table attributes are discarded. Three Bootstrap classes added: <code>table</code>, <code>table-condensed</code>, <code>table-bordered</code>.
+          </div>
+        </details>
+
+        <details class="filter-row">
+          <summary class="filter-summary"><div class="filter-name">flip_single_smart_quote()</div><div class="filter-desc">Fixes wrong-direction smart quotes after closing emphasis/italic/link tags</div></summary>
+          <div class="filter-detail">
+            <div class="fd-label">File</div>
+            <code>functions.php :6905-6914</code>
+            <div class="fd-label">Method</div>
+            6 direct <code>str_replace</code> calls.
+            <div class="fd-label">Exact replacements</div>
+<pre><span style="color:var(--accent-dim)"># Possessive 's after closing tags</span>
+&lt;/em&gt;&amp;#8216;s  &rarr;  &lt;/em&gt;&amp;#8217;s
+&lt;/i&gt;&amp;#8216;s   &rarr;  &lt;/i&gt;&amp;#8217;s
+&lt;/a&gt;&amp;#8216;s   &rarr;  &lt;/a&gt;&amp;#8217;s
+&lt;/a&gt;&amp;#8216;    &rarr;  &lt;/a&gt;&amp;#8217;    <span style="color:var(--accent-dim)">(space after)</span>
+
+<span style="color:var(--accent-dim)"># Special case: "The Athletic's" in italics</span>
+&lt;/em&gt;The Athletic&lt;em&gt;&amp;#8216;s  &rarr;  &lt;/em&gt;The Athletic&lt;em&gt;&amp;#8217;s
+&lt;/i&gt;The Athletic&lt;i&gt;&amp;#8216;s   &rarr;  &lt;/i&gt;The Athletic&lt;i&gt;&amp;#8217;s</pre>
+            <div class="fd-label">Why</div>
+            <code>&amp;#8216;</code> is a left (opening) curly single quote. <code>&amp;#8217;</code> is a right (closing) curly single quote. WordPress's <code>wptexturize()</code> sometimes picks the wrong direction after HTML tags.
+          </div>
+        </details>
+
+        <details class="filter-row">
+          <summary class="filter-summary"><div class="filter-name">remove_custom_paywall()</div><div class="filter-desc">Replaces <code>{{PAYWALL}}</code> marker with zero-width non-joiner chars</div></summary>
+          <div class="filter-detail">
+            <div class="fd-label">File</div>
+            <code>functions.php :6916-6921</code>
+            <div class="fd-label">Replacement</div>
+<pre>{{PAYWALL}}  &rarr;  &amp;zwnj;&amp;zwnj;&amp;zwnj;   <span style="color:var(--accent-dim)">(3x U+200C zero-width non-joiner)</span></pre>
+            <div class="fd-label">Why</div>
+            Editors can place <code>{{PAYWALL}}</code> in article text to control where the paywall cutoff appears. Replaced with invisible Unicode chars that the app can detect without being visible to readers. Three <code>&amp;zwnj;</code> in sequence is the sentinel pattern.
+          </div>
+        </details>
+
+        <details class="filter-row">
+          <summary class="filter-summary"><div class="filter-name">force_external_requests_to_https()</div><div class="filter-desc">Converts all <code>src="http:</code> to <code>src="https:</code></div></summary>
+          <div class="filter-detail">
+            <div class="fd-label">File</div>
+            <code>functions.php :6923-6929</code>
+            <div class="fd-label">Method</div>
+            3 direct <code>str_replace</code> calls.
+            <div class="fd-label">Exact replacements</div>
+<pre>http://s3      &rarr;  https://s3       <span style="color:var(--accent-dim)">(S3 bucket URLs)</span>
+src="http:     &rarr;  src="https:      <span style="color:var(--accent-dim)">(any src attribute)</span>
+src="//"       &rarr;  src="https://    <span style="color:var(--accent-dim)">(protocol-relative)</span></pre>
+            <div class="fd-label">Why</div>
+            Prevents mixed-content warnings. Older content may have HTTP URLs from before HTTPS migration. Protocol-relative URLs (<code>//</code>) are also upgraded.
+          </div>
+        </details>
+
+        <details class="filter-row">
+          <summary class="filter-summary"><div class="filter-name">remove_manual_styles()</div><div class="filter-desc">Strips inline <code>color: #hex;</code> styles</div></summary>
+          <div class="filter-detail">
+            <div class="fd-label">File</div>
+            <code>functions.php :6931-6936</code>
+            <div class="fd-label">Regex</div>
+<pre>/([; "'])color: \#[0-9A-Fa-f]{6};?/</pre>
+            <div class="fd-label">Transformation</div>
+<pre><span style="color:var(--accent-dim)"># Input:</span>
+&lt;span style="font-weight:bold; color: #1a1a1a;"&gt;text&lt;/span&gt;
+
+<span style="color:var(--accent-dim)"># Output:</span>
+&lt;span style="font-weight:bold;"&gt;text&lt;/span&gt;</pre>
+            <div class="fd-label">Why</div>
+            Writers paste text with hardcoded colors (usually black: <code>#000000</code> or <code>#1a1a1a</code>). These break dark mode where text should be white. The prefix capture group <code>[; "']</code> is preserved; only the <code>color: #hex</code> rule is stripped.
+          </div>
+        </details>
+
+        <details class="filter-row">
+          <summary class="filter-summary"><div class="filter-name">do_shortcode() <span class="tag tag-warn">implicit</span></div><div class="filter-desc">Expands all 23 registered shortcodes into HTML (see shortcode list below)</div></summary>
+          <div class="filter-detail">
+            <div class="fd-label">How</div>
+            WordPress calls <code>do_shortcode()</code> as part of the <code>the_content</code> filter chain. It finds all <code>[shortcode_name attr="val"]</code> patterns and calls the registered PHP callback function for each. Shortcodes can nest (e.g. <code>[caption]</code> calls <code>do_shortcode($content)</code> on its inner content).
+            <div class="fd-label">Key shortcode outputs</div>
+<pre><span style="color:var(--accent-dim)"># [caption] &rarr; nested div structure</span>
+&lt;div class="wp-caption alignnone"&gt;
+  &lt;div class="wp-caption-image-container"&gt;
+    &lt;img ...&gt;
+    &lt;div class="inline-credits"&gt;
+      &lt;div class="inline-credits-container"&gt;
+        &lt;span class="credits-text"&gt;Photo credit here&lt;/span&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+<span style="color:var(--accent-dim)"># [go-deeper id=123] &rarr; linked card</span>
+&lt;a href="/article/..." class="go-deeper" data-content-id="123"
+   data-content-post-type-id="26"&gt;
+  &lt;div class="go-deeper"&gt;
+    &lt;div class="go-deeper-img"&gt;
+      &lt;img loading="lazy" src="..." class="go-deeper" alt="go-deeper"&gt;
+    &lt;/div&gt;
+    &lt;div&gt;
+      &lt;p class="go-deeper-label"&gt;GO DEEPER&lt;/p&gt;
+      &lt;p class="go-deeper-title"&gt;Article Title&lt;/p&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/a&gt;
+
+<span style="color:var(--accent-dim)"># [video-stream id="V0Rko..."] &rarr; video placeholder</span>
+&lt;div data-ath-video-stream="V0Rko..."
+     data-horizontal="16" data-vertical="9"
+     data-restricted-countries="..." data-thumbnail-url="..."&gt;
+  &lt;div style="padding-bottom:56.25%"&gt;&lt;/div&gt;
+  &lt;span data-type="application/dash+xml" data-source="[DASH_URL]"
+        style="display:none"&gt;&lt;/span&gt;
+  &lt;span data-type="application/x-mpegURL" data-source="[HLS_URL]"
+        style="display:none"&gt;&lt;/span&gt;
+&lt;/div&gt;
+
+<span style="color:var(--accent-dim)"># [graphics id="KEY"] &rarr; raw HTML from Graphics Hub</span>
+(returns raw_html field from GraphQL getGraphic query)
+
+<span style="color:var(--accent-dim)"># [data-viz id="X" height="500"] &rarr; iframe</span>
+&lt;iframe class="iframeHeightX"
+  style="width:100%; border:0"
+  src="https://theathletic.com/report/?report_id=X"&gt;&lt;/iframe&gt;</pre>
+          </div>
+        </details>
+
+        <details class="filter-row">
+          <summary class="filter-summary"><div class="filter-name">S3 CDN filter <span class="tag tag-note">priority 100</span></div><div class="filter-desc">Rewrites local media URLs to S3/CloudFront URLs (runs last)</div></summary>
+          <div class="filter-detail">
+            <div class="fd-label">File</div>
+            <code>plugins/amazon-s3-and-cloudfront/classes/filters/as3cf-local-to-s3.php :21</code>
+            <div class="fd-label">Registration</div>
+<pre>add_filter('the_content', array($this, 'filter_post'), 100);</pre>
+            <div class="fd-label">Why priority 100</div>
+            Runs after all other filters (default priority is 10). By running last, it catches any media URLs that other filters may have introduced. Rewrites local WordPress upload paths to the S3/CloudFront CDN equivalent.
+            <div class="fd-label">CDN rewrite (separate, in gather_post_publish_info)</div>
+<pre>cdn.theathletic.com/app/uploads  &rarr;  static01.nyt.com/athletic/uploads/wp
+static01.nyt.com/app/uploads     &rarr;  static01.nyt.com/athletic/uploads/wp</pre>
+          </div>
+        </details>
+
+      </div>
+    </div>
+
+    <!-- Shortcodes -->
+    <div class="sublayer">
+      <div class="sublayer-title">23 Registered Shortcodes <span class="tag tag-note">expanded by do_shortcode()</span></div>
+      <div class="shortcode-grid">
+        <div class="shortcode-item">[caption] &rarr; wp-caption HTML</div>
+        <div class="shortcode-item">[graphics id] &rarr; GraphQL raw_html</div>
+        <div class="shortcode-item">[article-embed ids] &rarr; card HTML</div>
+        <div class="shortcode-item">[video-stream] &rarr; video div</div>
+        <div class="shortcode-item">[go-deeper] &rarr; CTA block</div>
+        <div class="shortcode-item">[in-content-module]</div>
+        <div class="shortcode-item">[ebay-icm]</div>
+        <div class="shortcode-item">[data-viz id height]</div>
+        <div class="shortcode-item">[bracket-widget id]</div>
+        <div class="shortcode-item">[player-card id]</div>
+        <div class="shortcode-item">[table id]</div>
+        <div class="shortcode-item">[quote-card]</div>
+        <div class="shortcode-item">[video-fullscreen]</div>
+        <div class="shortcode-item">[video-header]</div>
+        <div class="shortcode-item">[scroll-quote]</div>
+        <div class="shortcode-item">[full-screen]</div>
+        <div class="shortcode-item">[three-inline-images]</div>
+        <div class="shortcode-item">[twocol-text]</div>
+        <div class="shortcode-item">[article-logo]</div>
+        <div class="shortcode-item">[article-complex-header]</div>
+        <div class="shortcode-item">[widget-theme]</div>
+        <div class="shortcode-item">[baseball-100]</div>
+        <div class="shortcode-item">[bc-disclaimer] / [bc-cta]</div>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-icon">!!</div>
+      <div><strong>Double filtering.</strong> Content is stored to DB with all filters already applied. But the V4 read API applies <code>the_content</code> filters <em>again</em>. The autolinker and story indexer also run again on read. These filters are not fully idempotent.</div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow-connector">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+</div>
+
+<!-- ============================================================ -->
+<!-- LAYER 2: WORDPRESS READ -->
+<!-- ============================================================ -->
+<div class="layer">
+  <div class="layer-header" style="background:rgba(224,108,117,0.05)">
+    <div class="layer-number" style="background:var(--accent-wp)">2</div>
+    <div>
+      <div class="layer-title">WordPress PHP — Read Path (V4 API)</div>
+      <div style="font-size:12px;color:var(--muted)">When Apollo fetches <code>GET /v5/articles/{id}</code></div>
+    </div>
+    <div class="layer-repo">the-athletic/web/app/themes/athletic/inc/class.athApiV4.inc.php</div>
+  </div>
+  <div class="layer-body">
+    <div class="pipeline">
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-wp)">2.1</span> Read from DB</div>
+        <div class="step-desc">Fetches <code>post_content</code> from database. This content was <strong>already filtered</strong> at write time (step 1.5).</div>
+        <div class="step-file">get_post_field('post_content', $id)</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-wp)">2.2</span> the_content Again</div>
+        <div class="step-desc"><strong>All 10+ filters run a second time</strong> on already-filtered content. Shortcodes re-expand (but most are already HTML). Smart quotes, HTTPS enforcement, table wrapping, etc. all re-run.</div>
+        <div class="step-file">apply_filters('the_content', ...) :564</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-wp)">2.3</span> CDN Rewrite Again</div>
+        <div class="step-desc">Same URL replacement as write path. Idempotent (already rewritten).</div>
+        <div class="step-file">:565-566</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-wp)">2.4</span> Autolinker Again</div>
+        <div class="step-desc">If <code>autolinkerOn</code> meta is true, Lambda runs again on already-autolinked content. May add duplicate links.</div>
+        <div class="step-file">:569-576</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-wp)">2.5</span> Story Indexer Again</div>
+        <div class="step-desc">If <code>storyIndexEnabled</code> meta is true, Lambda runs again. Section IDs may already be present.</div>
+        <div class="step-file">:578-591</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-wp)">2.6</span> JSON Response</div>
+        <div class="step-desc">Returns <code>article_body</code> (HTML string) plus all metadata fields. Title processed through <code>strip_tags(html_entity_decode(wptexturize()))</code>.</div>
+        <div class="step-file">send_article() :788</div>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-icon">i</div>
+      <div><strong>V3 API (older mobile path)</strong> reads from the custom <code>posts</code> table directly and does NOT re-apply filters. Only V4 double-filters.</div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow-connector">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+</div>
+
+<!-- ============================================================ -->
+<!-- JSON EXAMPLE: What Apollo receives from PHP -->
+<!-- ============================================================ -->
+<div class="sublayer" style="margin-top:0; margin-bottom:24px;">
+  <div class="sublayer-title" style="margin-bottom:4px">
+    Example: JSON response from PHP API
+    <span class="tag tag-note">GET /v5/articles/{id}?exclude_body=0&amp;exclude_comments=1</span>
+  </div>
+  <div style="font-size:12px; color:var(--muted); margin-bottom:12px">
+    PHP returns a <strong>single <code>article_body</code></strong> field. Apollo generates the desktop/mobile/exp variants itself by parsing, sprinkling ads, and injecting modules.
+  </div>
+  <div class="json-example">
+<pre>{
+  <span class="jk">"article_id"</span>: <span class="js">"4459721"</span>,
+  <span class="jk">"article_title"</span>: <span class="js">"NHL Power Rankings: As crunch time arrives, which players must show up?"</span>,
+  <span class="jk">"article_publish_date"</span>: <span class="js">"2023-04-28 13:25:37"</span>,
+  <span class="jk">"last_activity_at"</span>: <span class="js">"2023-10-20 12:12:12"</span>,
+  <span class="jk">"post_type_id"</span>: <span class="jn">26</span>,
+  <span class="jk">"author_id"</span>: <span class="js">"6585761"</span>,
+  <span class="jk">"author_name"</span>: <span class="js">"Sean Gentille and Dom Luszczyszyn"</span>,
+  <span class="jk">"article_header_img"</span>: <span class="js">"https://static01.nyt.com/athletic/uploads/wp/2023/04/..."</span>,
+  <span class="jk">"permalink"</span>: <span class="js">"https://www.nytimes.com/athletic/4459721/..."</span>,
+
+  <span class="jc">// === THE BODY: single HTML string, all filters already applied ===</span>
+  <span class="jk">"article_body"</span>: <span class="js">"&lt;p&gt;&lt;em&gt;Read the latest edition...&lt;/em&gt;&lt;/p&gt;&lt;p&gt;Sound the alarms...&lt;/p&gt;
+    &lt;div class=\"wp-caption alignnone\"&gt;&lt;div class=\"wp-caption-image-container\"&gt;
+      &lt;img src=\"https://static01.nyt.com/athletic/uploads/wp/...\" /&gt;
+      &lt;div class=\"inline-credits\"&gt;&lt;div class=\"inline-credits-container\"&gt;
+        &lt;span class=\"credits-text\"&gt;Photo: Getty Images&lt;/span&gt;
+      &lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;
+    &lt;p&gt;More paragraph text...&lt;/p&gt;
+    &lt;blockquote class=\"twitter-tweet\"&gt;...&lt;/blockquote&gt;
+    &lt;a class=\"ath_autolink\" data-id=\"123\" href=\"/nhl/player/...\"&gt;Connor McDavid&lt;/a&gt;
+    &lt;div class=\"go-deeper\" data-content-id=\"456\"&gt;...&lt;/div&gt;
+    ..."</span>,
+
+  <span class="jk">"article_excerpt"</span>: <span class="js">"Whether your team is on the verge of golf season..."</span>,
+  <span class="jk">"truncated_article_body"</span>: <span class="js">"&lt;p&gt;Read the latest edition...&lt;/p&gt;..."</span>,
+  <span class="jk">"short_title"</span>: <span class="js">"NHL Power Rankings: Which players must show up?"</span>,
+  <span class="jk">"is_teaser"</span>: <span class="jb">false</span>,
+  <span class="jk">"is_sponsored"</span>: <span class="jb">false</span>,
+  <span class="jk">"featured"</span>: <span class="jb">true</span>,
+  <span class="jk">"subscriber_score"</span>: <span class="js">"70.72"</span>,
+  <span class="jk">"comments_count"</span>: <span class="jn">66</span>,
+  <span class="jk">"disable_comments"</span>: <span class="jb">false</span>,
+  <span class="jk">"show_rating"</span>: <span class="jb">true</span>,
+
+  <span class="jc">// === TAXONOMY ===</span>
+  <span class="jk">"team_ids"</span>: [<span class="jn">1</span>, <span class="jn">2</span>, <span class="jn">3</span>],
+  <span class="jk">"league_ids"</span>: [<span class="jn">1</span>],
+  <span class="jk">"primary_tag"</span>: <span class="js">"NHL"</span>,
+  <span class="jk">"chartbeat_sections"</span>: [<span class="js">"NHL"</span>, <span class="js">"hockey"</span>],
+  <span class="jk">"entity_keywords"</span>: [<span class="js">"Boston Bruins"</span>, <span class="js">"Buffalo Sabres"</span>],
+
+  <span class="jc">// === IMAGES ===</span>
+  <span class="jk">"article_header_img_full"</span>: <span class="js">"https://static01.nyt.com/athletic/uploads/wp/..."</span>,
+  <span class="jk">"article_header_img_caption"</span>: <span class="js">""</span>,
+
+  <span class="jc">// === AUTHORS (array) ===</span>
+  <span class="jk">"authors"</span>: [
+    {
+      <span class="jk">"author_id"</span>: <span class="jn">5644</span>,
+      <span class="jk">"first_name"</span>: <span class="js">"Dom"</span>,
+      <span class="jk">"last_name"</span>: <span class="js">"Luszczyszyn"</span>,
+      <span class="jk">"bio"</span>: <span class="js">"Dom Luszczyszyn is a national NHL writer..."</span>,
+      <span class="jk">"slug"</span>: <span class="js">"dom-luszczyszyn"</span>,
+      <span class="jk">"description"</span>: <span class="js">"Staff Writer"</span>,
+      <span class="jk">"full_description"</span>: <span class="js">"Staff Writer, NHL"</span>,
+      <span class="jk">"avatar_uri"</span>: <span class="js">"https://cdn.theathletic.com/app/uploads/..."</span>,
+      <span class="jk">"twitter_username"</span>: <span class="js">"domluszczyszyn"</span>
+    }
+  ]
+}</pre>
+  </div>
+  <div class="callout callout-info" style="margin-top:12px">
+    <div class="callout-icon">i</div>
+    <div><strong>No <code>article_body_desktop</code> or <code>article_body_mobile</code> in this response.</strong> Apollo generates those by parsing <code>article_body</code> into blocks, sprinkling ads (desktop rules vs mobile rules), injecting ICMs, and applying theme transforms. The PHP API only returns the single base body.</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- LAYER 3: APOLLO -->
+<!-- ============================================================ -->
+<div class="layer">
+  <div class="layer-header" style="background:rgba(97,175,239,0.08)">
+    <div class="layer-number" style="background:var(--accent-apollo)">3</div>
+    <div>
+      <div class="layer-title">Apollo Express (Node.js)</div>
+      <div style="font-size:12px;color:var(--muted)">GraphQL middleware: parsing, ads, modules, theme</div>
+    </div>
+    <div class="layer-repo">theathletic-apollo-express/src/</div>
+  </div>
+  <div class="layer-body">
+    <div class="pipeline">
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-apollo)">3.1</span> Fetch + Cache</div>
+        <div class="step-desc">Calls PHP API <code>GET /articles/{id}</code>. Caches full response in Redis. Skips cache for unpublished/preview articles.</div>
+        <div class="step-file">athleticRestDataSource.ts :399-511<br><span style="color:var(--accent-warn)">TTL: 4 hours</span></div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-apollo)">3.2</span> Parse to Blocks</div>
+        <div class="step-desc">HTML string parsed via JSDOM into typed blocks: <strong>ParagraphBlock</strong>, <strong>HeaderBlock</strong> (including all-bold &lt;p&gt;&lt;strong&gt; promoted to header), <strong>HorizontalRuleBlock</strong>, <strong>TwitterEmbedBlock</strong>, <strong>VideoEmbedBlock</strong>, <strong>InlineBlock</strong> (scripts, whitespace). Character count accumulated per block.</div>
+        <div class="step-file">helpers/articleParser.ts :43-106</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-apollo)">3.3</span> Sprinkle Ads</div>
+        <div class="step-desc">
+          Inserts <code>.ad-container</code> divs between blocks. <strong>Desktop:</strong> first ad at 300+ chars, then 4/5/7 paragraph gaps. <strong>Mobile:</strong> first at 300+ chars, then every 3 paragraphs. 6 validation checks per position (block type, char threshold, special markers, not last block, embed spacing). Sponsor slot prepended if <code>is_sponsored</code>.
+        </div>
+        <div class="step-file">helpers/ads.ts :61-319<br>constants/ads.ts</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-apollo)">3.4</span> Inject ICMs</div>
+        <div class="step-desc">In-content modules (graphics, recommendations, most-popular, brackets, follows, etc.) spliced at high-middle, middle, and end positions. 11 module types. Storytelling blocks (showcase-link, rich-storyline) suppress end modules.</div>
+        <div class="step-file">helpers/graphics.ts :174-212</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-apollo)">3.5</span> Theme Injection</div>
+        <div class="step-desc">Three transforms: (1) <code>data-theme="dark"</code> on Twitter blockquotes if dark mode, (2) <code>theme=auto</code> param on Apple Podcast iframes, (3) strip Tallysight script tags.</div>
+        <div class="step-file">modules/article/helpers.js :45-53</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-apollo)">3.6</span> Reassemble + Cache</div>
+        <div class="step-desc">Blocks joined back to HTML string. Cached per variant (desktop/mobile x dark/light x experiment options).</div>
+        <div class="step-file">athleticRestDataSource.ts :579-626<br><span style="color:var(--accent-warn)">TTL: 24 hours</span></div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-apollo)">3.7</span> Serve via GraphQL</div>
+        <div class="step-desc">
+          Six fields: <code>article_body</code> (theme only, no ads), <code>article_body_desktop</code>, <code>article_body_mobile</code>, <code>*_exp</code> variants (no experiments), <code>article_body_blocks</code> (structured). Client picks which to request.
+        </div>
+        <div class="step-file">modules/article/resolvers.js :177-256<br>modules/article/schema.js :18-27</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow-connector">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+</div>
+
+<!-- ============================================================ -->
+<!-- LAYER 4: WEB FRONTEND -->
+<!-- ============================================================ -->
+<div class="layer">
+  <div class="layer-header" style="background:rgba(152,195,121,0.08)">
+    <div class="layer-number" style="background:var(--accent-web)">4</div>
+    <div>
+      <div class="layer-title">Web Frontend (Next.js)</div>
+      <div style="font-size:12px;color:var(--muted)">Client-side transforms before render. Also serves mobile webviews.</div>
+    </div>
+    <div class="layer-repo">web/src/</div>
+  </div>
+  <div class="layer-body">
+    <div class="pipeline">
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-web)">4.1</span> Variant Selection</div>
+        <div class="step-desc">Client-side breakpoint picks <code>article_body_desktop</code> or <code>article_body_mobile</code> (with cross-fallback). GraphQL <code>@include</code> directives fetch both conditionally based on server-side device detection.</div>
+        <div class="step-file">features/article/article.tsx :143-147<br>fragments/articleFragment.ts :23-31</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-web)">4.2</span> styleAds()</div>
+        <div class="step-desc">String-replaces CSS classes on ad containers. Adds layout classes, ad-blocker detection (<code>ad-empty</code>), sponsor alignment. Does NOT insert ad slots; they're already in the HTML from Apollo.</div>
+        <div class="step-file">features/ads/utils/style-ads.ts :25-59</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-web)">4.3</span> cleanArticleBody()</div>
+        <div class="step-desc">Fixes 3 specific broken HTML patterns: (1) orphaned <code>&lt;/p&gt;</code> around credit images, (2) stray <code>&lt;/p&gt;</code> inside caption containers, (3) YouTube iframes replaced with lazy facades (Core Web Vitals).</div>
+        <div class="step-file">features/article/utils/cleanArticleBody.ts :8-41</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-web)">4.4</span> replaceShortcode()</div>
+        <div class="step-desc">Converts 3 remaining shortcode tags to data-attribute divs: <code>[comment id]</code>, <code>[game id]</code>, <code>[tournament-leaderboard id]</code>. Handles WordPress smart-quote variants.</div>
+        <div class="step-file">features/article/utils/replaceShortcode.ts :12-22</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-web)">4.5</span> Render to DOM</div>
+        <div class="step-desc"><code>dangerouslySetInnerHTML</code> into a div with classes <code>bodytext1 article-content-container</code>. All CSS targeting <code>.wp-caption</code>, <code>.twitter-tweet</code>, <code>.ad-container</code>, <code>.go-deeper</code>, etc. applies here.</div>
+        <div class="step-file">features/article/components/article-container.tsx :698</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-web)">4.6</span> React Portals</div>
+        <div class="step-desc">After render, <code>useLayoutEffect</code> queries the DOM for data attributes and mounts React components via <code>createPortal</code>: <strong>VideoHost</strong> (data-ath-video-stream), <strong>ArticleCommentEmbed</strong>, <strong>ArticleGameEmbed</strong>, <strong>ArticleTournamentEmbed</strong>.</div>
+        <div class="step-file">article-container.tsx :600-728</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-web)">4.7</span> GPT Ad Activation</div>
+        <div class="step-desc">Google Publisher Tag + AdSlot scripts initialize. Ad mediator handles lifecycle events (defined, called, rendered, empty). Ads fill the <code>.ad place-ad</code> divs that have been in the HTML since step 3.3.</div>
+        <div class="step-file">features/ads/components/article-ad-head.tsx<br>features/ads/article-mediator/</div>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-icon">i</div>
+      <div><strong>Webview mode (<code>?embed=1</code>):</strong> Same pipeline, but suppresses analytics, paywalls, and suggested follows. Native apps detect via <code>isTAAppUserAgent()</code>. Ad targeting provided by native <code>window.AdBridge</code>.</div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow-connector">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+</div>
+
+<!-- ============================================================ -->
+<!-- LAYER 5: MOBILE -->
+<!-- ============================================================ -->
+<div class="layer">
+  <div class="layer-header" style="background:rgba(198,120,221,0.08)">
+    <div class="layer-number" style="background:var(--accent-mobile)">5</div>
+    <div>
+      <div class="layer-title">Mobile Apps (iOS + Android)</div>
+      <div style="font-size:12px;color:var(--muted)">Webview rendering, not native parsing</div>
+    </div>
+    <div class="layer-repo">ios-theathletic / android-theathletic</div>
+  </div>
+  <div class="layer-body">
+    <div class="pipeline">
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-mobile)">5.1</span> Fetch Metadata</div>
+        <div class="step-desc">GraphQL query fetches article metadata including <code>permalinkForEmbed</code> URL. This is NOT the <code>article_body_mobile</code> field.</div>
+        <div class="step-file">iOS: ArticlePreloader.swift<br>Android: GetWebArticleUseCase.kt</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-mobile)">5.2</span> HTTP Fetch</div>
+        <div class="step-desc">Makes an HTTP request to the permalink URL with <code>?embed=1&amp;theme=dark|light</code>. Receives the <strong>full rendered HTML page</strong> from the Next.js web frontend (Layer 4).</div>
+        <div class="step-file">iOS: loadHTMLString(_:baseURL:)<br>Android: loadDataWithBaseURL()</div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-mobile)">5.3</span> Webview Render</div>
+        <div class="step-desc">Full page loaded into WKWebView (iOS) or android.webkit.WebView (Android). No native HTML parsing. The web frontend's Layer 4 transforms have already run server-side and client-side.</div>
+        <div class="step-file"></div>
+      </div>
+      <div class="step">
+        <div class="step-name"><span class="step-badge" style="background:var(--accent-mobile)">5.4</span> Native Bridges</div>
+        <div class="step-desc">JavaScript interfaces injected: <code>window.native</code> (comment interactions: like, reply, open, menu) and <code>window.AdBridge</code> (ad targeting config). iOS adds Chartbeat + Transcend consent scripts.</div>
+        <div class="step-file">iOS: WebViewController.swift :956-982<br>Android: ArticleWebNativeBridge.kt</div>
+      </div>
+    </div>
+
+    <div class="mobile-split">
+      <div class="mobile-platform" style="border-color:rgba(198,120,221,0.3)">
+        <h4 style="color:var(--accent-mobile)">iOS</h4>
+        <ul>
+          <li>WKWebView with .athletic config</li>
+          <li>URLCache: 50 MB disk cache</li>
+          <li>Preloads ~300 articles</li>
+          <li>?preview=1 for drafts</li>
+          <li>?ath_video_stream=1 for video</li>
+        </ul>
+      </div>
+      <div class="mobile-platform" style="border-color:rgba(198,120,221,0.3)">
+        <h4 style="color:var(--accent-mobile)">Android</h4>
+        <ul>
+          <li>android.webkit.WebView</li>
+          <li>Extracts + caches images, CSS, JS, fonts</li>
+          <li>User agent: "theathletic-android"</li>
+          <li>domStorageEnabled, mixedContent allowed</li>
+          <li>NYTBridge for analytics</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- NOT IN BODY -->
+<!-- ============================================================ -->
+<div class="not-in-body">
+  <h3>Not in the article body HTML (separate fields/queries)</h3>
+  <div class="not-in-body-grid">
+    <div class="not-in-body-item">Hero image/video (image_uri, hero_video_stream)</div>
+    <div class="not-in-body-item">Headline (article.title)</div>
+    <div class="not-in-body-item">Byline (byline_linkable, authors)</div>
+    <div class="not-in-body-item">Story type label (story_type_tags)</div>
+    <div class="not-in-body-item">Multi-recirc menu (separate query)</div>
+    <div class="not-in-body-item">Q&A content (QANDA_BY_ID query)</div>
+    <div class="not-in-body-item">Storyline nav (article.storyline)</div>
+    <div class="not-in-body-item">Comments (CommentsContainer)</div>
+    <div class="not-in-body-item">Puzzle entry (PuzzleEntryPoint)</div>
+    <div class="not-in-body-item">Related tags (display_tags)</div>
+    <div class="not-in-body-item">Ad targeting (ad_unit_path, ad_targeting_params)</div>
+    <div class="not-in-body-item">Paywall / OMA (AthleticDock)</div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

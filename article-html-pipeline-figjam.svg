@@ -1,0 +1,693 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 4200" width="1400" height="4200">
+  <defs>
+    <style>
+      text { font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; }
+      .layer-title { font-size: 18px; font-weight: 700; }
+      .layer-subtitle { font-size: 12px; fill: #666; }
+      .step-name { font-size: 13px; font-weight: 600; }
+      .step-desc { font-size: 11px; fill: #555; }
+      .step-file { font-size: 10px; fill: #888; font-family: 'SF Mono', Monaco, monospace; }
+      .badge { font-size: 11px; font-weight: 700; fill: white; }
+      .section-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; fill: #999; text-anchor: middle; }
+      .callout-text { font-size: 11px; fill: #8B6914; }
+      .info-text { font-size: 11px; fill: #1a6b5a; }
+      .json-label { font-size: 11px; font-weight: 600; fill: #3b82f6; }
+      .json-text { font-size: 10px; fill: #555; font-family: 'SF Mono', Monaco, monospace; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1400" height="4200" fill="#FAFAFA" rx="0"/>
+
+  <!-- Title -->
+  <text x="700" y="45" text-anchor="middle" font-size="26" font-weight="700" fill="#1a1a1a">Article HTML Pipeline</text>
+  <text x="700" y="68" text-anchor="middle" font-size="13" fill="#888">Every transformation between the WordPress editor and the reader's screen</text>
+
+  <!-- Legend -->
+  <g transform="translate(340, 88)">
+    <rect x="0" y="0" width="12" height="12" rx="3" fill="#E06C75"/>
+    <text x="18" y="11" font-size="12" fill="#666">WordPress PHP</text>
+    <rect x="150" y="0" width="12" height="12" rx="3" fill="#61AFEF"/>
+    <text x="168" y="11" font-size="12" fill="#666">Apollo Express</text>
+    <rect x="310" y="0" width="12" height="12" rx="3" fill="#5EA05E"/>
+    <text x="328" y="11" font-size="12" fill="#666">Web Frontend</text>
+    <rect x="450" y="0" width="12" height="12" rx="3" fill="#C678DD"/>
+    <text x="468" y="11" font-size="12" fill="#666">Mobile Apps</text>
+  </g>
+
+  <!-- ====================================================== -->
+  <!-- LAYER 1: WORDPRESS WRITE PATH -->
+  <!-- ====================================================== -->
+  <g transform="translate(40, 120)">
+    <!-- Card background -->
+    <rect width="1320" height="680" rx="16" fill="white" stroke="#E8E8E8" stroke-width="1.5"/>
+    <!-- Header bar -->
+    <rect width="1320" height="52" rx="16" fill="#FEF2F2"/>
+    <rect y="36" width="1320" height="16" fill="#FEF2F2"/>
+    <line x1="0" y1="52" x2="1320" y2="52" stroke="#FECACA" stroke-width="1"/>
+    <!-- Number badge -->
+    <rect x="20" y="12" width="28" height="28" rx="7" fill="#E06C75"/>
+    <text x="34" y="32" text-anchor="middle" class="badge">1</text>
+    <!-- Title -->
+    <text x="60" y="30" class="layer-title" fill="#1a1a1a">WordPress PHP — Write Path</text>
+    <text x="60" y="44" class="layer-subtitle">When a writer hits "Publish"</text>
+    <text x="1300" y="36" text-anchor="end" class="step-file">the-athletic / functions.php</text>
+
+    <!-- Steps as sticky-note cards -->
+    <!-- Step 1.1 -->
+    <g transform="translate(30, 68)">
+      <rect width="180" height="80" rx="8" fill="#FFF5F5" stroke="#FECACA" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#E06C75"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">1.1</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">Raw Content</text>
+      <text x="10" y="40" class="step-desc">Editor HTML with raw</text>
+      <text x="10" y="52" class="step-desc">shortcode tags, plain</text>
+      <text x="10" y="64" class="step-desc">text, and markup</text>
+    </g>
+
+    <!-- Arrow -->
+    <line x1="218" y1="108" x2="238" y2="108" stroke="#ccc" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- Step 1.2 -->
+    <g transform="translate(245, 68)">
+      <rect width="180" height="80" rx="8" fill="#FFF5F5" stroke="#FECACA" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#E06C75"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">1.2</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">Autolinker</text>
+      <text x="10" y="40" class="step-desc">Lambda: autolinkerv4</text>
+      <text x="10" y="52" class="step-desc">AWS Comprehend detects</text>
+      <text x="10" y="64" class="step-desc">entities, injects ath_autolink</text>
+    </g>
+
+    <line x1="433" y1="108" x2="453" y2="108" stroke="#ccc" stroke-width="1.5"/>
+
+    <!-- Step 1.3 -->
+    <g transform="translate(460, 68)">
+      <rect width="180" height="80" rx="8" fill="#FFF5F5" stroke="#FECACA" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#E06C75"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">1.3</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">Story Indexer</text>
+      <text x="10" y="40" class="step-desc">Lambda: storyIndexer</text>
+      <text x="10" y="52" class="step-desc">Adds id="sect0", "sect1"</text>
+      <text x="10" y="64" class="step-desc">anchors to h2-h6 headings</text>
+    </g>
+
+    <line x1="648" y1="108" x2="668" y2="108" stroke="#ccc" stroke-width="1.5"/>
+
+    <!-- Step 1.4 -->
+    <g transform="translate(675, 68)">
+      <rect width="160" height="80" rx="8" fill="#FFF5F5" stroke="#FECACA" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#E06C75"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">1.4</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">Rel Attrs</text>
+      <text x="10" y="40" class="step-desc">Sets rel=noopener</text>
+      <text x="10" y="52" class="step-desc">noreferrer on</text>
+      <text x="10" y="64" class="step-desc">external links</text>
+    </g>
+
+    <line x1="843" y1="108" x2="863" y2="108" stroke="#ccc" stroke-width="1.5"/>
+
+    <!-- Step 1.5 (the big one) -->
+    <g transform="translate(870, 68)">
+      <rect width="200" height="80" rx="8" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1.5"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#E06C75"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">1.5</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">the_content Filters</text>
+      <text x="10" y="40" class="step-desc" font-weight="600">10+ filters in priority order</text>
+      <text x="10" y="52" class="step-desc">Shortcodes expand, HTML</text>
+      <text x="10" y="64" class="step-desc">cleaned, media URLs rewritten</text>
+    </g>
+
+    <line x1="1078" y1="108" x2="1098" y2="108" stroke="#ccc" stroke-width="1.5"/>
+
+    <!-- Step 1.6 + 1.7 stacked -->
+    <g transform="translate(1105, 68)">
+      <rect width="185" height="36" rx="8" fill="#FFF5F5" stroke="#FECACA" stroke-width="1"/>
+      <rect x="8" y="6" width="28" height="18" rx="4" fill="#E06C75"/>
+      <text x="22" y="19" text-anchor="middle" font-size="10" font-weight="700" fill="white">1.6</text>
+      <text x="42" y="20" class="step-name" fill="#1a1a1a">CDN Rewrite</text>
+    </g>
+    <line x1="1197" y1="104" x2="1197" y2="112" stroke="#ccc" stroke-width="1.5"/>
+    <g transform="translate(1105, 116)">
+      <rect width="185" height="36" rx="8" fill="#FFF5F5" stroke="#FECACA" stroke-width="1"/>
+      <rect x="8" y="6" width="28" height="18" rx="4" fill="#E06C75"/>
+      <text x="22" y="19" text-anchor="middle" font-size="10" font-weight="700" fill="white">1.7</text>
+      <text x="42" y="20" class="step-name" fill="#1a1a1a">Store to DB</text>
+    </g>
+
+    <!-- Filters detail section -->
+    <g transform="translate(30, 170)">
+      <rect width="620" height="290" rx="10" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+      <text x="15" y="22" font-size="12" font-weight="700" fill="#374151">the_content Filters (priority order)</text>
+
+      <g transform="translate(15, 36)">
+        <text y="14" class="step-file" fill="#E06C75">ungreenbergify()</text><text x="160" y="14" class="step-desc">Strip XML artifacts, MS Word classes (p1, s1, MsoNormal)</text>
+        <text y="32" class="step-file" fill="#E06C75">dejunkify_html()</text><text x="160" y="32" class="step-desc">Strip span styles, unwrap [go-deeper] from wrapper tags, remove contenteditable</text>
+        <text y="50" class="step-file" fill="#E06C75">add_video_thumbnail()</text><text x="160" y="50" class="step-desc">Add poster=".jpg" and &lt;source&gt; to [video mp4] shortcodes</text>
+        <text y="68" class="step-file" fill="#E06C75">formatTables()</text><text x="160" y="68" class="step-desc">Wrap tables in div.table-responsive, add Bootstrap classes</text>
+        <text y="86" class="step-file" fill="#E06C75">flip_single_smart_quote()</text><text x="160" y="86" class="step-desc">Fix &#8216; to &#8217; after &lt;/em&gt;, &lt;/i&gt;, &lt;/a&gt; tags</text>
+        <text y="104" class="step-file" fill="#E06C75">remove_custom_paywall()</text><text x="160" y="104" class="step-desc">{{PAYWALL}} replaced with 3x zero-width non-joiner chars</text>
+        <text y="122" class="step-file" fill="#E06C75">force_external_to_https()</text><text x="160" y="122" class="step-desc">http://s3, src="http:, src="//" all forced to https</text>
+        <text y="140" class="step-file" fill="#E06C75">remove_manual_styles()</text><text x="160" y="140" class="step-desc">Strip inline color: #hex; styles (breaks dark mode)</text>
+        <text y="158" class="step-file" fill="#D97706">do_shortcode()</text><text x="160" y="158" class="step-desc" font-weight="600">Expands all 23 shortcodes into HTML</text>
+        <text y="176" class="step-file" fill="#E06C75">S3 CDN filter (p100)</text><text x="160" y="176" class="step-desc">Rewrite local media URLs to S3/CloudFront (runs last)</text>
+      </g>
+
+      <!-- CDN rewrite detail -->
+      <g transform="translate(15, 230)">
+        <rect width="585" height="40" rx="6" fill="#F3F4F6" stroke="#E5E7EB" stroke-width="0.5"/>
+        <text x="10" y="16" class="step-file" fill="#666">CDN Rewrite:</text>
+        <text x="100" y="16" class="json-text">cdn.theathletic.com/app/uploads  -->  static01.nyt.com/athletic/uploads/wp</text>
+        <text x="100" y="32" class="json-text">static01.nyt.com/app/uploads     -->  static01.nyt.com/athletic/uploads/wp</text>
+      </g>
+    </g>
+
+    <!-- Shortcodes detail section -->
+    <g transform="translate(670, 170)">
+      <rect width="620" height="290" rx="10" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+      <text x="15" y="22" font-size="12" font-weight="700" fill="#374151">23 Registered Shortcodes</text>
+
+      <g transform="translate(15, 40)">
+        <!-- Column 1 -->
+        <text y="0" class="json-text" font-weight="600">[caption]</text><text x="140" y="0" class="step-desc">wp-caption + inline-credits HTML</text>
+        <text y="18" class="json-text" font-weight="600">[graphics id]</text><text x="140" y="18" class="step-desc">GraphQL getGraphic, returns raw_html</text>
+        <text y="36" class="json-text" font-weight="600">[article-embed]</text><text x="140" y="36" class="step-desc">Card with thumbnail + title + author</text>
+        <text y="54" class="json-text" font-weight="600">[video-stream]</text><text x="140" y="54" class="step-desc">data-ath-video-stream div + HLS/DASH</text>
+        <text y="72" class="json-text" font-weight="600">[go-deeper]</text><text x="140" y="72" class="step-desc">Linked card with image + title</text>
+        <text y="90" class="json-text" font-weight="600">[data-viz]</text><text x="140" y="90" class="step-desc">Responsive iframe to /report/</text>
+        <text y="108" class="json-text" font-weight="600">[in-content-module]</text><text x="140" y="108" class="step-desc">ICM placeholder</text>
+        <text y="126" class="json-text" font-weight="600">[bracket-widget]</text><text x="140" y="126" class="step-desc">DB lookup, returns raw HTML</text>
+        <text y="144" class="json-text" font-weight="600">[player-card]</text><text x="140" y="144" class="step-desc">DB lookup, returns raw HTML</text>
+        <text y="162" class="json-text" font-weight="600">[table id]</text><text x="140" y="162" class="step-desc">DB lookup from in_article_tables</text>
+        <text y="180" class="json-text" font-weight="600">[ebay-icm]</text><text x="140" y="180" class="step-desc">eBay collectible module</text>
+
+        <!-- Column 2 -->
+        <text x="340" y="0" class="json-text">[quote-card]</text>
+        <text x="340" y="18" class="json-text">[video-fullscreen]</text>
+        <text x="340" y="36" class="json-text">[video-header]</text>
+        <text x="340" y="54" class="json-text">[scroll-quote]</text>
+        <text x="340" y="72" class="json-text">[full-screen]</text>
+        <text x="340" y="90" class="json-text">[three-inline-images]</text>
+        <text x="340" y="108" class="json-text">[twocol-text]</text>
+        <text x="340" y="126" class="json-text">[article-logo]</text>
+        <text x="340" y="144" class="json-text">[article-complex-header]</text>
+        <text x="340" y="162" class="json-text">[widget-theme]</text>
+        <text x="340" y="180" class="json-text">[baseball-100]</text>
+        <text x="340" y="198" class="json-text">[bc-disclaimer] / [bc-cta]</text>
+      </g>
+    </g>
+
+    <!-- Warning callout -->
+    <g transform="translate(30, 480)">
+      <rect width="1260" height="50" rx="8" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1"/>
+      <text x="15" y="20" font-size="14" fill="#92400E">!!</text>
+      <text x="35" y="20" class="callout-text" font-weight="700">Double filtering.</text>
+      <text x="160" y="20" class="callout-text">Content is stored to DB with all filters already applied. But the V4 read API applies the_content filters</text>
+      <text x="35" y="36" class="callout-text" font-style="italic">again.</text>
+      <text x="65" y="36" class="callout-text">The autolinker and story indexer also run again on read. These filters are not fully idempotent.</text>
+    </g>
+
+    <!-- Key output classes -->
+    <g transform="translate(30, 548)">
+      <rect width="1260" height="110" rx="8" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+      <text x="15" y="20" font-size="12" font-weight="700" fill="#1E40AF">Key HTML classes and structures in the output</text>
+      <g transform="translate(15, 34)">
+        <text y="0" class="json-text" fill="#1E40AF">Classes:</text>
+        <text x="60" y="0" class="json-text">wp-caption  wp-caption-image-container  inline-credits  inline-credits-container  credits-text</text>
+        <text x="60" y="16" class="json-text">ath_autolink  go-deeper  table-responsive  wp-video  twitter-tweet  showcase-link-container</text>
+        <text y="38" class="json-text" fill="#1E40AF">Data attrs:</text>
+        <text x="60" y="38" class="json-text">data-ath-video-stream  data-content-id  data-content-post-type-id  data-horizontal  data-vertical</text>
+        <text x="60" y="54" class="json-text">data-restricted-countries  data-thumbnail-url  data-type  data-source  data-shortcode-id</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Arrow down -->
+  <g transform="translate(690, 810)">
+    <line x1="0" y1="0" x2="0" y2="30" stroke="#bbb" stroke-width="2"/>
+    <polygon points="-6,30 6,30 0,40" fill="#bbb"/>
+  </g>
+
+  <!-- ====================================================== -->
+  <!-- LAYER 2: WORDPRESS READ PATH -->
+  <!-- ====================================================== -->
+  <g transform="translate(40, 860)">
+    <rect width="1320" height="300" rx="16" fill="white" stroke="#E8E8E8" stroke-width="1.5"/>
+    <rect width="1320" height="52" rx="16" fill="#FEF2F2"/>
+    <rect y="36" width="1320" height="16" fill="#FEF2F2"/>
+    <line x1="0" y1="52" x2="1320" y2="52" stroke="#FECACA" stroke-width="1"/>
+    <rect x="20" y="12" width="28" height="28" rx="7" fill="#E06C75"/>
+    <text x="34" y="32" text-anchor="middle" class="badge">2</text>
+    <text x="60" y="30" class="layer-title" fill="#1a1a1a">WordPress PHP — Read Path (V4 API)</text>
+    <text x="60" y="44" class="layer-subtitle">When Apollo fetches GET /v5/articles/{id}</text>
+    <text x="1300" y="36" text-anchor="end" class="step-file">class.athApiV4.inc.php</text>
+
+    <!-- Steps in a row -->
+    <g transform="translate(30, 68)">
+      <rect width="180" height="70" rx="8" fill="#FFF5F5" stroke="#FECACA" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#E06C75"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">2.1</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">Read from DB</text>
+      <text x="10" y="40" class="step-desc">Content already filtered</text>
+      <text x="10" y="52" class="step-desc">at write time (step 1.5)</text>
+    </g>
+    <line x1="218" y1="103" x2="238" y2="103" stroke="#ccc" stroke-width="1.5"/>
+
+    <g transform="translate(245, 68)">
+      <rect width="200" height="70" rx="8" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1.5"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#E06C75"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">2.2</text>
+      <text x="42" y="21" class="step-name" fill="#92400E">the_content AGAIN</text>
+      <text x="10" y="40" class="step-desc" fill="#92400E" font-weight="600">All 10+ filters run a 2nd time</text>
+      <text x="10" y="52" class="step-desc">on already-filtered content</text>
+    </g>
+    <line x1="453" y1="103" x2="473" y2="103" stroke="#ccc" stroke-width="1.5"/>
+
+    <g transform="translate(480, 68)">
+      <rect width="160" height="70" rx="8" fill="#FFF5F5" stroke="#FECACA" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#E06C75"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">2.3</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">CDN Rewrite</text>
+      <text x="10" y="40" class="step-desc">Same as write path.</text>
+      <text x="10" y="52" class="step-desc">Idempotent.</text>
+    </g>
+    <line x1="648" y1="103" x2="668" y2="103" stroke="#ccc" stroke-width="1.5"/>
+
+    <g transform="translate(675, 68)">
+      <rect width="180" height="70" rx="8" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#E06C75"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">2.4</text>
+      <text x="42" y="21" class="step-name" fill="#92400E">Autolinker Again</text>
+      <text x="10" y="40" class="step-desc">Runs on already-linked</text>
+      <text x="10" y="52" class="step-desc">content. May duplicate.</text>
+    </g>
+    <line x1="863" y1="103" x2="883" y2="103" stroke="#ccc" stroke-width="1.5"/>
+
+    <g transform="translate(890, 68)">
+      <rect width="180" height="70" rx="8" fill="#FFF5F5" stroke="#FECACA" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#E06C75"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">2.5</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">Story Indexer</text>
+      <text x="10" y="40" class="step-desc">Runs again if enabled.</text>
+      <text x="10" y="52" class="step-desc">Section IDs may exist.</text>
+    </g>
+    <line x1="1078" y1="103" x2="1098" y2="103" stroke="#ccc" stroke-width="1.5"/>
+
+    <g transform="translate(1105, 68)">
+      <rect width="185" height="70" rx="8" fill="#FFF5F5" stroke="#FECACA" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#E06C75"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">2.6</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">JSON Response</text>
+      <text x="10" y="40" class="step-desc">Returns article_body</text>
+      <text x="10" y="52" class="step-desc">(single HTML string)</text>
+    </g>
+
+    <!-- Info callout -->
+    <g transform="translate(30, 158)">
+      <rect width="1260" height="36" rx="8" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+      <text x="15" y="22" class="info-text"><tspan font-weight="700">V3 API (older mobile path)</tspan> reads from custom posts table directly and does NOT re-apply filters. Only V4 double-filters.</text>
+    </g>
+
+    <!-- JSON callout -->
+    <g transform="translate(30, 210)">
+      <rect width="1260" height="70" rx="8" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+      <text x="15" y="18" class="json-label">PHP returns a single article_body field. Apollo generates desktop/mobile variants itself.</text>
+      <text x="15" y="38" class="json-text">{ "article_id": "4459721", "article_title": "NHL Power Rankings...", "article_body": "&lt;p&gt;...full HTML...&lt;/p&gt;",</text>
+      <text x="15" y="54" class="json-text">  "authors": [...], "team_ids": [...], "league_ids": [...], "is_sponsored": false, "permalink": "..." }</text>
+    </g>
+  </g>
+
+  <!-- Arrow down -->
+  <g transform="translate(690, 1170)">
+    <line x1="0" y1="0" x2="0" y2="30" stroke="#bbb" stroke-width="2"/>
+    <polygon points="-6,30 6,30 0,40" fill="#bbb"/>
+  </g>
+
+  <!-- ====================================================== -->
+  <!-- LAYER 3: APOLLO EXPRESS -->
+  <!-- ====================================================== -->
+  <g transform="translate(40, 1220)">
+    <rect width="1320" height="520" rx="16" fill="white" stroke="#E8E8E8" stroke-width="1.5"/>
+    <rect width="1320" height="52" rx="16" fill="#EFF6FF"/>
+    <rect y="36" width="1320" height="16" fill="#EFF6FF"/>
+    <line x1="0" y1="52" x2="1320" y2="52" stroke="#BFDBFE" stroke-width="1"/>
+    <rect x="20" y="12" width="28" height="28" rx="7" fill="#61AFEF"/>
+    <text x="34" y="32" text-anchor="middle" class="badge">3</text>
+    <text x="60" y="30" class="layer-title" fill="#1a1a1a">Apollo Express (Node.js)</text>
+    <text x="60" y="44" class="layer-subtitle">GraphQL middleware: parsing, ads, modules, theme</text>
+    <text x="1300" y="36" text-anchor="end" class="step-file">theathletic-apollo-express / src/</text>
+
+    <!-- Row 1: steps 3.1 - 3.4 -->
+    <g transform="translate(30, 68)">
+      <rect width="295" height="90" rx="8" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#61AFEF"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">3.1</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">Fetch + Cache</text>
+      <text x="10" y="40" class="step-desc">GET /articles/{id} from PHP API</text>
+      <text x="10" y="52" class="step-desc">Redis cache, skip for unpublished/preview</text>
+      <text x="10" y="72" class="step-file" fill="#D97706">TTL: 4 hours</text>
+    </g>
+    <line x1="333" y1="113" x2="353" y2="113" stroke="#ccc" stroke-width="1.5"/>
+
+    <g transform="translate(360, 68)">
+      <rect width="295" height="90" rx="8" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#61AFEF"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">3.2</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">Parse to Blocks</text>
+      <text x="10" y="40" class="step-desc">HTML string parsed via JSDOM into typed blocks:</text>
+      <text x="10" y="52" class="step-desc">Paragraph, Header, HorizontalRule, TwitterEmbed,</text>
+      <text x="10" y="64" class="step-desc">VideoEmbed, Inline. Char count per block.</text>
+      <text x="10" y="80" class="step-file">helpers/articleParser.ts :43-106</text>
+    </g>
+    <line x1="663" y1="113" x2="683" y2="113" stroke="#ccc" stroke-width="1.5"/>
+
+    <g transform="translate(690, 68)">
+      <rect width="295" height="90" rx="8" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#61AFEF"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">3.3</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">Sprinkle Ads</text>
+      <text x="10" y="40" class="step-desc" font-weight="600">Desktop: 300ch first, 4/5/7 para gaps</text>
+      <text x="10" y="52" class="step-desc" font-weight="600">Mobile: 300ch first, 3 para gaps</text>
+      <text x="10" y="64" class="step-desc">6 validation checks per position</text>
+      <text x="10" y="80" class="step-file">helpers/ads.ts :61-319</text>
+    </g>
+    <line x1="993" y1="113" x2="1013" y2="113" stroke="#ccc" stroke-width="1.5"/>
+
+    <g transform="translate(1020, 68)">
+      <rect width="270" height="90" rx="8" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#61AFEF"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">3.4</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">Inject ICMs</text>
+      <text x="10" y="40" class="step-desc">In-content modules: graphics,</text>
+      <text x="10" y="52" class="step-desc">recommendations, most-popular, etc.</text>
+      <text x="10" y="64" class="step-desc">11 module types, 3 positions</text>
+      <text x="10" y="80" class="step-file">helpers/graphics.ts :174-212</text>
+    </g>
+
+    <!-- Row 2: steps 3.5 - 3.7 -->
+    <g transform="translate(30, 178)">
+      <rect width="400" height="80" rx="8" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#61AFEF"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">3.5</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">Theme Injection</text>
+      <text x="10" y="42" class="step-desc">1. data-theme="dark" on Twitter blockquotes (if dark mode)</text>
+      <text x="10" y="56" class="step-desc">2. theme=auto param on Apple Podcast iframes</text>
+      <text x="10" y="70" class="step-desc">3. Strip Tallysight script tags</text>
+    </g>
+    <line x1="438" y1="218" x2="458" y2="218" stroke="#ccc" stroke-width="1.5"/>
+
+    <g transform="translate(465, 178)">
+      <rect width="390" height="80" rx="8" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#61AFEF"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">3.6</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">Reassemble + Cache</text>
+      <text x="10" y="42" class="step-desc">Blocks joined to HTML string. Cached per variant:</text>
+      <text x="10" y="56" class="step-desc">desktop/mobile x dark/light x experiment options</text>
+      <text x="10" y="70" class="step-file" fill="#D97706">TTL: 24 hours</text>
+    </g>
+    <line x1="863" y1="218" x2="883" y2="218" stroke="#ccc" stroke-width="1.5"/>
+
+    <g transform="translate(890, 178)">
+      <rect width="400" height="80" rx="8" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#61AFEF"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">3.7</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">Serve via GraphQL</text>
+      <text x="10" y="42" class="step-desc">6 fields: article_body (theme only), article_body_desktop,</text>
+      <text x="10" y="56" class="step-desc">article_body_mobile, *_exp variants, article_body_blocks</text>
+      <text x="10" y="70" class="step-file">modules/article/resolvers.js :177-256</text>
+    </g>
+
+    <!-- Ad HTML output -->
+    <g transform="translate(30, 280)">
+      <rect width="620" height="210" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+      <text x="15" y="20" font-size="12" font-weight="700" fill="#374151">Ad Container HTML (injected by step 3.3)</text>
+      <g transform="translate(15, 36)">
+        <text y="0" class="json-text">&lt;div class="ad-container"&gt;</text>
+        <text y="16" class="json-text">  &lt;div class="ad-wrapper"&gt;</text>
+        <text y="32" class="json-text">    &lt;div class="ad-slug-container"&gt;</text>
+        <text y="48" class="json-text">      &lt;p class="ad-slug"&gt;Advertisement&lt;/p&gt;</text>
+        <text y="64" class="json-text">    &lt;/div&gt;</text>
+        <text y="80" class="json-text">    &lt;div id="mid{N}" data-position="mid{N}"</text>
+        <text y="96" class="json-text">         class="ad place-ad"&gt;&lt;/div&gt;</text>
+        <text y="112" class="json-text">  &lt;/div&gt;</text>
+        <text y="128" class="json-text">&lt;/div&gt;</text>
+      </g>
+      <text x="15" y="190" font-size="11" fill="#666">Position IDs: mid1, mid2, mid3... + sponsor slot</text>
+    </g>
+
+    <!-- Ad validation rules -->
+    <g transform="translate(670, 280)">
+      <rect width="620" height="210" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+      <text x="15" y="20" font-size="12" font-weight="700" fill="#374151">Ad Placement Validation (isValidDropzone)</text>
+      <g transform="translate(15, 38)">
+        <text y="0" class="step-desc">1. Within max slot limit</text>
+        <text y="18" class="step-desc">2. Adequate characters since last ad (300 first, 1800 between)</text>
+        <text y="36" class="step-desc">3. Previous block is a ParagraphBlock</text>
+        <text y="54" class="step-desc">4. Next block is Paragraph, Header, or HorizontalRule</text>
+        <text y="72" class="step-desc">5. Next block not special text: "Grade", "Rating", "Up next", etc.</text>
+        <text y="90" class="step-desc">6. Previous block doesn't end with : ; ... - --</text>
+        <text y="108" class="step-desc">7. Not the last block in the article</text>
+        <text y="126" class="step-desc">8. 100+ chars between embeds</text>
+      </g>
+      <g transform="translate(15, 178)">
+        <text y="0" class="step-file" fill="#61AFEF">Desktop: 4/5/7 para gaps | Mobile: 3 para gaps | First ad: 300+ chars</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Arrow down -->
+  <g transform="translate(690, 1750)">
+    <line x1="0" y1="0" x2="0" y2="30" stroke="#bbb" stroke-width="2"/>
+    <polygon points="-6,30 6,30 0,40" fill="#bbb"/>
+  </g>
+
+  <!-- ====================================================== -->
+  <!-- LAYER 4: WEB FRONTEND -->
+  <!-- ====================================================== -->
+  <g transform="translate(40, 1790)">
+    <rect width="1320" height="520" rx="16" fill="white" stroke="#E8E8E8" stroke-width="1.5"/>
+    <rect width="1320" height="52" rx="16" fill="#F0FDF4"/>
+    <rect y="36" width="1320" height="16" fill="#F0FDF4"/>
+    <line x1="0" y1="52" x2="1320" y2="52" stroke="#BBF7D0" stroke-width="1"/>
+    <rect x="20" y="12" width="28" height="28" rx="7" fill="#5EA05E"/>
+    <text x="34" y="32" text-anchor="middle" class="badge">4</text>
+    <text x="60" y="30" class="layer-title" fill="#1a1a1a">Web Frontend (Next.js)</text>
+    <text x="60" y="44" class="layer-subtitle">Client-side transforms before render. Also serves mobile webviews.</text>
+    <text x="1300" y="36" text-anchor="end" class="step-file">web / src/</text>
+
+    <!-- Row 1 -->
+    <g transform="translate(30, 68)">
+      <rect width="295" height="90" rx="8" fill="#F0FDF4" stroke="#BBF7D0" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#5EA05E"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">4.1</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">Variant Selection</text>
+      <text x="10" y="42" class="step-desc">Client breakpoint picks desktop or mobile</text>
+      <text x="10" y="56" class="step-desc">(with cross-fallback). @include directives</text>
+      <text x="10" y="70" class="step-desc">fetch both conditionally.</text>
+    </g>
+    <line x1="333" y1="113" x2="353" y2="113" stroke="#ccc" stroke-width="1.5"/>
+
+    <g transform="translate(360, 68)">
+      <rect width="295" height="90" rx="8" fill="#F0FDF4" stroke="#BBF7D0" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#5EA05E"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">4.2</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">styleAds()</text>
+      <text x="10" y="42" class="step-desc">String-replaces CSS classes on ad containers.</text>
+      <text x="10" y="56" class="step-desc">Ad-blocker detection (ad-empty class),</text>
+      <text x="10" y="70" class="step-desc">sponsor alignment. Does NOT insert slots.</text>
+    </g>
+    <line x1="663" y1="113" x2="683" y2="113" stroke="#ccc" stroke-width="1.5"/>
+
+    <g transform="translate(690, 68)">
+      <rect width="295" height="90" rx="8" fill="#F0FDF4" stroke="#BBF7D0" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#5EA05E"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">4.3</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">cleanArticleBody()</text>
+      <text x="10" y="42" class="step-desc">Fixes 3 broken HTML patterns:</text>
+      <text x="10" y="56" class="step-desc">1. Orphaned &lt;/p&gt; in credits</text>
+      <text x="10" y="70" class="step-desc">2. Stray &lt;/p&gt; in captions 3. YT facade</text>
+    </g>
+    <line x1="993" y1="113" x2="1013" y2="113" stroke="#ccc" stroke-width="1.5"/>
+
+    <g transform="translate(1020, 68)">
+      <rect width="270" height="90" rx="8" fill="#F0FDF4" stroke="#BBF7D0" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#5EA05E"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">4.4</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">replaceShortcode()</text>
+      <text x="10" y="42" class="step-desc">[comment], [game],</text>
+      <text x="10" y="56" class="step-desc">[tournament-leaderboard]</text>
+      <text x="10" y="70" class="step-desc">converted to data-attr divs</text>
+    </g>
+
+    <!-- Row 2 -->
+    <g transform="translate(30, 178)">
+      <rect width="400" height="80" rx="8" fill="#F0FDF4" stroke="#BBF7D0" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#5EA05E"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">4.5</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">Render to DOM</text>
+      <text x="10" y="42" class="step-desc">dangerouslySetInnerHTML into div with classes</text>
+      <text x="10" y="56" class="step-desc">bodytext1 article-content-container</text>
+      <text x="10" y="70" class="step-file">article-container.tsx :698</text>
+    </g>
+    <line x1="438" y1="218" x2="458" y2="218" stroke="#ccc" stroke-width="1.5"/>
+
+    <g transform="translate(465, 178)">
+      <rect width="390" height="80" rx="8" fill="#F0FDF4" stroke="#BBF7D0" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#5EA05E"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">4.6</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">React Portals</text>
+      <text x="10" y="42" class="step-desc">useLayoutEffect queries DOM, mounts via createPortal:</text>
+      <text x="10" y="56" class="step-desc" font-weight="600">VideoHost, CommentEmbed, GameEmbed, TournamentEmbed</text>
+      <text x="10" y="70" class="step-file">article-container.tsx :600-728</text>
+    </g>
+    <line x1="863" y1="218" x2="883" y2="218" stroke="#ccc" stroke-width="1.5"/>
+
+    <g transform="translate(890, 178)">
+      <rect width="400" height="80" rx="8" fill="#F0FDF4" stroke="#BBF7D0" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#5EA05E"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">4.7</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">GPT Ad Activation</text>
+      <text x="10" y="42" class="step-desc">Google Publisher Tag + AdSlot initialize.</text>
+      <text x="10" y="56" class="step-desc">Ad mediator fills .ad.place-ad divs from step 3.3</text>
+      <text x="10" y="70" class="step-file">features/ads/article-mediator/</text>
+    </g>
+
+    <!-- Webview callout -->
+    <g transform="translate(30, 280)">
+      <rect width="1260" height="44" rx="8" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+      <text x="15" y="17" class="info-text" font-weight="700">Webview mode (?embed=1):</text>
+      <text x="195" y="17" class="info-text">Same pipeline, but suppresses analytics, paywalls, and suggested follows.</text>
+      <text x="15" y="35" class="info-text">Native apps detect via isTAAppUserAgent(). Ad targeting provided by native window.AdBridge.</text>
+    </g>
+
+    <!-- CSS dependencies -->
+    <g transform="translate(30, 340)">
+      <rect width="1260" height="155" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+      <text x="15" y="20" font-size="12" font-weight="700" fill="#374151">CSS Class Dependencies (styled in Article.module.scss)</text>
+      <g transform="translate(15, 38)">
+        <text y="0" class="json-text" fill="#166534">Ads:</text><text x="100" y="0" class="json-text">.ad-container  .ad-wrapper  .ad-slug  .sponsor-container  .sponsor-slug  .ad-empty</text>
+        <text y="18" class="json-text" fill="#166534">Images:</text><text x="100" y="18" class="json-text">.wp-caption  .wp-caption-image-container  .credits-image  .credits-text  .inline-credits</text>
+        <text y="36" class="json-text" fill="#166534">Embeds:</text><text x="100" y="36" class="json-text">.twitter-tweet  .bluesky-embed  .wp-video  video.wp-video-shortcode  .in-content-module</text>
+        <text y="54" class="json-text" fill="#166534">Links:</text><text x="100" y="54" class="json-text">.go-deeper  .showcase-link-container  .ath_autolink  .embed-article</text>
+        <text y="72" class="json-text" fill="#166534">Tables:</text><text x="100" y="72" class="json-text">.table-responsive  .in-article.table</text>
+        <text y="90" class="json-text" fill="#166534">Video:</text><text x="100" y="90" class="json-text">[data-ath-video-stream]  .video-stream-container  .video-container</text>
+        <text y="108" class="json-text" fill="#166534">Portals:</text><text x="100" y="108" class="json-text">[data-comment]  [data-game]  [data-tournament-leaderboard]</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Arrow down -->
+  <g transform="translate(690, 2320)">
+    <line x1="0" y1="0" x2="0" y2="30" stroke="#bbb" stroke-width="2"/>
+    <polygon points="-6,30 6,30 0,40" fill="#bbb"/>
+  </g>
+
+  <!-- ====================================================== -->
+  <!-- LAYER 5: MOBILE APPS -->
+  <!-- ====================================================== -->
+  <g transform="translate(40, 2360)">
+    <rect width="1320" height="380" rx="16" fill="white" stroke="#E8E8E8" stroke-width="1.5"/>
+    <rect width="1320" height="52" rx="16" fill="#FAF5FF"/>
+    <rect y="36" width="1320" height="16" fill="#FAF5FF"/>
+    <line x1="0" y1="52" x2="1320" y2="52" stroke="#E9D5FF" stroke-width="1"/>
+    <rect x="20" y="12" width="28" height="28" rx="7" fill="#C678DD"/>
+    <text x="34" y="32" text-anchor="middle" class="badge">5</text>
+    <text x="60" y="30" class="layer-title" fill="#1a1a1a">Mobile Apps (iOS + Android)</text>
+    <text x="60" y="44" class="layer-subtitle">Webview rendering, not native parsing</text>
+    <text x="1300" y="36" text-anchor="end" class="step-file">ios-theathletic / android-theathletic</text>
+
+    <!-- Steps -->
+    <g transform="translate(30, 68)">
+      <rect width="295" height="90" rx="8" fill="#FAF5FF" stroke="#E9D5FF" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#C678DD"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">5.1</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">Fetch Metadata</text>
+      <text x="10" y="42" class="step-desc">GraphQL query gets article metadata</text>
+      <text x="10" y="56" class="step-desc">including permalinkForEmbed URL.</text>
+      <text x="10" y="70" class="step-desc" font-weight="600">NOT article_body_mobile.</text>
+    </g>
+    <line x1="333" y1="113" x2="353" y2="113" stroke="#ccc" stroke-width="1.5"/>
+
+    <g transform="translate(360, 68)">
+      <rect width="295" height="90" rx="8" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#C678DD"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">5.2</text>
+      <text x="42" y="21" class="step-name" fill="#92400E">HTTP Fetch</text>
+      <text x="10" y="42" class="step-desc" font-weight="600">Fetches the full rendered HTML page</text>
+      <text x="10" y="56" class="step-desc">from Next.js with ?embed=1&amp;theme=dark|light</text>
+      <text x="10" y="70" class="step-desc">All Layer 4 transforms already applied.</text>
+    </g>
+    <line x1="663" y1="113" x2="683" y2="113" stroke="#ccc" stroke-width="1.5"/>
+
+    <g transform="translate(690, 68)">
+      <rect width="295" height="90" rx="8" fill="#FAF5FF" stroke="#E9D5FF" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#C678DD"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">5.3</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">Webview Render</text>
+      <text x="10" y="42" class="step-desc">Full page loaded into webview.</text>
+      <text x="10" y="56" class="step-desc" font-weight="600">No native HTML parsing.</text>
+      <text x="10" y="70" class="step-desc">iOS: WKWebView, Android: WebView</text>
+    </g>
+    <line x1="993" y1="113" x2="1013" y2="113" stroke="#ccc" stroke-width="1.5"/>
+
+    <g transform="translate(1020, 68)">
+      <rect width="270" height="90" rx="8" fill="#FAF5FF" stroke="#E9D5FF" stroke-width="1"/>
+      <rect x="8" y="8" width="28" height="18" rx="4" fill="#C678DD"/>
+      <text x="22" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="white">5.4</text>
+      <text x="42" y="21" class="step-name" fill="#1a1a1a">Native Bridges</text>
+      <text x="10" y="42" class="step-desc">window.native (comments)</text>
+      <text x="10" y="56" class="step-desc">window.AdBridge (ad targeting)</text>
+      <text x="10" y="70" class="step-desc">iOS: Chartbeat + Transcend</text>
+    </g>
+
+    <!-- Platform cards -->
+    <g transform="translate(30, 178)">
+      <rect width="620" height="100" rx="8" fill="#FAF5FF" stroke="#E9D5FF" stroke-width="1"/>
+      <text x="15" y="20" font-size="13" font-weight="700" fill="#7C3AED">iOS</text>
+      <text x="15" y="40" class="step-desc">WKWebView with .athletic configuration</text>
+      <text x="15" y="56" class="step-desc">URLCache: 50 MB disk, preloads ~300 articles</text>
+      <text x="15" y="72" class="step-desc">?preview=1 for drafts, ?ath_video_stream=1 for video</text>
+      <text x="15" y="88" class="step-file">ArticlePreloader.swift, WebViewController.swift</text>
+    </g>
+
+    <g transform="translate(670, 178)">
+      <rect width="620" height="100" rx="8" fill="#FAF5FF" stroke="#E9D5FF" stroke-width="1"/>
+      <text x="15" y="20" font-size="13" font-weight="700" fill="#7C3AED">Android</text>
+      <text x="15" y="40" class="step-desc">android.webkit.WebView, UA: "theathletic-android"</text>
+      <text x="15" y="56" class="step-desc">Extracts + caches images, CSS, JS, fonts from HTML</text>
+      <text x="15" y="72" class="step-desc">NYTBridge for analytics, domStorageEnabled</text>
+      <text x="15" y="88" class="step-file">GetWebArticleUseCase.kt, ArticleWebNativeBridge.kt</text>
+    </g>
+
+    <!-- Key insight -->
+    <g transform="translate(30, 296)">
+      <rect width="1260" height="60" rx="8" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1"/>
+      <text x="15" y="20" class="info-text" font-weight="700">Key insight for regression testing:</text>
+      <text x="275" y="20" class="info-text">Mobile apps load the full web page in a webview. If the web frontend renders correctly, mobile is correct too.</text>
+      <text x="15" y="42" class="info-text">Mobile-specific concerns are limited to: ?embed=1 code path, native bridges (window.native, window.AdBridge), and asset caching.</text>
+    </g>
+  </g>
+
+  <!-- ====================================================== -->
+  <!-- NOT IN BODY -->
+  <!-- ====================================================== -->
+  <g transform="translate(40, 2780)">
+    <rect width="1320" height="110" rx="12" fill="white" stroke="#D1D5DB" stroke-width="1" stroke-dasharray="6 3"/>
+    <text x="20" y="24" font-size="13" font-weight="600" fill="#9CA3AF">Not in the article body HTML (separate fields/queries)</text>
+    <g transform="translate(20, 40)">
+      <text y="14" class="step-desc">Hero image/video</text>
+      <text y="32" class="step-desc">Headline (title)</text>
+      <text y="50" class="step-desc">Byline (authors)</text>
+      <text x="170" y="14" class="step-desc">Story type label</text>
+      <text x="170" y="32" class="step-desc">Multi-recirc menu</text>
+      <text x="170" y="50" class="step-desc">Q&amp;A content</text>
+      <text x="340" y="14" class="step-desc">Storyline nav</text>
+      <text x="340" y="32" class="step-desc">Comments</text>
+      <text x="340" y="50" class="step-desc">Puzzle entry</text>
+      <text x="510" y="14" class="step-desc">Related tags</text>
+      <text x="510" y="32" class="step-desc">Ad targeting params</text>
+      <text x="510" y="50" class="step-desc">Paywall / OMA</text>
+    </g>
+  </g>
+
+</svg>
