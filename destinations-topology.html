@@ -497,13 +497,15 @@ const DATA = {
       { label: "Auth", text: "basic (inherited from infra)" },
       { label: "Code", code: "the-athletic/web/app/themes/athletic/inc/class.athArticleIndex.inc.php" }
     ]},
-  "alice-pubsub": { title: "Alice (NYT ad targeting)", subtitle: "NYT DAP", summary: "Gets article metadata for ad segmentation via GCP Pub/Sub.",
+  "alice-pubsub": { title: "Alice (NYT ad targeting)", subtitle: "NYT DAP", summary: "Article publishes pushed to GCP Pub/Sub for NYT ad targeting (Grapeshot keyword extraction). Includes metadata AND article body content.",
     sections: [
-      { label: "Data shape", tag: "metadata", text: "post_id, author_id, title, body, URL, URI, game_id, word_count, is_teaser, taxonomies (teams, leagues, cities, story_subjects). Full article JSON but Alice consumes only metadata." },
-      { label: "Trigger", text: "WordPress save_post hook → publish_to_alice() (gated on ALICE_PUBSUB env)" },
+      { label: "What's shipped", tag: "mixed", text: "Metadata PLUS full article body (post_content). Alice is NOT metadata-only — Grapeshot runs keyword extraction on the article body for contextual ad targeting." },
+      { label: "Payload fields", tag: "mixed", list: ["publishedTime, updatedTime", "uri (theathletic://article/{id}), url, permalink", "post_id, post_author_id, post_date_gmt", "post_title", "post_content (full WordPress editor content — body text used by Grapeshot)", "post_type_name, post_type_id", "is_teaser, is_mag", "author_name, article_game_id, word_count", "custom_search_title, original_publish_date_gmt, localization", "story_subject_name", "city, league, team (comma-joined strings)"] },
+      { label: "Trigger", text: "WordPress save_post hook → publish_saved_post_to_alice() / publish_scheduled_post_to_alice() → publish_to_alice() at functions.php:8770" },
       { label: "Endpoint", code: "GCP Pub/Sub topic ta-asset-grapeshot" },
       { label: "Auth", text: "GCP service account (GOOGLE_APPLICATION_CREDENTIALS_JSON)" },
-      { label: "Purpose of each field", list: ["post_id, URI: identity for reconciliation", "author_id, title, URL: display/reporting", "game_id: ads targeted to specific games", "word_count, is_teaser: bid/floor hints", "teams, leagues, cities, story_subjects: targeting facets"] }
+      { label: "Guards", text: "ALICE_PUBSUB env flag AND is_production() — dev/stg do not publish" },
+      { label: "Why the body matters", text: "Grapeshot performs contextual keyword extraction on post_content to classify the article for ad targeting. Metadata alone is insufficient." }
     ]},
   "nyt-cms-print": { title: "NYT CMS REST (print)", subtitle: "print workflows", summary: "Article body + metadata shipped for print.",
     sections: [
@@ -720,12 +722,15 @@ const DATA = {
       { label: "Endpoint", code: "${ELASTIC_SEARCH_ENDPOINT}/search-articles-read/_bulk" },
       { label: "Trigger", text: "WordPress save_post hook → index_post() for publish-state articles" }
     ]},
-  "wp-to-alice": { title: "WP save_post → Alice Pub/Sub", summary: "Article metadata to GCP Pub/Sub topic ta-asset-grapeshot (for ad targeting).",
+  "wp-to-alice": { title: "WP save_post → Alice Pub/Sub", summary: "Article metadata AND body content pushed to GCP Pub/Sub topic ta-asset-grapeshot for NYT ad targeting (Grapeshot keyword extraction).",
     sections: [
-      { label: "Payload", tag: "metadata", list: ["post_id", "author_id", "title", "body", "URL", "URI (theathletic://article/{post_id})", "game_id", "word_count", "is_teaser / is_mag flags", "localization", "taxonomies (teams, leagues, cities, story_subjects)"] },
+      { label: "What's shipped", tag: "mixed", text: "Metadata PLUS article body (post_content). Grapeshot uses the body for contextual keyword extraction — Alice is NOT metadata-only." },
+      { label: "Payload fields", tag: "mixed", list: ["publishedTime, updatedTime", "uri (theathletic://article/{post_id}), url, permalink", "post_id, post_author_id, post_date_gmt", "post_title", "post_content (full WordPress editor body)", "post_type_name, post_type_id", "is_teaser, is_mag", "author_name, article_game_id, word_count", "custom_search_title, original_publish_date_gmt, localization", "story_subject_name", "city, league, team (comma-joined strings)"] },
       { label: "Format", text: "JSON Pub/Sub message body" },
+      { label: "Trigger", text: "WP save_post hook → publish_to_alice() at functions.php:8770" },
       { label: "Endpoint", code: "GCP Pub/Sub topic: ta-asset-grapeshot" },
-      { label: "Feature flag", code: "ALICE_PUBSUB=true (production only)" }
+      { label: "Auth", code: "GOOGLE_APPLICATION_CREDENTIALS_JSON (GCP service account)" },
+      { label: "Feature flag", code: "ALICE_PUBSUB=true AND is_production() (production only)" }
     ]},
   "wp-to-analytics-kafka": { title: "WP → TA Analytics Kafka", summary: "Emits post-publish / post-delete (and 15+ other event types) to the {stage}-analytics topic. The outer Kafka message has a fixed shape across all events; per-event data lives in meta_blob as a stringified JSON.",
     sections: [
