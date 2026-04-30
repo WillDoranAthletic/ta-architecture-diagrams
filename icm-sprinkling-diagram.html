@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICM Sprinkling — Placement Visualization</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-2: #1c2128;
+    --border: #30363d;
+    --border-hi: #484f58;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent-icm: #c678dd;
+    --accent-ad: #e5c07b;
+    --accent-embed: #56b6c2;
+    --accent-header: #61afef;
+    --accent-para: #8b949e;
+    --accent-high: #98c379;
+    --accent-warn: #e06c75;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 40px 20px;
+    line-height: 1.5;
+  }
+  .container { max-width: 1280px; margin: 0 auto; }
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+
+  .legend {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 360px;
+    gap: 28px;
+    align-items: start;
+  }
+  @media (max-width: 1100px) { .grid { grid-template-columns: 1fr 1fr; } .side { grid-column: span 2; } }
+  @media (max-width: 720px)  { .grid { grid-template-columns: 1fr; } .side { grid-column: span 1; } }
+
+  .col { }
+  .col-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+
+  .article {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+  }
+
+  /* Zone background bands */
+  .zone {
+    position: relative;
+    padding: 8px 0;
+    margin: -2px 0;
+  }
+  .zone::before {
+    content: attr(data-zone);
+    position: absolute;
+    top: 6px;
+    right: -8px;
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    z-index: 2;
+  }
+  .zone.first-third {
+    background: linear-gradient(to right, rgba(224,108,117,0.06), transparent);
+    border-left: 2px solid rgba(224,108,117,0.35);
+    padding-left: 8px;
+  }
+  .zone.mid {
+    background: linear-gradient(to right, rgba(152,195,121,0.06), transparent);
+    border-left: 2px solid rgba(152,195,121,0.35);
+    padding-left: 8px;
+  }
+  .zone.end {
+    background: linear-gradient(to right, rgba(198,120,221,0.06), transparent);
+    border-left: 2px solid rgba(198,120,221,0.35);
+    padding-left: 8px;
+  }
+
+  .block {
+    padding: 8px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    position: relative;
+  }
+  .block.para {
+    background: rgba(139,148,158,0.14);
+    color: var(--muted);
+  }
+  .block.header {
+    background: rgba(97,175,239,0.18);
+    color: var(--accent-header);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+  .block.embed {
+    background: rgba(86,182,194,0.16);
+    color: var(--accent-embed);
+    font-weight: 600;
+    border: 1px dashed rgba(86,182,194,0.4);
+  }
+  .block.image {
+    background: rgba(86,182,194,0.10);
+    color: var(--accent-embed);
+    font-style: italic;
+  }
+  .block.ad {
+    background: rgba(229,192,123,0.18);
+    color: var(--accent-ad);
+    font-weight: 700;
+    border: 1px dashed rgba(229,192,123,0.45);
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+  .block.icm {
+    background: rgba(198,120,221,0.22);
+    color: var(--accent-icm);
+    font-weight: 700;
+    border: 1px solid rgba(198,120,221,0.55);
+    box-shadow: 0 0 0 3px rgba(198,120,221,0.10);
+    letter-spacing: 0.3px;
+  }
+  .block.icm .slot {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+  }
+  .block.headline {
+    background: linear-gradient(to right, rgba(230,237,243,0.04), transparent);
+    color: var(--text);
+    font-weight: 800;
+    font-size: 13px;
+  }
+
+  .arrow {
+    position: absolute;
+    left: -18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--accent-icm);
+    font-size: 14px;
+  }
+
+  .side {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .side h3 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 22px;
+    margin-bottom: 10px;
+  }
+  .side h3:first-child { margin-top: 0; }
+
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .pipeline-step {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-icm);
+  }
+  .pipeline-arrow {
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .rule-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--text);
+  }
+  .rule-list li {
+    padding: 8px 0 8px 24px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    line-height: 1.4;
+  }
+  .rule-list li:last-child { border-bottom: none; }
+  .rule-list li.deny::before { content: "✕"; position: absolute; left: 4px; color: var(--accent-warn); font-weight: 700; }
+  .rule-list li.ok::before { content: "✓"; position: absolute; left: 4px; color: var(--accent-high); font-weight: 700; }
+  .rule-list li .sub {
+    color: var(--muted);
+    font-size: 11.5px;
+    display: block;
+    margin-top: 2px;
+  }
+
+  .defaults {
+    background: var(--surface-2);
+    border-radius: 6px;
+    padding: 12px;
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .defaults .k { color: var(--accent-embed); }
+  .defaults .v { color: var(--accent-ad); }
+  .defaults .dim { color: var(--muted); }
+
+  .callout {
+    background: rgba(97,175,239,0.08);
+    border-left: 3px solid var(--accent-header);
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--text);
+    margin-top: 10px;
+  }
+  .callout strong { color: var(--accent-header); }
+
+  footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+  }
+  footer code {
+    background: var(--surface-2);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 11px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>ICM Sprinkling — Placement Visualization</h1>
+  <div class="subtitle">How <code style="background:var(--surface-2); padding:2px 6px; border-radius:3px; font-family: ui-monospace,Menlo,monospace;">sprinkleInContentModules</code> places in-content modules into an article after ads have been sprinkled</div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(139,148,158,0.5)"></div> Paragraph</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(97,175,239,0.6)"></div> Header</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(86,182,194,0.6)"></div> Embed / Image</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(229,192,123,0.6); border:1px dashed rgba(229,192,123,0.8)"></div> Ad dropzone</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(198,120,221,0.7); border:1px solid rgba(198,120,221,0.9)"></div> ICM (sprinkled)</div>
+  </div>
+
+  <div class="grid">
+    <!-- DESKTOP -->
+    <div class="col">
+      <div class="col-title">Desktop article</div>
+      <div class="article">
+        <div class="block headline">Headline: "The Ranking We've All Been Waiting For"</div>
+        <div class="block image">Hero image + caption</div>
+
+        <div class="zone first-third" data-zone="First ⅓ — no ICMs">
+          <div class="block para">Paragraph 1 — lede</div>
+          <div class="block para">Paragraph 2</div>
+          <div class="block para">Paragraph 3</div>
+          <div class="block ad">AD — mid1 (first ad dropzone)</div>
+          <div class="block para">Paragraph 4</div>
+          <div class="block icm" style="margin-top:4px;">
+            ICM · high-middle
+            <span class="slot">default: pickem → client-hydrated &lt;p id="article-pickem"&gt;</span>
+          </div>
+          <div class="block header">H2 — Section header</div>
+        </div>
+
+        <div class="zone mid" data-zone="Middle third">
+          <div class="block para">Paragraph 5</div>
+          <div class="block para">Paragraph 6</div>
+          <div class="block icm">
+            ICM · middle
+            <span class="slot">default: top-league</span>
+          </div>
+          <div class="block header">H2 — Next section</div>
+          <div class="block para">Paragraph 7</div>
+          <div class="block embed">Tweet embed</div>
+          <div class="block para">Paragraph 8</div>
+          <div class="block ad">AD — mid2</div>
+          <div class="block para">Paragraph 9</div>
+        </div>
+
+        <div class="zone end" data-zone="End">
+          <div class="block para">Paragraph 10</div>
+          <div class="block icm">
+            ICM · end
+            <span class="slot">default: content-recommendation</span>
+          </div>
+          <div class="block para">Paragraph 11</div>
+          <div class="block para">Paragraph 12 (too close to end — no ICM)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOBILE -->
+    <div class="col">
+      <div class="col-title">Mobile article (same logic, different dropzone layout)</div>
+      <div class="article">
+        <div class="block headline">Headline: "The Ranking We've All Been Waiting For"</div>
+        <div class="block image">Hero image + caption</div>
+
+        <div class="zone first-third" data-zone="First ⅓">
+          <div class="block para">Paragraph 1</div>
+          <div class="block para">Paragraph 2</div>
+          <div class="block para">Paragraph 3</div>
+          <div class="block ad">AD — mid1</div>
+          <div class="block para">Paragraph 4</div>
+          <div class="block icm">
+            ICM · high-middle
+            <span class="slot">requires ≥1 prior ad dropzone</span>
+          </div>
+        </div>
+
+        <div class="zone mid" data-zone="Middle third">
+          <div class="block header">H2</div>
+          <div class="block para">Paragraph 5</div>
+          <div class="block para">Paragraph 6</div>
+          <div class="block icm">
+            ICM · middle
+            <span class="slot">placed before next header</span>
+          </div>
+          <div class="block header">H2</div>
+          <div class="block para">Paragraph 7</div>
+          <div class="block ad">AD — mid2</div>
+          <div class="block para">Paragraph 8</div>
+          <div class="block embed">Video embed</div>
+          <div class="block para">Paragraph 9</div>
+        </div>
+
+        <div class="zone end" data-zone="End">
+          <div class="block ad">AD — mid3</div>
+          <div class="block para">Paragraph 10</div>
+          <div class="block icm">
+            ICM · end
+            <span class="slot">skipped if storytelling present<br/>unless overrideStorytelling</span>
+          </div>
+          <div class="block para">Paragraph 11</div>
+          <div class="block para">Paragraph 12 (last)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDE PANEL -->
+    <div class="col side">
+      <h3>Processing order</h3>
+      <div class="pipeline">
+        <div class="pipeline-step">Middle</div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">High-middle</div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">End</div>
+      </div>
+      <div class="callout"><strong>Why this order:</strong> middle runs first because it has the strictest position constraints. High-middle runs second and depends on <code>dropzoneCount ≥ 1</code> being true (satisfied by the ad pass, not by prior ICMs). End runs last.</div>
+
+      <h3>Placement rules</h3>
+      <ul class="rule-list">
+        <li class="deny">Never within <em>ADS_MIN_PARAGRAPH_CHAR_LENGTH</em> of an embed or ad
+          <span class="sub">Keeps visual weight balanced</span>
+        </li>
+        <li class="deny">Never directly before an image
+          <span class="sub">Avoids awkward caption stacking</span>
+        </li>
+        <li class="deny">Never directly after a header
+          <span class="sub">Header → paragraph reading flow stays intact</span>
+        </li>
+        <li class="deny">Never in the first ⅓ of the article
+          <span class="sub">Let the reader into the piece first</span>
+        </li>
+        <li class="ok">Prefer directly before a header (if headers exist)
+          <span class="sub">Visually clean break</span>
+        </li>
+        <li class="ok">Otherwise, between paragraphs
+          <span class="sub">Fallback when no headers present</span>
+        </li>
+        <li class="deny">≤ 2 paragraphs remaining after insertion point
+          <span class="sub">Too close to the end; skip</span>
+        </li>
+      </ul>
+
+      <h3>Storytelling guards</h3>
+      <ul class="rule-list">
+        <li class="deny">Middle — skipped if <code>containsStorytelling</code>
+          <span class="sub">No override available</span>
+        </li>
+        <li class="deny">High-middle — skipped if <code>containsStorytelling</code>
+          <span class="sub">No override available</span>
+        </li>
+        <li class="ok">End — skipped unless <code>overrideStorytelling = true</code>
+          <span class="sub">Or the storytelling flavor's enable flag is false</span>
+        </li>
+      </ul>
+
+      <h3>Normalization defaults</h3>
+      <div class="defaults">
+        <span class="k">highMiddleGraphicModule</span> = <span class="v">'pickem'</span><br/>
+        <span class="k">middleGraphicModule</span>     = <span class="v">'top-league'</span><br/>
+        <span class="k">endGraphicModule</span>        = <span class="v">'content-recommendation'</span><br/>
+        <span class="dim">---</span><br/>
+        <span class="k">isHighMiddleGraphicEnabled</span>   = <span class="v">false</span><br/>
+        <span class="k">suppressedMiddleGraphic</span>      = <span class="v">false</span><br/>
+        <span class="k">multiRecircExperimentEnabled</span> = <span class="v">false</span><br/>
+        <span class="k">overrideStorytelling</span>         = <span class="v">true</span><br/>
+        <span class="k">showcaseLinkEnabled</span>          = <span class="v">true</span><br/>
+        <span class="k">richStorylineEnabled</span>         = <span class="v">true</span>
+      </div>
+
+      <h3>Pickem exception</h3>
+      <div class="callout">Pickem has <code>graphicId === null</code>. It skips <code>buildGraphicsModule</code> and emits a client-hydrated placeholder: <code>&lt;p id="article-pickem"&gt;&lt;/p&gt;</code>.</div>
+    </div>
+  </div>
+
+  <footer>
+    Entry point: <code>sprinkleInContentModules</code> in <code>apollo/src/helpers/graphics.ts</code> · Runs after ad sprinkling, before HTML assembly · Device-agnostic (surrounding dropzone layout differs, logic does not)
+  </footer>
+</div>
+</body>
+</html>
