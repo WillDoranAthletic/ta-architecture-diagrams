@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TA Article Destinations — Interactive Topology</title>
+<style>
+:root {
+  --bg: #fafaf7;
+  --panel: #ffffff;
+  --border: #d1d5db;
+  --text: #111827;
+  --muted: #4b5563;
+  --soft: #6b7280;
+  --content: #1f4e79;
+  --metadata: #2d8f79;
+  --mixed: #5b3886;
+  --pull: #c76a0c;
+  --inbound: #8b1538;
+  --hook: #0e7490;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+header { padding: 24px 40px 0; }
+h1 { margin: 0 0 4px; font-size: 26px; font-weight: 700; }
+.subtitle { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+.legend { display: flex; flex-wrap: wrap; gap: 24px; padding: 12px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
+.legend .item { display: flex; align-items: center; gap: 8px; }
+.legend .swatch { display: inline-block; width: 40px; height: 3px; border-radius: 2px; }
+.legend .swatch.content { background: var(--content); }
+.legend .swatch.metadata { background: var(--metadata); background-image: repeating-linear-gradient(90deg, var(--metadata) 0 8px, transparent 8px 13px); }
+.legend .swatch.mixed { background: var(--mixed); }
+.legend .swatch.pull { background: var(--pull); background-image: repeating-linear-gradient(90deg, var(--pull) 0 3px, transparent 3px 7px); }
+.legend .swatch.inbound { background: var(--inbound); }
+.legend .swatch.hook { background: var(--hook); background-image: repeating-linear-gradient(90deg, var(--hook) 0 5px, transparent 5px 10px); }
+main { padding: 0 40px 40px; }
+.section { margin-bottom: 8px; }
+.section h2 { font-size: 18px; font-weight: 700; margin: 24px 0 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+svg { display: block; width: 100%; height: auto; background: transparent; }
+
+/* Node styles */
+.node rect { fill: var(--panel); stroke: #333; stroke-width: 1.5; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.08)); cursor: pointer; transition: stroke-width 0.1s, fill 0.1s; }
+.node:hover rect { stroke-width: 2.5; fill: #f0f4f8; }
+.node text { pointer-events: none; }
+.node .title { font-size: 14px; font-weight: 700; fill: var(--text); }
+.node .subtitle { font-size: 11px; fill: var(--soft); }
+.node .kv { font-size: 11px; fill: var(--text); }
+.node .kv-key { font-weight: 600; fill: var(--muted); }
+.node.source rect { stroke: #6b4e00; stroke-width: 2; fill: #fffaf0; }
+.node.kafka rect { stroke: #5b3886; }
+.node.consumer rect { stroke: var(--content); }
+.node.handler rect { stroke: var(--mixed); }
+.node.pubp rect { stroke: #8a6d00; fill: #fefcf5; }
+.node.fanout rect { stroke: var(--mixed); fill: #f8f4fc; }
+.node.endpoint rect { stroke: var(--pull); stroke-dasharray: 4 3; fill: #fff8ee; }
+.node.pull-consumer rect { stroke: var(--pull); }
+.node.inbound-source rect { stroke: var(--inbound); }
+
+/* Edge styles */
+.edge { fill: none; cursor: pointer; pointer-events: visibleStroke; }
+.edge.content { stroke: var(--content); stroke-width: 2.2; }
+.edge.metadata { stroke: var(--metadata); stroke-width: 2.2; stroke-dasharray: 8 5; }
+.edge.mixed { stroke: var(--mixed); stroke-width: 2.2; }
+.edge.pull { stroke: var(--pull); stroke-width: 1.8; stroke-dasharray: 2 4; }
+.edge.inbound { stroke: var(--inbound); stroke-width: 2; }
+.edge.hook { stroke: var(--hook); stroke-width: 2; stroke-dasharray: 5 5; }
+.edge:hover { stroke-width: 4; filter: drop-shadow(0 0 6px rgba(0,0,0,0.2)); }
+
+/* Tooltip (hover) */
+#tooltip { position: fixed; background: #111827; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 12px; pointer-events: none; max-width: 320px; z-index: 1000; opacity: 0; transition: opacity 0.12s; line-height: 1.45; box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
+#tooltip.visible { opacity: 1; }
+#tooltip .tip-title { font-weight: 700; margin-bottom: 3px; color: #fbbf24; }
+#tooltip .tip-hint { color: #9ca3af; font-size: 10px; margin-top: 4px; font-style: italic; }
+
+/* Detail panel (click expand) */
+#panel { position: fixed; top: 0; right: 0; width: 520px; height: 100vh; background: var(--panel); border-left: 1px solid var(--border); box-shadow: -4px 0 16px rgba(0,0,0,0.08); transform: translateX(100%); transition: transform 0.2s; z-index: 500; overflow-y: auto; padding: 24px; }
+#panel.open { transform: translateX(0); }
+#panel h3 { margin: 0 0 4px; font-size: 20px; font-weight: 700; }
+#panel .subtitle { font-size: 13px; color: var(--muted); margin: 0 0 16px; }
+#panel .close { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 22px; cursor: pointer; color: var(--muted); padding: 4px 10px; border-radius: 4px; }
+#panel .close:hover { background: #f3f4f6; }
+#panel section { margin-bottom: 18px; }
+#panel .label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+#panel pre { background: #f9fafb; border: 1px solid var(--border); padding: 10px 12px; border-radius: 6px; font-size: 12px; overflow-x: auto; margin: 0; line-height: 1.5; }
+#panel ul { margin: 4px 0; padding-left: 20px; font-size: 13px; line-height: 1.7; }
+#panel li code, #panel p code { background: #f3f4f6; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+#panel .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-right: 6px; }
+#panel .tag.content { background: #dbeafe; color: #1e40af; }
+#panel .tag.metadata { background: #d1fae5; color: #065f46; }
+#panel .tag.mixed { background: #ede9fe; color: #5b21b6; }
+#panel .tag.pull { background: #fed7aa; color: #9a3412; }
+
+#overlay { position: fixed; inset: 0; background: rgba(17,24,39,0.25); opacity: 0; transition: opacity 0.2s; z-index: 400; pointer-events: none; }
+#overlay.open { opacity: 1; pointer-events: auto; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>TA Article Destinations — Interactive Topology</h1>
+  <p class="subtitle">Hover an edge to see a summary. Click a node or edge for full details. Last updated 2026-04-28.</p>
+  <div class="legend">
+    <div class="item"><span class="swatch content"></span>Content (body / HTML / full payload)</div>
+    <div class="item"><span class="swatch metadata"></span>Metadata only</div>
+    <div class="item"><span class="swatch mixed"></span>Both</div>
+    <div class="item"><span class="swatch pull"></span>Pull (consumer fetches)</div>
+    <div class="item"><span class="swatch inbound"></span>Inbound webhook</div>
+    <div class="item"><span class="swatch hook"></span>WP save_post hook trigger</div>
+  </div>
+</header>
+
+<main>
+
+<div class="section">
+  <h2>1. Push paths from WordPress</h2>
+  <svg viewBox="0 0 1720 860">
+    <!-- WordPress source -->
+    <g class="node source" data-id="wordpress">
+      <rect x="710" y="30" width="300" height="70" rx="10"/>
+      <text class="title" x="860" y="58" text-anchor="middle">WordPress publish</text>
+      <text class="subtitle" x="860" y="80" text-anchor="middle">the-athletic monolith</text>
+    </g>
+
+    <!-- TA OpenSearch (WP hook triggered) -->
+    <g class="node consumer" data-id="ta-opensearch">
+      <rect x="40" y="200" width="260" height="120" rx="10"/>
+      <text class="title" x="170" y="228" text-anchor="middle">TA OpenSearch</text>
+      <text class="subtitle" x="170" y="248" text-anchor="middle">TA-owned search index</text>
+      <text class="kv" x="60" y="272"><tspan class="kv-key">trigger:</tspan> save_post hook</text>
+      <text class="kv" x="60" y="290"><tspan class="kv-key">format:</tspan> JSON bulk upsert</text>
+      <text class="kv" x="60" y="308"><tspan class="kv-key">index:</tspan> search-articles-read</text>
+    </g>
+
+    <!-- Alice Pub/Sub (WP hook triggered) -->
+    <g class="node consumer" data-id="alice-pubsub">
+      <rect x="320" y="200" width="260" height="120" rx="10"/>
+      <text class="title" x="450" y="228" text-anchor="middle">Alice (NYT ad targeting)</text>
+      <text class="subtitle" x="450" y="248" text-anchor="middle">NYT DAP, ad segmentation</text>
+      <text class="kv" x="340" y="272"><tspan class="kv-key">trigger:</tspan> save_post hook</text>
+      <text class="kv" x="340" y="290"><tspan class="kv-key">format:</tspan> JSON</text>
+      <text class="kv" x="340" y="308"><tspan class="kv-key">topic:</tspan> ta-asset-grapeshot</text>
+    </g>
+
+    <!-- NYT CMS REST (print) -->
+    <g class="node consumer" data-id="nyt-cms-print">
+      <rect x="1150" y="200" width="260" height="120" rx="10"/>
+      <text class="title" x="1280" y="228" text-anchor="middle">NYT CMS REST (print)</text>
+      <text class="subtitle" x="1280" y="248" text-anchor="middle">print workflows</text>
+      <text class="kv" x="1170" y="272"><tspan class="kv-key">trigger:</tspan> scheduled / manual</text>
+      <text class="kv" x="1170" y="290"><tspan class="kv-key">format:</tspan> REST JSON</text>
+      <text class="kv" x="1170" y="308"><tspan class="kv-key">auth:</tspan> Bearer + x-api-key</text>
+    </g>
+
+    <!-- FlatPlan (pull via RSS) -->
+    <g class="node consumer" data-id="flatplan">
+      <rect x="1430" y="200" width="260" height="120" rx="10"/>
+      <text class="title" x="1560" y="228" text-anchor="middle">FlatPlan → Apple News</text>
+      <text class="subtitle" x="1560" y="248" text-anchor="middle">3rd-party publisher (pull)</text>
+      <text class="kv" x="1450" y="272"><tspan class="kv-key">trigger:</tspan> RSS poll</text>
+      <text class="kv" x="1450" y="290"><tspan class="kv-key">format:</tspan> Atom XML</text>
+      <text class="kv" x="1450" y="308"><tspan class="kv-key">endpoint:</tspan> /rss/flatplan/articles/</text>
+    </g>
+
+    <!-- PubP chain Step 1: TA Analytics Kafka -->
+    <g class="node kafka" data-id="ta-analytics-kafka">
+      <rect x="620" y="200" width="260" height="120" rx="10"/>
+      <text class="title" x="750" y="224" text-anchor="middle">TA Analytics Event Bus</text>
+      <text class="subtitle" x="750" y="244" text-anchor="middle">Kafka (TA-owned, Data Eng)</text>
+      <text class="kv" x="640" y="268"><tspan class="kv-key">topic:</tspan> {stage}-analytics</text>
+      <text class="kv" x="640" y="286"><tspan class="kv-key">brokers:</tspan> $KAFKA_SERVERS</text>
+      <text class="kv" x="640" y="304"><tspan class="kv-key">events:</tspan> 16 event types (click)</text>
+    </g>
+
+    <!-- PubP chain Step 2: Apollo Event Bus Consumer -->
+    <g class="node consumer" data-id="apollo-event-bus-consumer">
+      <rect x="620" y="380" width="260" height="120" rx="10"/>
+      <text class="title" x="750" y="406" text-anchor="middle">Apollo Event Bus Consumer</text>
+      <text class="subtitle" x="750" y="426" text-anchor="middle">theathletic-apollo-express</text>
+      <text class="kv" x="640" y="450"><tspan class="kv-key">group:</tspan> apollo-server-{stage}</text>
+      <text class="kv" x="640" y="468"><tspan class="kv-key">file:</tspan> src/kafkaConsumer.js</text>
+      <text class="kv" x="640" y="486"><tspan class="kv-key">handlers:</tspan> 16 event types (click)</text>
+    </g>
+
+    <!-- Apollo consumer fan-out: cache invalidations (not just PubP) -->
+    <g class="node handler" data-id="cache-invalidations">
+      <rect x="330" y="410" width="240" height="60" rx="8"/>
+      <text class="title" x="450" y="435" text-anchor="middle" font-size="12">Redis + feed refresh</text>
+      <text class="subtitle" x="450" y="454" text-anchor="middle" font-size="10">refreshArticle + Insiders + FeedOrderPost</text>
+    </g>
+
+    <!-- PubP chain Step 3: publishToPubP handler -->
+    <g class="node handler" data-id="publish-to-pubp-handler">
+      <rect x="930" y="410" width="240" height="60" rx="8"/>
+      <text class="title" x="1050" y="435" text-anchor="middle" font-size="12">publishToPubP handler</text>
+      <text class="subtitle" x="1050" y="454" text-anchor="middle" font-size="10">delete if trash else update</text>
+    </g>
+
+    <!-- PubP chain Step 4: REST fetch + gRPC publish -->
+    <g class="node pubp" data-id="pubp-gateway">
+      <rect x="860" y="570" width="380" height="110" rx="12"/>
+      <text class="title" x="1050" y="596" text-anchor="middle">PubP Gateway (gRPC + JWT)</text>
+      <text class="subtitle" x="1050" y="614" text-anchor="middle">GCP_PUBP_GATEWAY_URL · Gateway.publish</text>
+      <text class="kv" x="880" y="638"><tspan class="kv-key">preceded by:</tspan> GET /articles/{id}?pubp_metadata=1</text>
+      <text class="kv" x="880" y="656"><tspan class="kv-key">payload:</tspan> AthleticArticle protobuf (click)</text>
+      <text class="kv" x="880" y="674"><tspan class="kv-key">auth:</tspan> JWT (GCP service account, 1h)</text>
+    </g>
+
+    <!-- PubP Kafka Monolog -->
+    <g class="node pubp" data-id="pubp-monolog">
+      <rect x="910" y="740" width="280" height="70" rx="10"/>
+      <text class="title" x="1050" y="768" text-anchor="middle">PubP Kafka Monolog</text>
+      <text class="subtitle" x="1050" y="790" text-anchor="middle">event log · total ordering</text>
+    </g>
+
+    <!-- WP save_post hook edges (control points raised high to arc clearly ABOVE all destination boxes) -->
+    <path class="edge hook" data-edge="wp-to-opensearch" d="M 760 100 Q 470 -20 180 200" marker-end="url(#arrow-hook)"/>
+    <path class="edge hook" data-edge="wp-to-alice" d="M 800 100 Q 620 20 440 200" marker-end="url(#arrow-hook)"/>
+
+    <!-- WP to analytics bus (short straight-ish diagonal, no crossing) -->
+    <path class="edge mixed" data-edge="wp-to-analytics-kafka" d="M 860 100 L 750 200" marker-end="url(#arrow-mixed)"/>
+
+    <!-- WP to NYT CMS print (REST push) -->
+    <path class="edge content" data-edge="wp-to-nyt-cms-print" d="M 920 100 Q 1100 20 1270 200" marker-end="url(#arrow-content)"/>
+
+    <!-- WP serves RSS (pull: FlatPlan reaches INTO TA to fetch) -->
+    <path class="edge pull" data-edge="flatplan-pulls-rss" d="M 1560 200 Q 1400 -20 980 100" marker-end="url(#arrow-pull)"/>
+
+    <!-- Kafka → consumer -->
+    <path class="edge mixed" data-edge="analytics-to-apollo" d="M 750 320 L 750 380" marker-end="url(#arrow-mixed)"/>
+
+    <!-- Consumer fan-out -->
+    <path class="edge mixed" data-edge="apollo-to-cache" d="M 620 440 L 570 440" marker-end="url(#arrow-mixed)"/>
+    <path class="edge mixed" data-edge="apollo-to-pubp-handler" d="M 880 440 L 930 440" marker-end="url(#arrow-mixed)"/>
+
+    <!-- Handler → Gateway -->
+    <path class="edge mixed" data-edge="pubp-handler-to-gateway" d="M 1050 470 L 1050 570" marker-end="url(#arrow-mixed)"/>
+
+    <!-- Gateway → Monolog -->
+    <path class="edge mixed" data-edge="gateway-to-monolog" d="M 1050 680 L 1050 740" marker-end="url(#arrow-mixed)"/>
+
+    <defs>
+      <marker id="arrow-content" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f4e79"/></marker>
+      <marker id="arrow-metadata" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2d8f79"/></marker>
+      <marker id="arrow-mixed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b3886"/></marker>
+      <marker id="arrow-pull" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c76a0c"/></marker>
+      <marker id="arrow-inbound" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8b1538"/></marker>
+      <marker id="arrow-hook" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0e7490"/></marker>
+    </defs>
+  </svg>
+</div>
+
+<div class="section">
+  <h2>2. PubP fan-out (NYT-side consumers of the monolog)</h2>
+  <svg viewBox="0 0 1720 340">
+    <g class="node fanout" data-id="apple-news-nyt">
+      <rect x="20" y="30" width="256" height="120" rx="10"/>
+      <text class="title" x="148" y="56" text-anchor="middle">Apple News (NYT)</text>
+      <text class="subtitle" x="148" y="75" text-anchor="middle">nytm/cms-applenews</text>
+      <text class="kv" x="40" y="100"><tspan class="kv-key">receives:</tspan> plain-text body + meta</text>
+      <text class="kv" x="40" y="118"><tspan class="kv-key">via:</tspan> Kafka consumer on monolog</text>
+      <text class="kv" x="40" y="136" font-style="italic" fill="#a16207">overlap with FlatPlan path?</text>
+    </g>
+    <g class="node fanout" data-id="content-search">
+      <rect x="296" y="30" width="256" height="120" rx="10"/>
+      <text class="title" x="424" y="56" text-anchor="middle">Content Search (NYT)</text>
+      <text class="subtitle" x="424" y="75" text-anchor="middle">NYT Elasticsearch + Samizdat</text>
+      <text class="kv" x="316" y="100"><tspan class="kv-key">receives:</tspan> plain-text body + meta</text>
+      <text class="kv" x="316" y="118"><tspan class="kv-key">via:</tspan> Denormalizer → ES index</text>
+    </g>
+    <g class="node fanout" data-id="alice-assets">
+      <rect x="572" y="30" width="256" height="120" rx="10"/>
+      <text class="title" x="700" y="56" text-anchor="middle">Alice Assets Consumer</text>
+      <text class="subtitle" x="700" y="75" text-anchor="middle">DAP ad segmentation</text>
+      <text class="kv" x="592" y="100"><tspan class="kv-key">receives:</tspan> metadata only</text>
+      <text class="kv" x="592" y="118"><tspan class="kv-key">via:</tspan> PubP replay → Kafka</text>
+    </g>
+    <g class="node fanout" data-id="bodega">
+      <rect x="848" y="30" width="256" height="120" rx="10"/>
+      <text class="title" x="976" y="56" text-anchor="middle">Bodega</text>
+      <text class="subtitle" x="976" y="75" text-anchor="middle">GCS + Memcached cache</text>
+      <text class="kv" x="868" y="100"><tspan class="kv-key">receives:</tspan> full AthleticArticle</text>
+      <text class="kv" x="868" y="118"><tspan class="kv-key">via:</tspan> gRPC from monolog</text>
+    </g>
+    <g class="node fanout" data-id="samizdat">
+      <rect x="1124" y="30" width="256" height="120" rx="10"/>
+      <text class="title" x="1252" y="56" text-anchor="middle">Samizdat</text>
+      <text class="subtitle" x="1252" y="75" text-anchor="middle">NYT-wide GraphQL API</text>
+      <text class="kv" x="1144" y="100"><tspan class="kv-key">receives:</tspan> full AthleticArticle</text>
+      <text class="kv" x="1144" y="118"><tspan class="kv-key">via:</tspan> Bodega reads</text>
+    </g>
+    <g class="node fanout" data-id="bigquery">
+      <rect x="1400" y="30" width="256" height="120" rx="10"/>
+      <text class="title" x="1528" y="56" text-anchor="middle">BigQuery</text>
+      <text class="subtitle" x="1528" y="75" text-anchor="middle">analytics / data warehouse</text>
+      <text class="kv" x="1420" y="100"><tspan class="kv-key">receives:</tspan> full event + binaries</text>
+      <text class="kv" x="1420" y="118"><tspan class="kv-key">via:</tspan> Dataflow → PubSub → BQ</text>
+    </g>
+
+    <!-- Monolog at top -->
+    <g class="node pubp" data-id="pubp-monolog-fanout-view">
+      <rect x="730" y="190" width="256" height="60" rx="10"/>
+      <text class="title" x="858" y="216" text-anchor="middle">PubP Kafka Monolog</text>
+      <text class="subtitle" x="858" y="236" text-anchor="middle">(same as section 1)</text>
+    </g>
+
+    <!-- Fan-out arrows UP from monolog -->
+    <path class="edge mixed" data-edge="monolog-to-apple-news" d="M 770 190 Q 500 180 148 150" marker-end="url(#arrow-mixed)"/>
+    <path class="edge mixed" data-edge="monolog-to-content-search" d="M 800 190 Q 650 180 424 150" marker-end="url(#arrow-mixed)"/>
+    <path class="edge metadata" data-edge="monolog-to-alice-assets" d="M 830 190 L 700 150" marker-end="url(#arrow-metadata)"/>
+    <path class="edge mixed" data-edge="monolog-to-bodega" d="M 886 190 L 976 150" marker-end="url(#arrow-mixed)"/>
+    <path class="edge mixed" data-edge="monolog-to-samizdat" d="M 920 190 Q 1100 180 1252 150" marker-end="url(#arrow-mixed)"/>
+    <path class="edge mixed" data-edge="monolog-to-bigquery" d="M 960 190 Q 1250 180 1528 150" marker-end="url(#arrow-mixed)"/>
+
+    <defs>
+      <marker id="arrow-mixed2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b3886"/></marker>
+      <marker id="arrow-metadata2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2d8f79"/></marker>
+    </defs>
+  </svg>
+</div>
+
+<div class="section">
+  <h2>3. Pull + push destinations (consumer ↔ specific endpoint)</h2>
+  <svg viewBox="0 0 1720 820">
+    <!-- Consumers on left -->
+    <g class="node pull-consumer" data-id="consumer-flatplan">
+      <rect x="20" y="20" width="240" height="52" rx="8"/>
+      <text class="title" x="140" y="42" text-anchor="middle">FlatPlan</text>
+      <text class="subtitle" x="140" y="60" text-anchor="middle">Apple News publisher (3rd party)</text>
+    </g>
+    <g class="node pull-consumer" data-id="consumer-seo-bots">
+      <rect x="20" y="100" width="240" height="52" rx="8"/>
+      <text class="title" x="140" y="122" text-anchor="middle">Google / Bing bots</text>
+      <text class="subtitle" x="140" y="140" text-anchor="middle">SEO indexing</text>
+    </g>
+    <g class="node pull-consumer" data-id="consumer-astro">
+      <rect x="20" y="180" width="240" height="52" rx="8"/>
+      <text class="title" x="140" y="202" text-anchor="middle">Astro</text>
+      <text class="subtitle" x="140" y="220" text-anchor="middle">partnership feed</text>
+    </g>
+    <g class="node pull-consumer" data-id="consumer-iterable">
+      <rect x="20" y="260" width="240" height="52" rx="8"/>
+      <text class="title" x="140" y="282" text-anchor="middle">Iterable</text>
+      <text class="subtitle" x="140" y="300" text-anchor="middle">email campaigns</text>
+    </g>
+    <g class="node pull-consumer" data-id="consumer-nyt-loupe">
+      <rect x="20" y="340" width="240" height="52" rx="8"/>
+      <text class="title" x="140" y="362" text-anchor="middle">NYT Loupe</text>
+      <text class="subtitle" x="140" y="380" text-anchor="middle">image asset mgmt (SFTP + REST)</text>
+    </g>
+    <g class="node pull-consumer" data-id="consumer-google-sitemap">
+      <rect x="20" y="420" width="240" height="52" rx="8"/>
+      <text class="title" x="140" y="442" text-anchor="middle">Google Sitemap Ping</text>
+      <text class="subtitle" x="140" y="460" text-anchor="middle">notifySitemapUpdate Lambda (push)</text>
+    </g>
+    <g class="node pull-consumer" data-id="consumer-nyt-federation">
+      <rect x="20" y="500" width="240" height="52" rx="8"/>
+      <text class="title" x="140" y="522" text-anchor="middle">NYT supergraph?</text>
+      <text class="subtitle" x="140" y="540" text-anchor="middle">infra only; unverified</text>
+    </g>
+    <g class="node pull-consumer" data-id="consumer-ta-serverless">
+      <rect x="20" y="580" width="240" height="52" rx="8"/>
+      <text class="title" x="140" y="602" text-anchor="middle">TA Serverless / Apollo</text>
+      <text class="subtitle" x="140" y="620" text-anchor="middle">internal consumers</text>
+    </g>
+
+    <!-- Endpoints on right, grouped -->
+    <text x="680" y="34" font-size="12" font-weight="700" fill="#6b7280">RSS FEEDS (Atom XML)</text>
+    <g class="node endpoint" data-id="ep-rss-flatplan">
+      <rect x="660" y="46" width="660" height="40" rx="8"/>
+      <text class="title" x="990" y="71" text-anchor="middle" font-size="12">/rss/flatplan/articles/</text>
+    </g>
+    <g class="node endpoint" data-id="ep-rss-homepage">
+      <rect x="660" y="94" width="660" height="40" rx="8"/>
+      <text class="title" x="990" y="119" text-anchor="middle" font-size="12">/rss/  (homepage)</text>
+    </g>
+    <g class="node endpoint" data-id="ep-rss-news">
+      <rect x="660" y="142" width="660" height="40" rx="8"/>
+      <text class="title" x="990" y="167" text-anchor="middle" font-size="12">/feeds/rss/news</text>
+    </g>
+    <g class="node endpoint" data-id="ep-rss-astro">
+      <rect x="660" y="190" width="660" height="40" rx="8"/>
+      <text class="title" x="990" y="215" text-anchor="middle" font-size="12">/feeds/rss/astro</text>
+    </g>
+    <g class="node endpoint" data-id="ep-rss-nopaywall">
+      <rect x="660" y="238" width="660" height="40" rx="8"/>
+      <text class="title" x="990" y="263" text-anchor="middle" font-size="12">/feeds/rss/feed-no-paywall.php</text>
+    </g>
+
+    <text x="680" y="320" font-size="12" font-weight="700" fill="#6b7280">SITEMAPS (URLs + lastmod)</text>
+    <g class="node endpoint" data-id="ep-sitemaps">
+      <rect x="660" y="332" width="660" height="40" rx="8"/>
+      <text class="title" x="990" y="357" text-anchor="middle" font-size="11">/sitemap-{authors,tags,news,teams,cities,videos,schedule,roster,players,verticals}.xml.php</text>
+    </g>
+
+    <text x="680" y="420" font-size="12" font-weight="700" fill="#6b7280">ITERABLE — PULL (api_domain=3) + PUSH (digestNewsletterSend Lambda via SQS)</text>
+    <g class="node endpoint" data-id="ep-evergreen">
+      <rect x="660" y="432" width="660" height="40" rx="8"/>
+      <text class="title" x="990" y="457" text-anchor="middle" font-size="12">pull: /v1iterable/evergreen  /recent_stories  /unread_saved_stories     push: Iterable API (newsletter digests)</text>
+    </g>
+
+    <text x="680" y="494" font-size="12" font-weight="700" fill="#6b7280">NYT LOUPE (image asset mgmt)</text>
+    <g class="node endpoint" data-id="ep-nyt-loupe">
+      <rect x="660" y="506" width="660" height="40" rx="8"/>
+      <text class="title" x="990" y="531" text-anchor="middle" font-size="12">SFTP: sftp.photo.nyt.net      REST: api.photo.nyt.net  (asset ID lookup)</text>
+    </g>
+
+    <text x="680" y="568" font-size="12" font-weight="700" fill="#6b7280">GOOGLE SITEMAP PING (outbound push)</text>
+    <g class="node endpoint" data-id="ep-google-sitemap-ping">
+      <rect x="660" y="580" width="660" height="40" rx="8"/>
+      <text class="title" x="990" y="605" text-anchor="middle" font-size="12">https://www.google.com/ping?sitemap=...  (notifySitemapUpdate Lambda)</text>
+    </g>
+
+    <text x="680" y="642" font-size="12" font-weight="700" fill="#6b7280">APOLLO GRAPHQL FEDERATION</text>
+    <g class="node endpoint" data-id="ep-apollo-federation">
+      <rect x="660" y="654" width="660" height="40" rx="8"/>
+      <text class="title" x="990" y="679" text-anchor="middle" font-size="12">apollo-express:4444/monolith  (dormant?)</text>
+    </g>
+
+    <text x="680" y="716" font-size="12" font-weight="700" fill="#6b7280">SERVERLESS BACKOFFICE (api_domain=4)</text>
+    <g class="node endpoint" data-id="ep-serverless-articles">
+      <rect x="660" y="728" width="660" height="40" rx="8"/>
+      <text class="title" x="990" y="753" text-anchor="middle" font-size="11">/articles/{id}  /articles_by_date  /topics_by_post_ids  /search_articles_v2</text>
+    </g>
+
+    <!-- Annotation on Astro explaining its feed merges two source systems -->
+    <text x="140" y="236" text-anchor="middle" font-size="9" font-style="italic" fill="#a16207">merges articles + briefs (two source systems)</text>
+
+    <!-- Pull edges: each consumer to its specific endpoints -->
+    <path class="edge pull" data-edge="flatplan-pulls" d="M 260 46 L 660 66" marker-end="url(#arrow-pull3)"/>
+    <path class="edge pull" data-edge="seo-sitemaps" d="M 260 126 Q 400 260 660 362" marker-end="url(#arrow-pull3)"/>
+    <path class="edge pull" data-edge="seo-rss" d="M 260 132 Q 440 160 660 162" marker-end="url(#arrow-pull3)"/>
+    <path class="edge pull" data-edge="astro-pulls" d="M 260 206 Q 450 205 660 210" marker-end="url(#arrow-pull3)"/>
+    <!-- Iterable: both pull and push -->
+    <path class="edge pull" data-edge="iterable-pulls" d="M 260 280 Q 450 370 660 448" marker-end="url(#arrow-pull3)"/>
+    <path class="edge content" data-edge="iterable-push" d="M 260 292 Q 450 380 660 456" marker-end="url(#arrow-content3)"/>
+    <!-- NYT Loupe (image assets) -->
+    <path class="edge pull" data-edge="nyt-loupe-pulls" d="M 260 366 Q 450 440 660 526" marker-end="url(#arrow-pull3)"/>
+    <!-- Google Sitemap Ping (push) -->
+    <path class="edge content" data-edge="google-sitemap-push" d="M 260 446 Q 450 520 660 600" marker-end="url(#arrow-content3)"/>
+    <!-- NYT supergraph (pull, unverified) -->
+    <path class="edge pull" data-edge="nyt-federation-pulls" d="M 260 526 Q 450 600 660 674" marker-end="url(#arrow-pull3)"/>
+    <!-- TA Serverless / Apollo (pull) -->
+    <path class="edge pull" data-edge="ta-serverless-pulls" d="M 260 606 Q 450 680 660 748" marker-end="url(#arrow-pull3)"/>
+
+    <defs>
+      <marker id="arrow-pull3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c76a0c"/></marker>
+      <marker id="arrow-content3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f4e79"/></marker>
+    </defs>
+  </svg>
+</div>
+
+<div class="section">
+  <h2>4. Inbound webhooks (external → TA)</h2>
+  <svg viewBox="0 0 1720 240">
+    <g class="node inbound-source" data-id="inbound-nyt-identity">
+      <rect x="20" y="20" width="280" height="90" rx="8"/>
+      <text class="title" x="160" y="46" text-anchor="middle">NYT Identity (Pub/Sub)</text>
+      <text class="subtitle" x="160" y="64" text-anchor="middle">email/prefs changes</text>
+      <text class="kv" x="40" y="88"><tspan class="kv-key">endpoint:</tspan> /propagate_nyt_email_*</text>
+      <text class="kv" x="40" y="104"><tspan class="kv-key">auth:</tspan> api_domain=8</text>
+    </g>
+    <g class="node inbound-source" data-id="inbound-payments">
+      <rect x="320" y="20" width="280" height="90" rx="8"/>
+      <text class="title" x="460" y="46" text-anchor="middle">Payment providers</text>
+      <text class="subtitle" x="460" y="64" text-anchor="middle">Stripe · Google · Apple · Braintree · ...</text>
+      <text class="kv" x="340" y="88"><tspan class="kv-key">endpoints:</tspan> /page-webhook-*.php</text>
+      <text class="kv" x="340" y="104"><tspan class="kv-key">result:</tspan> logged to Kafka event logs</text>
+    </g>
+    <g class="node source" data-id="inbound-ta-endpoint">
+      <rect x="680" y="20" width="300" height="90" rx="10"/>
+      <text class="title" x="830" y="46" text-anchor="middle">the-athletic monolith</text>
+      <text class="subtitle" x="830" y="64" text-anchor="middle">/api.php + page-webhook-*.php</text>
+    </g>
+    <path class="edge inbound" data-edge="inbound-identity" d="M 300 65 L 680 65" marker-end="url(#arrow-inbound3)"/>
+    <path class="edge inbound" data-edge="inbound-payments" d="M 600 65 L 680 65" marker-end="url(#arrow-inbound3)"/>
+    <defs>
+      <marker id="arrow-inbound3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8b1538"/></marker>
+    </defs>
+  </svg>
+</div>
+
+</main>
+
+<div id="tooltip"></div>
+<div id="overlay"></div>
+<aside id="panel">
+  <button class="close" onclick="closePanel()">×</button>
+  <div id="panel-content">Select a node or edge for details.</div>
+</aside>
+
+<script>
+const DATA = {
+  // NODES
+  "wordpress": { title: "WordPress publish", subtitle: "the-athletic monolith", summary: "Source of all publish events. Fires save_post + transition_post_status hooks.",
+    sections: [
+      { label: "File", text: "the-athletic/web/app/themes/athletic/functions.php" },
+      { label: "Hooks", list: ["save_post", "transition_post_status"] },
+      { label: "Side effects at publish time", list: ["OpenSearch index_post()", "publish_to_alice() Pub/Sub push", "Emit post-publish event to {stage}-analytics Kafka topic", "NYT CMS REST push for print (scheduled)"] }
+    ]},
+  "ta-opensearch": { title: "TA OpenSearch", subtitle: "TA-owned search index", summary: "Receives rich searchable article JSON on every save_post.",
+    sections: [
+      { label: "Data shape", tag: "content", text: "Rich: title, body with expanded HTML + autolinker, excerpt, author names and IDs, team/league/city IDs, player IDs, topic IDs, story types, timestamps, boost metadata, game ref, teaser flag, image URLs, bylines." },
+      { label: "Trigger", text: "WordPress save_post hook → index_post()" },
+      { label: "Endpoint", code: "ELASTIC_SEARCH_ENDPOINT (index: search-articles-read)" },
+      { label: "Auth", text: "basic (inherited from infra)" },
+      { label: "Code", code: "the-athletic/web/app/themes/athletic/inc/class.athArticleIndex.inc.php" }
+    ]},
+  "alice-pubsub": { title: "Alice (NYT ad targeting)", subtitle: "NYT DAP", summary: "Gets article metadata for ad segmentation via GCP Pub/Sub.",
+    sections: [
+      { label: "Data shape", tag: "metadata", text: "post_id, author_id, title, body, URL, URI, game_id, word_count, is_teaser, taxonomies (teams, leagues, cities, story_subjects). Full article JSON but Alice consumes only metadata." },
+      { label: "Trigger", text: "WordPress save_post hook → publish_to_alice() (gated on ALICE_PUBSUB env)" },
+      { label: "Endpoint", code: "GCP Pub/Sub topic ta-asset-grapeshot" },
+      { label: "Auth", text: "GCP service account (GOOGLE_APPLICATION_CREDENTIALS_JSON)" },
+      { label: "Purpose of each field", list: ["post_id, URI: identity for reconciliation", "author_id, title, URL: display/reporting", "game_id: ads targeted to specific games", "word_count, is_teaser: bid/floor hints", "teams, leagues, cities, story_subjects: targeting facets"] }
+    ]},
+  "nyt-cms-print": { title: "NYT CMS REST (print)", subtitle: "print workflows", summary: "Article body + metadata shipped for print.",
+    sections: [
+      { label: "Data shape", tag: "mixed", text: "Article body (HTML), title, authors, publish timestamps, print-specific metadata." },
+      { label: "Trigger", text: "Scheduled / manual from WP admin" },
+      { label: "Endpoint", code: "TA_NYT_CMS_API_HOST/resources/v4/app/content/article" },
+      { label: "Auth", text: "Bearer (OAuth2 password grant via TA_NYT_CMS_SCOOP_USERNAME / PASSWORD) + x-api-key" },
+      { label: "Code", code: "the-athletic/web/app/themes/athletic/inc/class.athNytCmsApi.inc.php" }
+    ]},
+  "flatplan": { title: "FlatPlan → Apple News", subtitle: "3rd-party publisher (pull)", summary: "Polls TA's RSS feed, publishes articles to Apple News on TA's behalf.",
+    sections: [
+      { label: "Model", text: "Pull. TA does not push to Apple News directly (since H1 2025). FlatPlan polls an RSS feed and handles the Apple News API calls." },
+      { label: "Data shape", tag: "content", text: "Full article body + metadata inside Atom XML." },
+      { label: "Endpoint served by TA", code: "https://www.nytimes.com/athletic/rss/flatplan/articles/" },
+      { label: "Migration", text: "H1 2025. Previously used the 'Publish to Apple News' WP plugin. PRs: TheAthletic/the-athletic#9351, #9411." },
+      { label: "Note", text: "Separate from NYT cms-applenews (which consumes PubP monolog). Overlap for TA content is unverified." }
+    ]},
+  "ta-analytics-kafka": { title: "TA Analytics Event Bus", subtitle: "Kafka (TA-owned, Data Eng)", summary: "General analytics topic. Destination for WordPress post-publish / post-delete / user events / etc.",
+    sections: [
+      { label: "Role", text: "This is the NYT-facing Kafka most people refer to as 'TA Kafka' in casual usage. It's not article-specific. It carries 16+ event types used for cache invalidation, user refresh, podcast refresh, PubP sync, etc." },
+      { label: "Topic", code: "{stage}-analytics  (e.g., production-analytics, staging-analytics)" },
+      { label: "Brokers", code: "$KAFKA_SERVERS env (TA MSK, legacy EC2-based, Data Eng-owned)" },
+      { label: "Host account", text: "TA AWS account 035875988818 (per memory)" },
+      { label: "Sample events on this topic", list: ["post-publish", "post-delete", "post-comment", "podcast-comment / delete / update", "update-customer", "update-notif-preferences", "update-staff", "user-add-*", "user-remove-*", "article-view", "article-save", "article-unsave", "update_user_end_date", "feed-article-read"] }
+    ]},
+  "apollo-event-bus-consumer": { title: "Apollo Event Bus Consumer", subtitle: "theathletic-apollo-express", summary: "One-service fan-out: reads WP events and triggers cache invalidations, feed refreshes, and PubP publishing.",
+    sections: [
+      { label: "Role", text: "Standalone process inside the Apollo Express service. Subscribes to {stage}-analytics, filters by event_name, dispatches to registered handlers. Triggers multiple side effects per event, PubP being one of many." },
+      { label: "File", code: "theathletic-apollo-express/src/kafkaConsumer.js" },
+      { label: "Consumer group", code: "apollo-server-group-${stage}" },
+      { label: "Event → Handler map", list: [
+        "post-publish → refreshArticle, refreshInsiders, refreshFeedOrderPost, publishToPubP",
+        "post-delete → refreshArticle, refreshInsiders, refreshFeedOrderPost, publishToPubP",
+        "post-comment → refreshArticle",
+        "podcast-comment / delete / update → refreshPodcastEpisode",
+        "update-customer → refreshCustomer, refreshUserFollowing*, refreshAnnouncements, refreshUserEmail",
+        "update-notif-preferences → refreshGameStartNotifyByPreference",
+        "update-staff → refreshStaff, refreshAnnouncements",
+        "user-add-* → refreshUserFollowing*, refreshRecommendedPodcasts, refreshAppNavigation, refreshCustomer, refreshGameStartNotifyByFollow",
+        "user-remove-* → similar but unfollow variants",
+        "article-view → refreshUserData",
+        "article-save / unsave → refreshUserData, refreshSavedArticles",
+        "update_user_end_date → refreshCustomer",
+        "feed-article-read → refreshUserData"
+      ]},
+      { label: "Error handling", text: "On publishToPubP failure: posts to Slack #pubp-alerts-prd or #pubp-alerts-stg." }
+    ]},
+  "cache-invalidations": { title: "Cache invalidation handlers", subtitle: "Redis + feed refresh + in-memory", summary: "On post-publish/delete the Apollo consumer invalidates Redis keys and refreshes feed ordering.",
+    sections: [
+      { label: "Functions run", list: ["refreshArticle: Redis key flush per article; refresh REST DataSource", "refreshInsiders: insiders-visibility refresh", "refreshFeedOrderPost: feed ordering refresh"] },
+      { label: "Why", text: "Articles served via Apollo use cached REST payloads. A publish or delete must invalidate those caches so the next read gets fresh data." }
+    ]},
+  "publish-to-pubp-handler": { title: "publishToPubP handler", subtitle: "in kafkaConsumer.js line 298", summary: "Classifies event, kicks off REST fetch + gRPC publish, reports to Slack on failure.",
+    sections: [
+      { label: "Behavior", list: [
+        "Reads post.status. 'trash' → event_type='delete', else 'update'.",
+        "Calls fetchArticleAndSendToPubP(post.post_id, event_type).",
+        "Logs success / failure via bunyanLogger.",
+        "On exception: posts to Slack channel (#pubp-alerts-prd or #pubp-alerts-stg) with the article ID and error message."
+      ]},
+      { label: "File", code: "theathletic-apollo-express/src/kafkaConsumer.js (lines 298–322)" }
+    ]},
+  "pubp-gateway": { title: "PubP Gateway (step 4: REST fetch + gRPC publish)", subtitle: "GCP_PUBP_GATEWAY_URL", summary: "First fetches the full article from TA REST, then converts to AthleticArticle protobuf and publishes via gRPC.",
+    sections: [
+      { label: "Step 4a: REST fetch", code: "GET /articles/{post_id}?exclude_body=0&exclude_comments=1&exclude_tags=1&pubp_metadata=1" },
+      { label: "Step 4a auth", text: "Bearer SERVERLESS_API_KEY. 3 retries with exponential backoff." },
+      { label: "Step 4b: Image publish (if header image)", text: "Before article publish, if article has article_header_img, publish the image as its own asset (Image protobuf). URI: nyt://image/<uuidv5(filename)>. Returned imageUri is referenced in the article's PromotionalProperties.media." },
+      { label: "Step 4c: protobuf build", text: "buildAthleticArticlePublishReq(post, image_ref) in pubpConverter.js. Produces AthleticArticle with: PublicationProperties (source, uri, url, firstpublished, lastmajormodification, type), PromotionalProperties (headline, summary, media), CreativeWork (title, wordcount, bylines, language), AthleticProperties (league, desk, game, images), tag lists (team/league/player/topic), athleticsection, athletickeywords, athleticauthors, bodycontentforsearch (stripTags of article_body)." },
+      { label: "Step 4d: gRPC publish", code: "client.publish(publishRequest, metadata, callback)" },
+      { label: "Auth", text: "JWT signed RS256 with GCP service account private key (GCP_SERVICE_CREDENTIALS_BASE64). 1h expiry. Audience = GCP_PUBP_GATEWAY_URL." },
+      { label: "Backfill mode", text: "If is_backfill=true, adds X-Backfill: true to gRPC metadata so downstream consumers skip non-idempotent side effects." },
+      { label: "Gating", text: "Only fires when NODE_ENV === 'prd-nyt' OR send_override=true." },
+      { label: "Key files", list: ["theathletic-apollo-express/src/helpers/pubp.js", "theathletic-apollo-express/src/helpers/pubpConverter.js"] }
+    ]},
+  "pubp-monolog": { title: "PubP Kafka Monolog", subtitle: "NYT-side event log", summary: "Single source of truth for published articles across NYT. Consumers subscribe to Kafka topics.",
+    sections: [
+      { label: "Ownership", text: "NYT Publishing. Not TA-managed." },
+      { label: "Fan-out consumers", list: ["Apple News (nytm/cms-applenews)", "Content Search (NYT Elasticsearch via Denormalizer)", "Alice Assets Consumer (ad metadata replay)", "Bodega (content cache)", "Samizdat (GraphQL API, via Bodega)", "BigQuery (via Dataflow + Pub/Sub)"] },
+      { label: "Guarantees", text: "Total ordering across events. Deterministic URIs mean consumers can dedupe republishes." }
+    ]},
+
+  // PubP fan-out nodes
+  "apple-news-nyt": { title: "Apple News (NYT)", subtitle: "nytm/cms-applenews", summary: "Receives plain-text body + full metadata. Kafka consumer of PubP monolog.",
+    sections: [
+      { label: "Data shape", tag: "mixed", text: "plain-text body (bodycontentforsearch) + all AthleticArticle metadata" },
+      { label: "Path", text: "Direct Kafka subscriber to PubP monolog." },
+      { label: "Open question", text: "Does this publish TA articles to Apple News, or does FlatPlan handle TA content separately? Needs confirmation with NYT Publishing." }
+    ]},
+  "content-search": { title: "Content Search (NYT)", subtitle: "NYT Elasticsearch + Samizdat", summary: "Full-text search indexing of published content.",
+    sections: [
+      { label: "Data shape", tag: "content", text: "plain-text body (bodycontentforsearch) + metadata" },
+      { label: "Path", text: "PubP monolog → Denormalizer service → Kafka → Content Search Consumer → ES index" },
+      { label: "Query surface", text: "NYT Content Search API + Samizdat GraphQL" }
+    ]},
+  "alice-assets": { title: "Alice Assets Consumer", subtitle: "DAP ad segmentation", summary: "Uses PubP metadata replay for ad targeting segmentation across NYT.",
+    sections: [
+      { label: "Data shape", tag: "metadata", text: "Metadata only. Content is not needed." },
+      { label: "Path", text: "PubP monolog replay → Kafka → Assets Consumer." },
+      { label: "Docs", code: "nyt-docs/docs/ads/data-ad-products/alice/component-services/assets-consumer/" }
+    ]},
+  "bodega": { title: "Bodega", subtitle: "GCS + Memcached content cache", summary: "Caches latest AthleticArticle payloads; feeds Samizdat and direct consumers.",
+    sections: [
+      { label: "Data shape", tag: "mixed", text: "Full AthleticArticle protobuf, cached verbatim." },
+      { label: "Path", text: "PubP monolog → Bodega gRPC service." },
+      { label: "Reads", text: "Samizdat reads from Bodega to serve GraphQL queries." }
+    ]},
+  "samizdat": { title: "Samizdat", subtitle: "NYT-wide GraphQL API", summary: "Unified content GraphQL API used by NYT products.",
+    sections: [
+      { label: "Data shape", tag: "mixed", text: "Full AthleticArticle" },
+      { label: "Path", text: "Reads from Bodega cache." },
+      { label: "Consumers", text: "Vi / web, mobile apps, other NYT products that need NYT-wide content." }
+    ]},
+  "bigquery": { title: "BigQuery (NYT analytics)", subtitle: "data warehouse / analytics", summary: "Stream from PubP monolog via Dataflow and Pub/Sub.",
+    sections: [
+      { label: "Data shape", tag: "mixed", text: "Full event + binaries." },
+      { label: "Tables", list: ["origin_prd.Event", "origin_prd.Event_Binaries", "origin_prd.Notification"] },
+      { label: "Path", text: "PubP monolog → Dataflow → Pub/Sub (pubp-events-monolog-east / -binaries) → BigQuery." }
+    ]},
+
+  "pubp-monolog-fanout-view": { title: "PubP Kafka Monolog (fan-out view)", subtitle: "see section 1 for upstream", summary: "Same node as in section 1. This is the origin point for the 6 NYT consumers below.", sections: [] },
+
+  // Pull consumers
+  "consumer-flatplan": { title: "FlatPlan", subtitle: "Apple News publisher (3rd party)", summary: "Polls TA RSS to publish to Apple News.", sections: [
+    { label: "What it pulls", list: ["/rss/flatplan/articles/"] }
+  ]},
+  "consumer-seo-bots": { title: "SEO bots", subtitle: "Google / Bing / etc.", summary: "Web crawlers indexing TA content.", sections: [
+    { label: "What they pull", list: ["/sitemap-*.xml.php (10 sitemaps)", "/rss/", "/feeds/rss/news", "robots.txt"] }
+  ]},
+  "consumer-astro": { title: "Astro", subtitle: "partnership feed", summary: "Specific sandboxed feed for Astro partnership.", sections: [
+    { label: "What it pulls", list: ["/feeds/rss/astro"] },
+    { label: "Details", text: "Headlines + briefs with canonical tags and trial CTA. Limited by category." }
+  ]},
+  "consumer-iterable": { title: "Iterable", subtitle: "email campaigns (push + pull)", summary: "Article destination with two paths: TA pushes newsletter digests via digestNewsletterSend Lambda, and Iterable pulls content feeds for email campaign rendering.", sections: [
+    { label: "Push path", text: "digestNewsletterSend Lambda reads from an SQS queue and calls the Iterable API to send newsletter digest emails." },
+    { label: "Pull path", list: ["GET /v1iterable/evergreen", "GET /v1iterable/recent_stories", "GET /v1iterable/unread_saved_stories"] },
+    { label: "Auth (pull)", code: "ITERABLE_FEED_API_KEY (api_domain=3)" }
+  ]},
+  "consumer-nyt-loupe": { title: "NYT Loupe", subtitle: "image asset management", summary: "NYT's image asset management system. TA uploads images via SFTP and looks up asset IDs via REST.", sections: [
+    { label: "Push", text: "Images uploaded via SFTP to sftp.photo.nyt.net." },
+    { label: "Pull / lookup", text: "REST API at api.photo.nyt.net to fetch Loupe asset IDs for images already uploaded." },
+    { label: "Scope", text: "Image asset integration only. Not related to article body sync; that path is NYT CMS REST (section 1)." }
+  ]},
+  "consumer-google-sitemap": { title: "Google Sitemap Ping", subtitle: "notifySitemapUpdate Lambda (push)", summary: "After sitemap regeneration, a Lambda pings Google so it re-crawls the updated sitemap.", sections: [
+    { label: "Trigger", text: "Sitemap regeneration job publishes to the notifySitemapUpdate Lambda." },
+    { label: "Outbound call", code: "GET https://www.google.com/ping?sitemap=<encoded sitemap URL>" },
+    { label: "Note", text: "Classic SEO ping. Simple, fire-and-forget." }
+  ]},
+  "consumer-nyt-federation": { title: "NYT Apollo supergraph (unverified)", subtitle: "dormant or internal?", summary: "Federation subgraph infrastructure exists at port 4444; unclear if an NYT supergraph actively consumes it.", sections: [
+    { label: "What it would call", list: ["apollo-express:4444/monolith"] },
+    { label: "Status", text: "Uses Apollo Federation v2 with @key on Article. No evidence of an NYT supergraph consumer. May be dormant or TA-internal only." }
+  ]},
+  "consumer-ta-serverless": { title: "TA Serverless / Apollo backoffice", subtitle: "internal consumers", summary: "TA's own Apollo and Lambda services that pull article data.", sections: [
+    { label: "What it pulls", list: ["/articles/{id}", "/articles_by_date", "/topics_by_post_ids", "/search_articles_v2"] },
+    { label: "Auth", code: "SERVERLESS_API_KEY (api_domain=4)" }
+  ]},
+
+  // Endpoints
+  "ep-rss-flatplan": { title: "/rss/flatplan/articles/", subtitle: "Atom XML RSS feed", summary: "Dedicated FlatPlan feed that drives Apple News publishing.", sections: [
+    { label: "Format", text: "Atom 1.0 XML" },
+    { label: "Data", tag: "content", text: "Full article body + metadata per item (title, permalink, date, author, excerpt, image)." },
+    { label: "Consumer", text: "FlatPlan polls this feed." }
+  ]},
+  "ep-rss-homepage": { title: "/rss/", subtitle: "homepage Atom feed", summary: "Articles + headlines combined.", sections: [
+    { label: "Format", text: "Atom 1.0 XML" },
+    { label: "Fields", list: ["title", "permalink", "post_date_gmt", "author_name", "excerpt", "post_img_url"] },
+    { label: "Code", code: "the-athletic/web/app/themes/athletic/page-rss-feed.php" }
+  ]},
+  "ep-rss-news": { title: "/feeds/rss/news", subtitle: "News headlines feed", summary: "Headlines (type_id=39) + regular articles, capped at 90 items.", sections: [
+    { label: "Code", code: "the-athletic/web/app/themes/athletic/feeds/rss/feed-news.php" }
+  ]},
+  "ep-rss-astro": { title: "/feeds/rss/astro", subtitle: "Astro partnership feed", summary: "Sandboxed feed specifically for Astro: headlines + briefs with canonical tags, categories (article/realtime, sport classification), and trial CTA.", sections: [
+    { label: "Code", code: "the-athletic/web/app/themes/athletic/feeds/rss/feed-astro.php" }
+  ]},
+  "ep-rss-nopaywall": { title: "/feeds/rss/feed-no-paywall.php", subtitle: "No-paywall feed (inferred)", summary: "File exists; consumer unknown.", sections: [
+    { label: "Code", code: "the-athletic/web/app/themes/athletic/feeds/rss/feed-no-paywall.php" },
+    { label: "Open question", text: "Who consumes this? Not traced." }
+  ]},
+  "ep-sitemaps": { title: "/sitemap-*.xml.php", subtitle: "10 XML sitemaps", summary: "Standard SEO sitemaps with URLs + lastmod timestamps.", sections: [
+    { label: "Files", list: ["sitemap-authors.xml.php", "sitemap-tags.xml.php", "sitemap-news.xml.php", "sitemap-teams.xml.php", "sitemap-cities.xml.php", "sitemap-videos.xml.php", "sitemap-schedule.xml.php", "sitemap-roster.xml.php", "sitemap-players.xml.php", "sitemap-verticals.xml.php"] }
+  ]},
+  "ep-evergreen": { title: "Iterable: pull feeds + push (newsletter digests)", subtitle: "two integration paths", summary: "Iterable is an article destination with both push and pull paths.", sections: [
+    { label: "Pull endpoints (TA serves)", list: ["/v1iterable/evergreen", "/v1iterable/recent_stories", "/v1iterable/unread_saved_stories"] },
+    { label: "Push path (TA calls Iterable)", text: "digestNewsletterSend Lambda reads from SQS and posts newsletter digest payloads to the Iterable API." },
+    { label: "Auth (pull)", code: "ITERABLE_FEED_API_KEY (api_domain=3)" },
+    { label: "Code (pull)", code: "the-athletic/web/api.php lines 623-634" }
+  ]},
+  "ep-nyt-loupe": { title: "NYT Loupe (image asset management)", subtitle: "SFTP + REST", summary: "Distinct from NYT CMS REST. Handles image assets only.", sections: [
+    { label: "Upload", code: "SFTP: sftp.photo.nyt.net" },
+    { label: "Lookup", code: "REST: https://api.photo.nyt.net  (asset ID resolution)" },
+    { label: "Scope", text: "Images only. Article body sync uses NYT CMS REST (shown in section 1)." }
+  ]},
+  "ep-google-sitemap-ping": { title: "Google Sitemap Ping", subtitle: "notifySitemapUpdate Lambda", summary: "After sitemap regeneration, this Lambda pings Google with the updated sitemap URL.", sections: [
+    { label: "Outbound", code: "GET https://www.google.com/ping?sitemap=<encoded URL>" },
+    { label: "Trigger", text: "Fires after sitemap regen completes." }
+  ]},
+  "ep-apollo-federation": { title: "apollo-express:4444/monolith", subtitle: "Apollo GraphQL federation subgraph", summary: "Federation subgraph. May or may not be consumed by an NYT supergraph.", sections: [
+    { label: "Features", list: ["Apollo Federation v2", "@key(fields: \"id\") on Article type"] },
+    { label: "Status", text: "Infrastructure exists; no evidence of active NYT supergraph consumer." },
+    { label: "Code", code: "theathletic-apollo-express/src/subgraphs/monolith/federationServer.ts" }
+  ]},
+  "ep-serverless-articles": { title: "Serverless backoffice article endpoints", subtitle: "internal REST API", summary: "Article fetch and search used by TA's own Apollo and backoffice.", sections: [
+    { label: "Endpoints", list: ["/articles/{id}", "/articles_by_date", "/topics_by_post_ids", "/search_articles_v2"] },
+    { label: "Auth", code: "SERVERLESS_API_KEY (api_domain=4)" },
+    { label: "Role in PubP path", text: "Apollo Event Bus Consumer fetches article via /articles/{id}?pubp_metadata=1 before pushing to PubP Gateway." }
+  ]},
+
+  // Inbound webhook sources
+  "inbound-nyt-identity": { title: "NYT Identity (Pub/Sub inbound)", subtitle: "pushes email + prefs changes", summary: "When users change email or email prefs on nytimes.com, NYT pushes the change to TA.", sections: [
+    { label: "Endpoints", list: ["/propagate_nyt_email_change_to_ta", "/propagate_email_prefs_change_to_ta", "/propagate_nyt_email_prefs_change_to_ta"] },
+    { label: "Auth", code: "api_domain=8" },
+    { label: "Code", code: "the-athletic/web/api.php lines 1254-1267" }
+  ]},
+  "inbound-payments": { title: "Payment providers (inbound webhooks)", subtitle: "subscription lifecycle events", summary: "Stripe, Google Play, Apple, Braintree, etc. push subscription changes to TA.", sections: [
+    { label: "Handlers", list: ["/page-webhook-endpoint.php (Stripe)", "/page-webhook-google.php (Google Play)", "/page-webhook-apple.php (Apple)", "/page-webhook-bango.php", "/page-webhook-braintree.php", "/page-webhook-chargehound.php", "/page-webhook-sendgrid.php", "/page-webhook-betmgm.php"] },
+    { label: "Downstream", text: "Stripe and Google Play events are logged to Kafka topics stripe-event-log and google-play-store-event-log respectively." }
+  ]},
+  "inbound-ta-endpoint": { title: "the-athletic monolith (inbound surface)", subtitle: "api.php + page-webhook-*.php", summary: "TA's public HTTP surface for inbound webhooks.", sections: [] },
+
+  // EDGES
+  "wp-to-opensearch": { title: "WP save_post → TA OpenSearch", summary: "Rich article JSON indexed on save_post (regardless of publish state). HTTP bulk upsert.",
+    sections: [
+      { label: "Payload fields", tag: "content", list: ["title", "body (expanded HTML + autolinker)", "excerpt", "author_names, author_ids", "team/league/city IDs", "player IDs", "topic IDs", "story_types", "published / updated / created timestamps", "boost metadata", "game ref", "teaser flag", "image URLs", "bylines"] },
+      { label: "Format", text: "JSON (bulk upsert)" },
+      { label: "Endpoint", code: "${ELASTIC_SEARCH_ENDPOINT}/search-articles-read/_bulk" },
+      { label: "Trigger", text: "WordPress save_post hook → index_post() for publish-state articles" }
+    ]},
+  "wp-to-alice": { title: "WP save_post → Alice Pub/Sub", summary: "Article metadata to GCP Pub/Sub topic ta-asset-grapeshot (for ad targeting).",
+    sections: [
+      { label: "Payload", tag: "metadata", list: ["post_id", "author_id", "title", "body", "URL", "URI (theathletic://article/{post_id})", "game_id", "word_count", "is_teaser / is_mag flags", "localization", "taxonomies (teams, leagues, cities, story_subjects)"] },
+      { label: "Format", text: "JSON Pub/Sub message body" },
+      { label: "Endpoint", code: "GCP Pub/Sub topic: ta-asset-grapeshot" },
+      { label: "Feature flag", code: "ALICE_PUBSUB=true (production only)" }
+    ]},
+  "wp-to-analytics-kafka": { title: "WP → TA Analytics Kafka", summary: "Emits post-publish / post-delete (and 15+ other event types) to the {stage}-analytics topic. The outer Kafka message has a fixed shape across all events; per-event data lives in meta_blob as a stringified JSON.",
+    sections: [
+      { label: "Format", text: "JSON payload produced by PHP kafka producer. post-publish and post-delete use non-blocking background curl; other events use the async jobs table." },
+      { label: "Topic", code: "{stage}-analytics  (TA MSK, $KAFKA_SERVERS)" },
+      { label: "Outer Kafka message envelope", tag: "mixed", code: "{\n  \"time\": 1745942400,\n  \"event_name\": \"post-publish\",\n  \"platform\": \"post-publish\",\n  \"browser\": null,\n  \"browser_version\": null,\n  \"user_id\": 12345,\n  \"event_key\": null,\n  \"event_value\": null,\n  \"meta_blob\": \"{\\\"post_id\\\":6789012,...}\",\n  \"session_id\": null,\n  \"ip_address\": \"203.0.113.5\",\n  \"source\": null,\n  \"promo_code\": null,\n  \"device_id\": null,\n  \"locale\": \"en-US\",\n  \"user_agent\": \"Mozilla/5.0 ...\"\n}" },
+      { label: "meta_blob for post-publish (parsed from its JSON string)", code: "{\n  \"post_id\": 6789012,\n  \"team_ids\": [12, 34],\n  \"city_ids\": [56],\n  \"league_ids\": [1, 3],\n  \"author_ids\": [9876],\n  \"insider_regions\": [],\n  \"prev_team_ids\": [11, 12],\n  \"prev_city_ids\": [],\n  \"prev_league_ids\": [1],\n  \"prev_author_ids\": []\n}" },
+      { label: "meta_blob for post-delete (parsed)", code: "{\n  \"post_id\": 6789012,\n  \"team_ids\": [12, 34],\n  \"city_ids\": [56],\n  \"league_ids\": [1, 3],\n  \"author_ids\": [9876],\n  \"insider_regions\": []\n}" },
+      { label: "Source of truth", list: ["Envelope: the-athletic/web/app/themes/athletic/inc/class.athAnalytics.inc.php lines 206-223", "post-publish / post-delete meta_blob: inc/class.athArticle.inc.php lines 470-527 (log_post_publish_or_delete_event)"] },
+      { label: "Note", text: "This is NOT an article-specific topic. It's a general event bus. Other event_name values on the same topic include: post-comment, podcast-comment / delete / update, update-customer, user-add-*, user-remove-*, update-notif-preferences, update-staff, article-view, article-save, article-unsave, update_user_end_date, feed-article-read, gift_card_purchase, gift_card_redeemed. Each has its own meta_blob schema." }
+    ]},
+  "wp-to-nyt-cms-print": { title: "WP → NYT CMS REST (print)", summary: "Article body + metadata pushed to NYT CMS for print workflows.",
+    sections: [
+      { label: "Payload", tag: "content", list: ["title", "body (HTML)", "authors", "publish timestamps", "print metadata"] },
+      { label: "Format", text: "REST JSON" },
+      { label: "Endpoint", code: "${TA_NYT_CMS_API_HOST}/resources/v4/app/content/article" },
+      { label: "Auth", text: "OAuth2 password grant (Bearer token) + x-api-key" }
+    ]},
+  "flatplan-pulls-rss": { title: "FlatPlan pulls /rss/flatplan/articles/", summary: "FlatPlan polls TA's RSS feed to drive Apple News publishing.",
+    sections: [
+      { label: "Payload", tag: "content", text: "Atom 1.0 XML. Full article body + metadata per item." },
+      { label: "Method", text: "HTTP GET (poll interval configured on FlatPlan side)" },
+      { label: "URL", code: "https://www.nytimes.com/athletic/rss/flatplan/articles/" }
+    ]},
+  "analytics-to-apollo": { title: "Analytics Kafka → Apollo Event Bus Consumer", summary: "Consumer subscribes to {stage}-analytics. 16+ event types dispatched by event_name filter.",
+    sections: [
+      { label: "Subscribe call", code: "consumer.subscribe({ topic: `${stage}-analytics`, fromBeginning: false })" },
+      { label: "Dispatch", text: "Each message parsed; event_name matched against eventHandlers map. Known types dispatched; unknown types incremented as 'ignored'." }
+    ]},
+  "apollo-to-cache": { title: "Apollo consumer → Cache/feed refresh", summary: "On post-publish/delete, consumer triggers Redis + feed refresh side effects in parallel with PubP publish.",
+    sections: [
+      { label: "Side effects", list: ["refreshArticle: invalidate Redis keys for the article", "refreshInsiders: insiders-specific cache refresh", "refreshFeedOrderPost: feed ordering"] }
+    ]},
+  "apollo-to-pubp-handler": { title: "Apollo consumer → publishToPubP handler", summary: "Dispatched for post-publish and post-delete events.",
+    sections: [
+      { label: "Function", code: "publishToPubP({ dataSources, obj: post })" },
+      { label: "Event types", list: ["post-publish", "post-delete"] }
+    ]},
+  "pubp-handler-to-gateway": { title: "publishToPubP → PubP Gateway", summary: "Full article fetch + protobuf conversion + gRPC publish.",
+    sections: [
+      { label: "Step 1", code: "GET /articles/{post_id}?pubp_metadata=1   (Bearer SERVERLESS_API_KEY)" },
+      { label: "Step 2 (header image)", text: "If header image exists: publish Image protobuf first, get back imageUri (nyt://image/<uuidv5>)." },
+      { label: "Step 3 (build)", text: "buildAthleticArticlePublishReq(post, imageUri) in pubpConverter.js." },
+      { label: "Step 4 (publish)", code: "gateway.publish(PublishRequest{ athleticArticle }, metadata)" },
+      { label: "URI", code: "nyt://athleticarticle/<uuidv5(article_id, 84da2fb8-1cb7-5f6e-b2ab-87506a7198d4)>" },
+      { label: "Payload (AthleticArticle protobuf top-level)", list: ["publicationproperties", "promotionalproperties", "creativework (title, wordcount, language, bylines)", "athleticproperties (league, desk, game, images, isteaser)", "athleticsection", "athletickeywords", "athleticauthors", "teamtags, leaguetags, playertags, topictags", "bodycontentforsearch (stripTags(article_body) — plain text only)"] },
+      { label: "Auth", text: "JWT RS256 (1h). Signed with GCP service account private key." }
+    ]},
+  "gateway-to-monolog": { title: "PubP Gateway → Monolog", summary: "After validation the Gateway persists the event to the Kafka monolog.",
+    sections: [
+      { label: "Role", text: "Gateway is the gRPC write API. Monolog is the event log downstream systems subscribe to." },
+      { label: "Ordering", text: "Total ordering within the monolog." }
+    ]},
+
+  "monolog-to-apple-news": { title: "Monolog → Apple News (NYT)", summary: "Kafka subscriber path; plain-text body + metadata.",
+    sections: [
+      { label: "Payload", tag: "mixed", text: "AthleticArticle protobuf as published. Body is plain text only." }
+    ]},
+  "monolog-to-content-search": { title: "Monolog → Content Search", summary: "Full-text indexing via Denormalizer → ES.",
+    sections: [
+      { label: "Payload", tag: "content", text: "bodycontentforsearch plain text + metadata. Denormalizer expands references before ES index." },
+      { label: "Path stages", list: ["PubP Monolog", "Denormalizer service", "Denormalizer DB", "Kafka", "Content Search Consumer", "Elasticsearch index"] }
+    ]},
+  "monolog-to-alice-assets": { title: "Monolog → Alice Assets Consumer", summary: "Metadata replay for ad targeting.",
+    sections: [
+      { label: "Payload", tag: "metadata", text: "Metadata fields (tags, section, keywords, authors, publication props)." }
+    ]},
+  "monolog-to-bodega": { title: "Monolog → Bodega", summary: "Bodega caches latest versions of each asset.",
+    sections: [
+      { label: "Payload", tag: "mixed", text: "Full AthleticArticle protobuf." },
+      { label: "Storage", text: "GCS + Memcached." }
+    ]},
+  "monolog-to-samizdat": { title: "Monolog → Samizdat (via Bodega)", summary: "Samizdat doesn't read monolog directly; it reads Bodega.",
+    sections: [
+      { label: "Note", text: "Samizdat's consumption is indirect. Shown as a direct edge for clarity." }
+    ]},
+  "monolog-to-bigquery": { title: "Monolog → BigQuery", summary: "Dataflow streams events into BigQuery tables for analytics.",
+    sections: [
+      { label: "Intermediate", text: "Dataflow pipeline → Pub/Sub topics (pubp-events-monolog-east, pubp-events-monolog-east-binaries, skinny-log-origin-prd-east) → BigQuery." },
+      { label: "Destination tables", list: ["origin_prd.Event", "origin_prd.Event_Binaries", "origin_prd.Notification"] }
+    ]},
+
+  // Pull edges
+  "flatplan-pulls": { title: "FlatPlan → /rss/flatplan/articles/", summary: "RSS poll for Apple News publishing.",
+    sections: [{ label: "Method", text: "HTTP GET poll" }, { label: "Format", text: "Atom 1.0 XML" }] },
+  "seo-sitemaps": { title: "SEO bots → sitemaps", summary: "URL + lastmod crawl seeds.",
+    sections: [{ label: "Sitemaps", list: ["/sitemap-authors.xml.php", "/sitemap-tags.xml.php", "/sitemap-news.xml.php", "/sitemap-teams.xml.php", "/sitemap-cities.xml.php", "/sitemap-videos.xml.php", "/sitemap-schedule.xml.php", "/sitemap-roster.xml.php", "/sitemap-players.xml.php", "/sitemap-verticals.xml.php"] }] },
+  "seo-rss": { title: "SEO bots → RSS", summary: "Search engines may also consume /rss/ and /feeds/rss/news for fresh content.",
+    sections: [{ label: "Feeds", list: ["/rss/", "/feeds/rss/news"] }] },
+  "astro-pulls": { title: "Astro → /feeds/rss/astro", summary: "Partner-specific Atom feed.",
+    sections: [] },
+  "iterable-pulls": { title: "Iterable → /v1iterable/* (pull)", summary: "Iterable polls TA feeds for email campaign content.",
+    sections: [{ label: "Endpoints", list: ["/v1iterable/evergreen", "/v1iterable/recent_stories", "/v1iterable/unread_saved_stories"] }, { label: "Auth", code: "ITERABLE_FEED_API_KEY (api_domain=3)" }] },
+  "iterable-push": { title: "TA → Iterable API (push)", summary: "digestNewsletterSend Lambda pushes newsletter digests to Iterable.",
+    sections: [{ label: "Flow", text: "SQS queue drives the Lambda, which POSTs digest payloads to the Iterable API." }, { label: "Why article destination", text: "Digests contain article content. Iterable receives actual article data as a destination." }] },
+  "nyt-loupe-pulls": { title: "TA ↔ NYT Loupe (images only)", summary: "TA uploads images via SFTP and resolves Loupe asset IDs via REST.",
+    sections: [{ label: "Upload", code: "SFTP sftp.photo.nyt.net" }, { label: "Lookup", code: "REST api.photo.nyt.net" }, { label: "Scope", text: "Image assets only. Separate from NYT CMS REST (article body sync, section 1)." }] },
+  "google-sitemap-push": { title: "notifySitemapUpdate → Google ping", summary: "After sitemap regen, Lambda pings Google with the updated sitemap URL.",
+    sections: [{ label: "Call", code: "GET https://www.google.com/ping?sitemap=..." }] },
+  "nyt-federation-pulls": { title: "NYT supergraph? → :4444/monolith", summary: "Apollo federation subgraph. Dormant or internal-only.",
+    sections: [{ label: "Status", text: "Infrastructure exists; no verified active NYT consumer." }] },
+  "ta-serverless-pulls": { title: "TA Serverless / Apollo → internal REST", summary: "TA's own Apollo consumes the REST API for article data.",
+    sections: [{ label: "Endpoints", list: ["/articles/{id}", "/articles_by_date", "/topics_by_post_ids", "/search_articles_v2"] }] },
+
+  // Inbound edges
+  "inbound-identity": { title: "NYT Identity → TA (Pub/Sub inbound)", summary: "Identity state changes pushed from NYT to TA via HTTPS.",
+    sections: [{ label: "Endpoints hit", list: ["POST /propagate_nyt_email_change_to_ta", "POST /propagate_email_prefs_change_to_ta", "POST /propagate_nyt_email_prefs_change_to_ta"] }] },
+  "inbound-payments": { title: "Payment providers → TA webhooks", summary: "Subscription lifecycle events.",
+    sections: [{ label: "Endpoints hit", list: ["/page-webhook-endpoint.php (Stripe)", "/page-webhook-google.php", "/page-webhook-apple.php", "/page-webhook-bango.php", "/page-webhook-braintree.php", "/page-webhook-chargehound.php", "/page-webhook-sendgrid.php", "/page-webhook-betmgm.php"] }] }
+};
+
+const tooltip = document.getElementById('tooltip');
+const panel = document.getElementById('panel');
+const overlay = document.getElementById('overlay');
+const panelContent = document.getElementById('panel-content');
+
+function tooltipFor(id) {
+  const d = DATA[id];
+  if (!d) return { title: id, summary: '' };
+  return { title: d.title || id, summary: d.summary || '' };
+}
+
+function buildPanelHTML(d) {
+  if (!d) return 'No data';
+  const tag = d.tag ? `<span class="tag ${d.tag}">${d.tag.toUpperCase()}</span>` : '';
+  let html = `<h3>${d.title || ''}</h3>`;
+  if (d.subtitle) html += `<p class="subtitle">${d.subtitle}</p>`;
+  if (d.summary) html += `<p>${tag}${d.summary}</p>`;
+  (d.sections || []).forEach(s => {
+    html += `<section><div class="label">${s.label}</div>`;
+    if (s.tag) html += `<span class="tag ${s.tag}">${s.tag.toUpperCase()}</span> `;
+    if (s.text) html += `<p>${s.text}</p>`;
+    if (s.code) html += `<pre>${s.code}</pre>`;
+    if (s.list) html += `<ul>${s.list.map(item => `<li>${item}</li>`).join('')}</ul>`;
+    html += '</section>';
+  });
+  return html;
+}
+
+function openPanel(id) {
+  const d = DATA[id];
+  panelContent.innerHTML = buildPanelHTML(d);
+  panel.classList.add('open');
+  overlay.classList.add('open');
+}
+function closePanel() {
+  panel.classList.remove('open');
+  overlay.classList.remove('open');
+}
+overlay.addEventListener('click', closePanel);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+function showTooltip(e, id) {
+  const { title, summary } = tooltipFor(id);
+  if (!title && !summary) return;
+  tooltip.innerHTML = `<div class="tip-title">${title}</div>${summary}<div class="tip-hint">click to expand</div>`;
+  tooltip.classList.add('visible');
+  positionTooltip(e);
+}
+function positionTooltip(e) {
+  const pad = 14;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  const rect = tooltip.getBoundingClientRect();
+  if (x + rect.width > window.innerWidth) x = e.clientX - rect.width - pad;
+  if (y + rect.height > window.innerHeight) y = e.clientY - rect.height - pad;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+}
+function hideTooltip() { tooltip.classList.remove('visible'); }
+
+document.querySelectorAll('[data-id]').forEach(el => {
+  const id = el.dataset.id;
+  el.addEventListener('mouseenter', e => showTooltip(e, id));
+  el.addEventListener('mousemove', positionTooltip);
+  el.addEventListener('mouseleave', hideTooltip);
+  el.addEventListener('click', e => { e.stopPropagation(); openPanel(id); });
+});
+document.querySelectorAll('[data-edge]').forEach(el => {
+  const id = el.dataset.edge;
+  el.addEventListener('mouseenter', e => showTooltip(e, id));
+  el.addEventListener('mousemove', positionTooltip);
+  el.addEventListener('mouseleave', hideTooltip);
+  el.addEventListener('click', e => { e.stopPropagation(); openPanel(id); });
+});
+</script>
+</body>
+</html>
