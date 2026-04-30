@@ -112,7 +112,7 @@ svg { display: block; width: 100%; height: auto; background: transparent; }
 
 <div class="section">
   <h2>1. Push paths from WordPress</h2>
-  <svg viewBox="0 0 1720 860">
+  <svg viewBox="0 0 1720 1080">
     <!-- WordPress source -->
     <g class="node source" data-id="wordpress">
       <rect x="710" y="30" width="300" height="70" rx="10"/>
@@ -120,122 +120,169 @@ svg { display: block; width: 100%; height: auto; background: transparent; }
       <text class="subtitle" x="860" y="80" text-anchor="middle">the-athletic monolith</text>
     </g>
 
+    <!-- ROW 1: Direct save_post / publish-time push destinations -->
+
     <!-- TA OpenSearch (WP hook triggered) -->
     <g class="node consumer" data-id="ta-opensearch">
-      <rect x="40" y="200" width="260" height="120" rx="10"/>
-      <text class="title" x="170" y="228" text-anchor="middle">TA OpenSearch</text>
-      <text class="subtitle" x="170" y="248" text-anchor="middle">TA-owned search index</text>
-      <text class="kv" x="60" y="272"><tspan class="kv-key">trigger:</tspan> save_post hook</text>
-      <text class="kv" x="60" y="290"><tspan class="kv-key">format:</tspan> JSON bulk upsert</text>
-      <text class="kv" x="60" y="308"><tspan class="kv-key">index:</tspan> search-articles-read</text>
+      <rect x="20" y="180" width="240" height="120" rx="10"/>
+      <text class="title" x="140" y="208" text-anchor="middle">TA OpenSearch</text>
+      <text class="subtitle" x="140" y="226" text-anchor="middle">TA-owned search index</text>
+      <text class="kv" x="35" y="250"><tspan class="kv-key">trigger:</tspan> save_post hook</text>
+      <text class="kv" x="35" y="268"><tspan class="kv-key">format:</tspan> JSON bulk upsert</text>
+      <text class="kv" x="35" y="286"><tspan class="kv-key">index:</tspan> search-articles-read</text>
     </g>
 
     <!-- Alice Pub/Sub (WP hook triggered) -->
     <g class="node consumer" data-id="alice-pubsub">
-      <rect x="320" y="200" width="260" height="120" rx="10"/>
-      <text class="title" x="450" y="228" text-anchor="middle">Alice (NYT ad targeting)</text>
-      <text class="subtitle" x="450" y="248" text-anchor="middle">NYT DAP, ad segmentation</text>
-      <text class="kv" x="340" y="272"><tspan class="kv-key">trigger:</tspan> save_post hook</text>
-      <text class="kv" x="340" y="290"><tspan class="kv-key">format:</tspan> JSON</text>
-      <text class="kv" x="340" y="308"><tspan class="kv-key">topic:</tspan> ta-asset-grapeshot</text>
+      <rect x="280" y="180" width="240" height="120" rx="10"/>
+      <text class="title" x="400" y="208" text-anchor="middle">Alice (NYT ad targeting)</text>
+      <text class="subtitle" x="400" y="226" text-anchor="middle">NYT DAP, ad segmentation</text>
+      <text class="kv" x="295" y="250"><tspan class="kv-key">trigger:</tspan> save_post hook</text>
+      <text class="kv" x="295" y="268"><tspan class="kv-key">format:</tspan> JSON</text>
+      <text class="kv" x="295" y="286"><tspan class="kv-key">topic:</tspan> ta-asset-grapeshot</text>
+    </g>
+
+    <!-- Sitemap Generator -->
+    <g class="node handler" data-id="sitemap-generator">
+      <rect x="540" y="180" width="240" height="120" rx="10"/>
+      <text class="title" x="660" y="208" text-anchor="middle">Sitemap Generator</text>
+      <text class="subtitle" x="660" y="226" text-anchor="middle">writes sitemap-*.xml.php</text>
+      <text class="kv" x="555" y="250"><tspan class="kv-key">trigger:</tspan> publish → regen</text>
+      <text class="kv" x="555" y="268"><tspan class="kv-key">outputs:</tspan> 10 sitemap XML files</text>
+      <text class="kv" x="555" y="286"><tspan class="kv-key">then:</tspan> fires Google ping Lambda</text>
     </g>
 
     <!-- NYT CMS REST (print) -->
     <g class="node consumer" data-id="nyt-cms-print">
-      <rect x="1150" y="200" width="260" height="120" rx="10"/>
-      <text class="title" x="1280" y="228" text-anchor="middle">NYT CMS REST (print)</text>
-      <text class="subtitle" x="1280" y="248" text-anchor="middle">print workflows</text>
-      <text class="kv" x="1170" y="272"><tspan class="kv-key">trigger:</tspan> scheduled / manual</text>
-      <text class="kv" x="1170" y="290"><tspan class="kv-key">format:</tspan> REST JSON</text>
-      <text class="kv" x="1170" y="308"><tspan class="kv-key">auth:</tspan> Bearer + x-api-key</text>
+      <rect x="940" y="180" width="240" height="120" rx="10"/>
+      <text class="title" x="1060" y="208" text-anchor="middle">NYT CMS REST (print)</text>
+      <text class="subtitle" x="1060" y="226" text-anchor="middle">print workflows</text>
+      <text class="kv" x="955" y="250"><tspan class="kv-key">trigger:</tspan> scheduled / manual</text>
+      <text class="kv" x="955" y="268"><tspan class="kv-key">format:</tspan> REST JSON</text>
+      <text class="kv" x="955" y="286"><tspan class="kv-key">auth:</tspan> Bearer + x-api-key</text>
     </g>
 
-    <!-- FlatPlan (pull via RSS) -->
-    <g class="node consumer" data-id="flatplan">
-      <rect x="1430" y="200" width="260" height="120" rx="10"/>
-      <text class="title" x="1560" y="228" text-anchor="middle">FlatPlan → Apple News</text>
-      <text class="subtitle" x="1560" y="248" text-anchor="middle">3rd-party publisher (pull)</text>
-      <text class="kv" x="1450" y="272"><tspan class="kv-key">trigger:</tspan> RSS poll</text>
-      <text class="kv" x="1450" y="290"><tspan class="kv-key">format:</tspan> Atom XML</text>
-      <text class="kv" x="1450" y="308"><tspan class="kv-key">endpoint:</tspan> /rss/flatplan/articles/</text>
+    <!-- NYT Loupe (image assets, push via SFTP + REST) -->
+    <g class="node consumer" data-id="consumer-nyt-loupe">
+      <rect x="1200" y="180" width="240" height="120" rx="10"/>
+      <text class="title" x="1320" y="208" text-anchor="middle">NYT Loupe</text>
+      <text class="subtitle" x="1320" y="226" text-anchor="middle">image asset mgmt (push)</text>
+      <text class="kv" x="1215" y="250"><tspan class="kv-key">upload:</tspan> SFTP sftp.photo.nyt.net</text>
+      <text class="kv" x="1215" y="268"><tspan class="kv-key">lookup:</tspan> REST api.photo.nyt.net</text>
+      <text class="kv" x="1215" y="286"><tspan class="kv-key">scope:</tspan> images only</text>
+    </g>
+
+    <!-- Iterable push (digestNewsletterSend Lambda) -->
+    <g class="node consumer" data-id="consumer-iterable-push">
+      <rect x="1460" y="180" width="240" height="120" rx="10"/>
+      <text class="title" x="1580" y="208" text-anchor="middle">Iterable (digest push)</text>
+      <text class="subtitle" x="1580" y="226" text-anchor="middle">digestNewsletterSend Lambda</text>
+      <text class="kv" x="1475" y="250"><tspan class="kv-key">driver:</tspan> SQS queue</text>
+      <text class="kv" x="1475" y="268"><tspan class="kv-key">calls:</tspan> Iterable REST API</text>
+      <text class="kv" x="1475" y="286"><tspan class="kv-key">scope:</tspan> newsletter digests</text>
+    </g>
+
+    <!-- ROW 2: downstream handlers / chains -->
+
+    <!-- Google Sitemap Ping (driven by Sitemap Generator) -->
+    <g class="node consumer" data-id="consumer-google-sitemap">
+      <rect x="540" y="340" width="240" height="100" rx="10"/>
+      <text class="title" x="660" y="368" text-anchor="middle">Google Sitemap Ping</text>
+      <text class="subtitle" x="660" y="386" text-anchor="middle">notifySitemapUpdate Lambda</text>
+      <text class="kv" x="555" y="410"><tspan class="kv-key">call:</tspan> GET google.com/ping?sitemap=…</text>
+      <text class="kv" x="555" y="428"><tspan class="kv-key">model:</tspan> outbound push (fire-and-forget)</text>
     </g>
 
     <!-- PubP chain Step 1: TA Analytics Kafka -->
     <g class="node kafka" data-id="ta-analytics-kafka">
-      <rect x="620" y="200" width="260" height="120" rx="10"/>
-      <text class="title" x="750" y="224" text-anchor="middle">TA Analytics Event Bus</text>
-      <text class="subtitle" x="750" y="244" text-anchor="middle">Kafka (TA-owned, Data Eng)</text>
-      <text class="kv" x="640" y="268"><tspan class="kv-key">topic:</tspan> {stage}-analytics</text>
-      <text class="kv" x="640" y="286"><tspan class="kv-key">brokers:</tspan> $KAFKA_SERVERS</text>
-      <text class="kv" x="640" y="304"><tspan class="kv-key">events:</tspan> 16 event types (click)</text>
+      <rect x="800" y="340" width="260" height="120" rx="10"/>
+      <text class="title" x="930" y="364" text-anchor="middle">TA Analytics Event Bus</text>
+      <text class="subtitle" x="930" y="384" text-anchor="middle">Kafka (TA-owned, Data Eng)</text>
+      <text class="kv" x="815" y="408"><tspan class="kv-key">topic:</tspan> {stage}-analytics</text>
+      <text class="kv" x="815" y="426"><tspan class="kv-key">brokers:</tspan> $KAFKA_SERVERS</text>
+      <text class="kv" x="815" y="444"><tspan class="kv-key">events:</tspan> 16 event types (click)</text>
+    </g>
+
+    <!-- FlatPlan (pull via RSS) -->
+    <g class="node consumer" data-id="flatplan">
+      <rect x="1460" y="340" width="240" height="120" rx="10"/>
+      <text class="title" x="1580" y="368" text-anchor="middle">FlatPlan → Apple News</text>
+      <text class="subtitle" x="1580" y="386" text-anchor="middle">3rd-party publisher (pull)</text>
+      <text class="kv" x="1475" y="410"><tspan class="kv-key">trigger:</tspan> RSS poll</text>
+      <text class="kv" x="1475" y="428"><tspan class="kv-key">format:</tspan> Atom XML</text>
+      <text class="kv" x="1475" y="446"><tspan class="kv-key">endpoint:</tspan> /rss/flatplan/articles/</text>
     </g>
 
     <!-- PubP chain Step 2: Apollo Event Bus Consumer -->
     <g class="node consumer" data-id="apollo-event-bus-consumer">
-      <rect x="620" y="380" width="260" height="120" rx="10"/>
-      <text class="title" x="750" y="406" text-anchor="middle">Apollo Event Bus Consumer</text>
-      <text class="subtitle" x="750" y="426" text-anchor="middle">theathletic-apollo-express</text>
-      <text class="kv" x="640" y="450"><tspan class="kv-key">group:</tspan> apollo-server-{stage}</text>
-      <text class="kv" x="640" y="468"><tspan class="kv-key">file:</tspan> src/kafkaConsumer.js</text>
-      <text class="kv" x="640" y="486"><tspan class="kv-key">handlers:</tspan> 16 event types (click)</text>
+      <rect x="800" y="520" width="260" height="120" rx="10"/>
+      <text class="title" x="930" y="546" text-anchor="middle">Apollo Event Bus Consumer</text>
+      <text class="subtitle" x="930" y="566" text-anchor="middle">theathletic-apollo-express</text>
+      <text class="kv" x="815" y="590"><tspan class="kv-key">group:</tspan> apollo-server-{stage}</text>
+      <text class="kv" x="815" y="608"><tspan class="kv-key">file:</tspan> src/kafkaConsumer.js</text>
+      <text class="kv" x="815" y="626"><tspan class="kv-key">handlers:</tspan> 16 event types (click)</text>
     </g>
 
     <!-- Apollo consumer fan-out: cache invalidations (not just PubP) -->
     <g class="node handler" data-id="cache-invalidations">
-      <rect x="330" y="410" width="240" height="60" rx="8"/>
-      <text class="title" x="450" y="435" text-anchor="middle" font-size="12">Redis + feed refresh</text>
-      <text class="subtitle" x="450" y="454" text-anchor="middle" font-size="10">refreshArticle + Insiders + FeedOrderPost</text>
+      <rect x="510" y="550" width="240" height="60" rx="8"/>
+      <text class="title" x="630" y="575" text-anchor="middle" font-size="12">Redis + feed refresh</text>
+      <text class="subtitle" x="630" y="594" text-anchor="middle" font-size="10">refreshArticle + Insiders + FeedOrderPost</text>
     </g>
 
     <!-- PubP chain Step 3: publishToPubP handler -->
     <g class="node handler" data-id="publish-to-pubp-handler">
-      <rect x="930" y="410" width="240" height="60" rx="8"/>
-      <text class="title" x="1050" y="435" text-anchor="middle" font-size="12">publishToPubP handler</text>
-      <text class="subtitle" x="1050" y="454" text-anchor="middle" font-size="10">delete if trash else update</text>
+      <rect x="1110" y="550" width="240" height="60" rx="8"/>
+      <text class="title" x="1230" y="575" text-anchor="middle" font-size="12">publishToPubP handler</text>
+      <text class="subtitle" x="1230" y="594" text-anchor="middle" font-size="10">delete if trash else update</text>
     </g>
 
     <!-- PubP chain Step 4: REST fetch + gRPC publish -->
     <g class="node pubp" data-id="pubp-gateway">
-      <rect x="860" y="570" width="380" height="110" rx="12"/>
-      <text class="title" x="1050" y="596" text-anchor="middle">PubP Gateway (gRPC + JWT)</text>
-      <text class="subtitle" x="1050" y="614" text-anchor="middle">GCP_PUBP_GATEWAY_URL · Gateway.publish</text>
-      <text class="kv" x="880" y="638"><tspan class="kv-key">preceded by:</tspan> GET /articles/{id}?pubp_metadata=1</text>
-      <text class="kv" x="880" y="656"><tspan class="kv-key">payload:</tspan> AthleticArticle protobuf (click)</text>
-      <text class="kv" x="880" y="674"><tspan class="kv-key">auth:</tspan> JWT (GCP service account, 1h)</text>
+      <rect x="1040" y="710" width="380" height="110" rx="12"/>
+      <text class="title" x="1230" y="736" text-anchor="middle">PubP Gateway (gRPC + JWT)</text>
+      <text class="subtitle" x="1230" y="754" text-anchor="middle">GCP_PUBP_GATEWAY_URL · Gateway.publish</text>
+      <text class="kv" x="1060" y="778"><tspan class="kv-key">preceded by:</tspan> GET /articles/{id}?pubp_metadata=1</text>
+      <text class="kv" x="1060" y="796"><tspan class="kv-key">payload:</tspan> AthleticArticle protobuf (click)</text>
+      <text class="kv" x="1060" y="814"><tspan class="kv-key">auth:</tspan> JWT (GCP service account, 1h)</text>
     </g>
 
     <!-- PubP Kafka Monolog -->
     <g class="node pubp" data-id="pubp-monolog">
-      <rect x="910" y="740" width="280" height="70" rx="10"/>
-      <text class="title" x="1050" y="768" text-anchor="middle">PubP Kafka Monolog</text>
-      <text class="subtitle" x="1050" y="790" text-anchor="middle">event log · total ordering</text>
+      <rect x="1090" y="880" width="280" height="70" rx="10"/>
+      <text class="title" x="1230" y="908" text-anchor="middle">PubP Kafka Monolog</text>
+      <text class="subtitle" x="1230" y="930" text-anchor="middle">event log · total ordering</text>
     </g>
 
-    <!-- WP save_post hook edges (control points raised high to arc clearly ABOVE all destination boxes) -->
-    <path class="edge hook" data-edge="wp-to-opensearch" d="M 760 100 Q 470 -20 180 200" marker-end="url(#arrow-hook)"/>
-    <path class="edge hook" data-edge="wp-to-alice" d="M 800 100 Q 620 20 440 200" marker-end="url(#arrow-hook)"/>
+    <!-- WP save_post hook edges to row-1 direct pushes -->
+    <path class="edge hook" data-edge="wp-to-opensearch" d="M 760 100 Q 460 40 140 180" marker-end="url(#arrow-hook)"/>
+    <path class="edge hook" data-edge="wp-to-alice" d="M 790 100 Q 600 50 400 180" marker-end="url(#arrow-hook)"/>
+    <path class="edge hook" data-edge="wp-to-sitemap-generator" d="M 820 100 Q 740 140 660 180" marker-end="url(#arrow-hook)"/>
+    <path class="edge content" data-edge="wp-to-nyt-cms-print" d="M 900 100 Q 980 140 1060 180" marker-end="url(#arrow-content)"/>
+    <path class="edge content" data-edge="wp-to-nyt-loupe" d="M 940 100 Q 1130 50 1320 180" marker-end="url(#arrow-content)"/>
+    <path class="edge content" data-edge="wp-to-iterable-push" d="M 980 100 Q 1280 40 1580 180" marker-end="url(#arrow-content)"/>
 
-    <!-- WP to analytics bus (short straight-ish diagonal, no crossing) -->
-    <path class="edge mixed" data-edge="wp-to-analytics-kafka" d="M 860 100 L 750 200" marker-end="url(#arrow-mixed)"/>
+    <!-- Sitemap Generator → Google Sitemap Ping -->
+    <path class="edge content" data-edge="sitemap-generator-to-google-ping" d="M 660 300 L 660 340" marker-end="url(#arrow-content)"/>
 
-    <!-- WP to NYT CMS print (REST push) -->
-    <path class="edge content" data-edge="wp-to-nyt-cms-print" d="M 920 100 Q 1100 20 1270 200" marker-end="url(#arrow-content)"/>
+    <!-- WP to analytics bus -->
+    <path class="edge mixed" data-edge="wp-to-analytics-kafka" d="M 880 100 Q 900 200 930 340" marker-end="url(#arrow-mixed)"/>
 
     <!-- WP serves RSS (pull: FlatPlan reaches INTO TA to fetch) -->
-    <path class="edge pull" data-edge="flatplan-pulls-rss" d="M 1560 200 Q 1400 -20 980 100" marker-end="url(#arrow-pull)"/>
+    <path class="edge pull" data-edge="flatplan-pulls-rss" d="M 1580 340 Q 1420 160 1000 100" marker-end="url(#arrow-pull)"/>
 
     <!-- Kafka → consumer -->
-    <path class="edge mixed" data-edge="analytics-to-apollo" d="M 750 320 L 750 380" marker-end="url(#arrow-mixed)"/>
+    <path class="edge mixed" data-edge="analytics-to-apollo" d="M 930 460 L 930 520" marker-end="url(#arrow-mixed)"/>
 
     <!-- Consumer fan-out -->
-    <path class="edge mixed" data-edge="apollo-to-cache" d="M 620 440 L 570 440" marker-end="url(#arrow-mixed)"/>
-    <path class="edge mixed" data-edge="apollo-to-pubp-handler" d="M 880 440 L 930 440" marker-end="url(#arrow-mixed)"/>
+    <path class="edge mixed" data-edge="apollo-to-cache" d="M 800 580 L 750 580" marker-end="url(#arrow-mixed)"/>
+    <path class="edge mixed" data-edge="apollo-to-pubp-handler" d="M 1060 580 L 1110 580" marker-end="url(#arrow-mixed)"/>
 
     <!-- Handler → Gateway -->
-    <path class="edge mixed" data-edge="pubp-handler-to-gateway" d="M 1050 470 L 1050 570" marker-end="url(#arrow-mixed)"/>
+    <path class="edge mixed" data-edge="pubp-handler-to-gateway" d="M 1230 610 L 1230 710" marker-end="url(#arrow-mixed)"/>
 
     <!-- Gateway → Monolog -->
-    <path class="edge mixed" data-edge="gateway-to-monolog" d="M 1050 680 L 1050 740" marker-end="url(#arrow-mixed)"/>
+    <path class="edge mixed" data-edge="gateway-to-monolog" d="M 1230 820 L 1230 880" marker-end="url(#arrow-mixed)"/>
 
     <defs>
       <marker id="arrow-content" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f4e79"/></marker>
@@ -318,8 +365,8 @@ svg { display: block; width: 100%; height: auto; background: transparent; }
 </div>
 
 <div class="section">
-  <h2>3. Pull + push destinations (consumer ↔ specific endpoint)</h2>
-  <svg viewBox="0 0 1720 820">
+  <h2>3. Pull destinations (consumers fetch on their schedule)</h2>
+  <svg viewBox="0 0 1720 560">
     <!-- Consumers on left -->
     <g class="node pull-consumer" data-id="consumer-flatplan">
       <rect x="20" y="20" width="240" height="52" rx="8"/>
@@ -329,37 +376,22 @@ svg { display: block; width: 100%; height: auto; background: transparent; }
     <g class="node pull-consumer" data-id="consumer-seo-bots">
       <rect x="20" y="100" width="240" height="52" rx="8"/>
       <text class="title" x="140" y="122" text-anchor="middle">Google / Bing bots</text>
-      <text class="subtitle" x="140" y="140" text-anchor="middle">SEO indexing</text>
-    </g>
-    <g class="node pull-consumer" data-id="consumer-astro">
-      <rect x="20" y="180" width="240" height="52" rx="8"/>
-      <text class="title" x="140" y="202" text-anchor="middle">Astro</text>
-      <text class="subtitle" x="140" y="220" text-anchor="middle">partnership feed</text>
+      <text class="subtitle" x="140" y="140" text-anchor="middle">SEO indexing + Google News/Discover</text>
     </g>
     <g class="node pull-consumer" data-id="consumer-iterable">
-      <rect x="20" y="260" width="240" height="52" rx="8"/>
-      <text class="title" x="140" y="282" text-anchor="middle">Iterable</text>
-      <text class="subtitle" x="140" y="300" text-anchor="middle">email campaigns</text>
-    </g>
-    <g class="node pull-consumer" data-id="consumer-nyt-loupe">
-      <rect x="20" y="340" width="240" height="52" rx="8"/>
-      <text class="title" x="140" y="362" text-anchor="middle">NYT Loupe</text>
-      <text class="subtitle" x="140" y="380" text-anchor="middle">image asset mgmt (SFTP + REST)</text>
-    </g>
-    <g class="node pull-consumer" data-id="consumer-google-sitemap">
-      <rect x="20" y="420" width="240" height="52" rx="8"/>
-      <text class="title" x="140" y="442" text-anchor="middle">Google Sitemap Ping</text>
-      <text class="subtitle" x="140" y="460" text-anchor="middle">notifySitemapUpdate Lambda (push)</text>
+      <rect x="20" y="180" width="240" height="52" rx="8"/>
+      <text class="title" x="140" y="202" text-anchor="middle">Iterable (pull feeds)</text>
+      <text class="subtitle" x="140" y="220" text-anchor="middle">polls v1iterable/* endpoints</text>
     </g>
     <g class="node pull-consumer" data-id="consumer-nyt-federation">
-      <rect x="20" y="500" width="240" height="52" rx="8"/>
-      <text class="title" x="140" y="522" text-anchor="middle">NYT supergraph?</text>
-      <text class="subtitle" x="140" y="540" text-anchor="middle">infra only; unverified</text>
+      <rect x="20" y="260" width="240" height="52" rx="8"/>
+      <text class="title" x="140" y="282" text-anchor="middle">NYT supergraph?</text>
+      <text class="subtitle" x="140" y="300" text-anchor="middle">infra only; unverified</text>
     </g>
     <g class="node pull-consumer" data-id="consumer-ta-serverless">
-      <rect x="20" y="580" width="240" height="52" rx="8"/>
-      <text class="title" x="140" y="602" text-anchor="middle">TA Serverless / Apollo</text>
-      <text class="subtitle" x="140" y="620" text-anchor="middle">internal consumers</text>
+      <rect x="20" y="340" width="240" height="52" rx="8"/>
+      <text class="title" x="140" y="362" text-anchor="middle">TA Serverless / Apollo</text>
+      <text class="subtitle" x="140" y="380" text-anchor="middle">internal consumers</text>
     </g>
 
     <!-- Endpoints on right, grouped -->
@@ -376,70 +408,42 @@ svg { display: block; width: 100%; height: auto; background: transparent; }
       <rect x="660" y="142" width="660" height="40" rx="8"/>
       <text class="title" x="990" y="167" text-anchor="middle" font-size="12">/feeds/rss/news</text>
     </g>
-    <g class="node endpoint" data-id="ep-rss-astro">
-      <rect x="660" y="190" width="660" height="40" rx="8"/>
-      <text class="title" x="990" y="215" text-anchor="middle" font-size="12">/feeds/rss/astro</text>
-    </g>
     <g class="node endpoint" data-id="ep-rss-nopaywall">
-      <rect x="660" y="238" width="660" height="40" rx="8"/>
-      <text class="title" x="990" y="263" text-anchor="middle" font-size="12">/feeds/rss/feed-no-paywall.php</text>
+      <rect x="660" y="190" width="660" height="40" rx="8"/>
+      <text class="title" x="990" y="215" text-anchor="middle" font-size="12">/feeds/rss/feed-no-paywall.php</text>
     </g>
 
-    <text x="680" y="320" font-size="12" font-weight="700" fill="#6b7280">SITEMAPS (URLs + lastmod)</text>
+    <text x="680" y="272" font-size="12" font-weight="700" fill="#6b7280">SITEMAPS (URLs + lastmod) — written by Sitemap Generator (section 1)</text>
     <g class="node endpoint" data-id="ep-sitemaps">
-      <rect x="660" y="332" width="660" height="40" rx="8"/>
-      <text class="title" x="990" y="357" text-anchor="middle" font-size="11">/sitemap-{authors,tags,news,teams,cities,videos,schedule,roster,players,verticals}.xml.php</text>
+      <rect x="660" y="284" width="660" height="40" rx="8"/>
+      <text class="title" x="990" y="309" text-anchor="middle" font-size="11">/sitemap-{authors,tags,news,teams,cities,videos,schedule,roster,players,verticals}.xml.php</text>
     </g>
 
-    <text x="680" y="420" font-size="12" font-weight="700" fill="#6b7280">ITERABLE — PULL (api_domain=3) + PUSH (digestNewsletterSend Lambda via SQS)</text>
+    <text x="680" y="372" font-size="12" font-weight="700" fill="#6b7280">ITERABLE PULL FEEDS (api_domain=3)</text>
     <g class="node endpoint" data-id="ep-evergreen">
-      <rect x="660" y="432" width="660" height="40" rx="8"/>
-      <text class="title" x="990" y="457" text-anchor="middle" font-size="12">pull: /v1iterable/evergreen  /recent_stories  /unread_saved_stories     push: Iterable API (newsletter digests)</text>
+      <rect x="660" y="384" width="660" height="40" rx="8"/>
+      <text class="title" x="990" y="409" text-anchor="middle" font-size="12">/v1iterable/evergreen   /v1iterable/recent_stories   /v1iterable/unread_saved_stories</text>
     </g>
 
-    <text x="680" y="494" font-size="12" font-weight="700" fill="#6b7280">NYT LOUPE (image asset mgmt)</text>
-    <g class="node endpoint" data-id="ep-nyt-loupe">
-      <rect x="660" y="506" width="660" height="40" rx="8"/>
-      <text class="title" x="990" y="531" text-anchor="middle" font-size="12">SFTP: sftp.photo.nyt.net      REST: api.photo.nyt.net  (asset ID lookup)</text>
-    </g>
-
-    <text x="680" y="568" font-size="12" font-weight="700" fill="#6b7280">GOOGLE SITEMAP PING (outbound push)</text>
-    <g class="node endpoint" data-id="ep-google-sitemap-ping">
-      <rect x="660" y="580" width="660" height="40" rx="8"/>
-      <text class="title" x="990" y="605" text-anchor="middle" font-size="12">https://www.google.com/ping?sitemap=...  (notifySitemapUpdate Lambda)</text>
-    </g>
-
-    <text x="680" y="642" font-size="12" font-weight="700" fill="#6b7280">APOLLO GRAPHQL FEDERATION</text>
+    <text x="680" y="446" font-size="12" font-weight="700" fill="#6b7280">APOLLO GRAPHQL FEDERATION</text>
     <g class="node endpoint" data-id="ep-apollo-federation">
-      <rect x="660" y="654" width="660" height="40" rx="8"/>
-      <text class="title" x="990" y="679" text-anchor="middle" font-size="12">apollo-express:4444/monolith  (dormant?)</text>
+      <rect x="660" y="458" width="660" height="40" rx="8"/>
+      <text class="title" x="990" y="483" text-anchor="middle" font-size="12">apollo-express:4444/monolith  (dormant?)</text>
     </g>
 
-    <text x="680" y="716" font-size="12" font-weight="700" fill="#6b7280">SERVERLESS BACKOFFICE (api_domain=4)</text>
+    <text x="680" y="518" font-size="12" font-weight="700" fill="#6b7280">SERVERLESS BACKOFFICE (api_domain=4)</text>
     <g class="node endpoint" data-id="ep-serverless-articles">
-      <rect x="660" y="728" width="660" height="40" rx="8"/>
-      <text class="title" x="990" y="753" text-anchor="middle" font-size="11">/articles/{id}  /articles_by_date  /topics_by_post_ids  /search_articles_v2</text>
+      <rect x="660" y="530" width="660" height="40" rx="8"/>
+      <text class="title" x="990" y="555" text-anchor="middle" font-size="11">/articles/{id}  /articles_by_date  /topics_by_post_ids  /search_articles_v2</text>
     </g>
-
-    <!-- Annotation on Astro explaining its feed merges two source systems -->
-    <text x="140" y="236" text-anchor="middle" font-size="9" font-style="italic" fill="#a16207">merges articles + briefs (two source systems)</text>
 
     <!-- Pull edges: each consumer to its specific endpoints -->
     <path class="edge pull" data-edge="flatplan-pulls" d="M 260 46 L 660 66" marker-end="url(#arrow-pull3)"/>
-    <path class="edge pull" data-edge="seo-sitemaps" d="M 260 126 Q 400 260 660 362" marker-end="url(#arrow-pull3)"/>
+    <path class="edge pull" data-edge="seo-sitemaps" d="M 260 126 Q 400 210 660 304" marker-end="url(#arrow-pull3)"/>
     <path class="edge pull" data-edge="seo-rss" d="M 260 132 Q 440 160 660 162" marker-end="url(#arrow-pull3)"/>
-    <path class="edge pull" data-edge="astro-pulls" d="M 260 206 Q 450 205 660 210" marker-end="url(#arrow-pull3)"/>
-    <!-- Iterable: both pull and push -->
-    <path class="edge pull" data-edge="iterable-pulls" d="M 260 280 Q 450 370 660 448" marker-end="url(#arrow-pull3)"/>
-    <path class="edge content" data-edge="iterable-push" d="M 260 292 Q 450 380 660 456" marker-end="url(#arrow-content3)"/>
-    <!-- NYT Loupe (image assets) -->
-    <path class="edge pull" data-edge="nyt-loupe-pulls" d="M 260 366 Q 450 440 660 526" marker-end="url(#arrow-pull3)"/>
-    <!-- Google Sitemap Ping (push) -->
-    <path class="edge content" data-edge="google-sitemap-push" d="M 260 446 Q 450 520 660 600" marker-end="url(#arrow-content3)"/>
-    <!-- NYT supergraph (pull, unverified) -->
-    <path class="edge pull" data-edge="nyt-federation-pulls" d="M 260 526 Q 450 600 660 674" marker-end="url(#arrow-pull3)"/>
-    <!-- TA Serverless / Apollo (pull) -->
-    <path class="edge pull" data-edge="ta-serverless-pulls" d="M 260 606 Q 450 680 660 748" marker-end="url(#arrow-pull3)"/>
+    <path class="edge pull" data-edge="iterable-pulls" d="M 260 206 Q 450 310 660 404" marker-end="url(#arrow-pull3)"/>
+    <path class="edge pull" data-edge="nyt-federation-pulls" d="M 260 286 Q 450 380 660 478" marker-end="url(#arrow-pull3)"/>
+    <path class="edge pull" data-edge="ta-serverless-pulls" d="M 260 366 Q 450 450 660 550" marker-end="url(#arrow-pull3)"/>
 
     <defs>
       <marker id="arrow-pull3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c76a0c"/></marker>
@@ -632,29 +636,41 @@ const DATA = {
 
   "pubp-monolog-fanout-view": { title: "PubP Kafka Monolog (fan-out view)", subtitle: "see section 1 for upstream", summary: "Same node as in section 1. This is the origin point for the 6 NYT consumers below.", sections: [] },
 
+  // Sitemap Generator (push handler)
+  "sitemap-generator": { title: "Sitemap Generator", subtitle: "writes sitemap-*.xml.php", summary: "On publish, the monolith regenerates the 10 sitemap XML files and then fires the notifySitemapUpdate Lambda to ping Google.",
+    sections: [
+      { label: "Trigger", text: "WordPress publish / save_post triggers sitemap regeneration." },
+      { label: "Outputs", list: ["/sitemap-authors.xml.php", "/sitemap-tags.xml.php", "/sitemap-news.xml.php", "/sitemap-teams.xml.php", "/sitemap-cities.xml.php", "/sitemap-videos.xml.php", "/sitemap-schedule.xml.php", "/sitemap-roster.xml.php", "/sitemap-players.xml.php", "/sitemap-verticals.xml.php"] },
+      { label: "Downstream", text: "After regeneration, publishes to the notifySitemapUpdate Lambda, which pings Google. Pull consumers (SEO bots, Section 3) fetch the XML on their own schedule." }
+    ]},
+
+  // Iterable push (digestNewsletterSend Lambda)
+  "consumer-iterable-push": { title: "Iterable (digest push)", subtitle: "digestNewsletterSend Lambda", summary: "SQS-driven Lambda that posts newsletter digest payloads (containing article content) to the Iterable REST API.",
+    sections: [
+      { label: "Flow", text: "SQS queue → digestNewsletterSend Lambda → Iterable REST API." },
+      { label: "Scope", text: "Newsletter digest sends only. Iterable's pull-based campaign content fetching is shown in Section 3." },
+      { label: "Why push", text: "TA controls send timing for digests, so TA initiates the call to Iterable." }
+    ]},
+
   // Pull consumers
   "consumer-flatplan": { title: "FlatPlan", subtitle: "Apple News publisher (3rd party)", summary: "Polls TA RSS to publish to Apple News.", sections: [
     { label: "What it pulls", list: ["/rss/flatplan/articles/"] }
   ]},
-  "consumer-seo-bots": { title: "SEO bots", subtitle: "Google / Bing / etc.", summary: "Web crawlers indexing TA content.", sections: [
+  "consumer-seo-bots": { title: "SEO bots", subtitle: "Google / Bing / etc.", summary: "Web crawlers indexing TA content. Google News / Discover surface the same content via these pull paths (no separate push).", sections: [
     { label: "What they pull", list: ["/sitemap-*.xml.php (10 sitemaps)", "/rss/", "/feeds/rss/news", "robots.txt"] }
   ]},
-  "consumer-astro": { title: "Astro", subtitle: "partnership feed", summary: "Specific sandboxed feed for Astro partnership.", sections: [
-    { label: "What it pulls", list: ["/feeds/rss/astro"] },
-    { label: "Details", text: "Headlines + briefs with canonical tags and trial CTA. Limited by category." }
+  "consumer-iterable": { title: "Iterable (pull feeds)", subtitle: "email campaign rendering", summary: "Iterable polls the v1iterable/* endpoints to fetch article content for email campaign rendering. Separate from the push (digest) path shown in Section 1.", sections: [
+    { label: "Pull endpoints", list: ["GET /v1iterable/evergreen", "GET /v1iterable/recent_stories", "GET /v1iterable/unread_saved_stories"] },
+    { label: "Auth", code: "ITERABLE_FEED_API_KEY (api_domain=3)" },
+    { label: "Paired push", text: "The Iterable (digest push) node in Section 1 handles outbound newsletter digest sends." }
   ]},
-  "consumer-iterable": { title: "Iterable", subtitle: "email campaigns (push + pull)", summary: "Article destination with two paths: TA pushes newsletter digests via digestNewsletterSend Lambda, and Iterable pulls content feeds for email campaign rendering.", sections: [
-    { label: "Push path", text: "digestNewsletterSend Lambda reads from an SQS queue and calls the Iterable API to send newsletter digest emails." },
-    { label: "Pull path", list: ["GET /v1iterable/evergreen", "GET /v1iterable/recent_stories", "GET /v1iterable/unread_saved_stories"] },
-    { label: "Auth (pull)", code: "ITERABLE_FEED_API_KEY (api_domain=3)" }
-  ]},
-  "consumer-nyt-loupe": { title: "NYT Loupe", subtitle: "image asset management", summary: "NYT's image asset management system. TA uploads images via SFTP and looks up asset IDs via REST.", sections: [
-    { label: "Push", text: "Images uploaded via SFTP to sftp.photo.nyt.net." },
-    { label: "Pull / lookup", text: "REST API at api.photo.nyt.net to fetch Loupe asset IDs for images already uploaded." },
+  "consumer-nyt-loupe": { title: "NYT Loupe", subtitle: "image asset management (push)", summary: "NYT's image asset management system. TA uploads images via SFTP and looks up asset IDs via REST. Classified as a push integration: TA initiates both the SFTP upload and the REST asset-ID lookups.", sections: [
+    { label: "Upload (push)", text: "Images uploaded via SFTP to sftp.photo.nyt.net." },
+    { label: "Lookup", text: "REST API at api.photo.nyt.net to fetch Loupe asset IDs for images already uploaded." },
     { label: "Scope", text: "Image asset integration only. Not related to article body sync; that path is NYT CMS REST (section 1)." }
   ]},
-  "consumer-google-sitemap": { title: "Google Sitemap Ping", subtitle: "notifySitemapUpdate Lambda (push)", summary: "After sitemap regeneration, a Lambda pings Google so it re-crawls the updated sitemap.", sections: [
-    { label: "Trigger", text: "Sitemap regeneration job publishes to the notifySitemapUpdate Lambda." },
+  "consumer-google-sitemap": { title: "Google Sitemap Ping", subtitle: "notifySitemapUpdate Lambda (push)", summary: "After sitemap regeneration, this Lambda pings Google so it re-crawls the updated sitemap. Outbound push, driven by the Sitemap Generator.", sections: [
+    { label: "Trigger", text: "Sitemap Generator publishes to the notifySitemapUpdate Lambda after regeneration." },
     { label: "Outbound call", code: "GET https://www.google.com/ping?sitemap=<encoded sitemap URL>" },
     { label: "Note", text: "Classic SEO ping. Simple, fire-and-forget." }
   ]},
@@ -681,9 +697,6 @@ const DATA = {
   "ep-rss-news": { title: "/feeds/rss/news", subtitle: "News headlines feed", summary: "Headlines (type_id=39) + regular articles, capped at 90 items.", sections: [
     { label: "Code", code: "the-athletic/web/app/themes/athletic/feeds/rss/feed-news.php" }
   ]},
-  "ep-rss-astro": { title: "/feeds/rss/astro", subtitle: "Astro partnership feed", summary: "Sandboxed feed specifically for Astro: headlines + briefs with canonical tags, categories (article/realtime, sport classification), and trial CTA.", sections: [
-    { label: "Code", code: "the-athletic/web/app/themes/athletic/feeds/rss/feed-astro.php" }
-  ]},
   "ep-rss-nopaywall": { title: "/feeds/rss/feed-no-paywall.php", subtitle: "No-paywall feed (inferred)", summary: "File exists; consumer unknown.", sections: [
     { label: "Code", code: "the-athletic/web/app/themes/athletic/feeds/rss/feed-no-paywall.php" },
     { label: "Open question", text: "Who consumes this? Not traced." }
@@ -691,20 +704,10 @@ const DATA = {
   "ep-sitemaps": { title: "/sitemap-*.xml.php", subtitle: "10 XML sitemaps", summary: "Standard SEO sitemaps with URLs + lastmod timestamps.", sections: [
     { label: "Files", list: ["sitemap-authors.xml.php", "sitemap-tags.xml.php", "sitemap-news.xml.php", "sitemap-teams.xml.php", "sitemap-cities.xml.php", "sitemap-videos.xml.php", "sitemap-schedule.xml.php", "sitemap-roster.xml.php", "sitemap-players.xml.php", "sitemap-verticals.xml.php"] }
   ]},
-  "ep-evergreen": { title: "Iterable: pull feeds + push (newsletter digests)", subtitle: "two integration paths", summary: "Iterable is an article destination with both push and pull paths.", sections: [
+  "ep-evergreen": { title: "Iterable pull feeds", subtitle: "three endpoints, api_domain=3", summary: "Iterable polls these to render campaign content. Outbound digest sends are a separate path (Section 1).", sections: [
     { label: "Pull endpoints (TA serves)", list: ["/v1iterable/evergreen", "/v1iterable/recent_stories", "/v1iterable/unread_saved_stories"] },
-    { label: "Push path (TA calls Iterable)", text: "digestNewsletterSend Lambda reads from SQS and posts newsletter digest payloads to the Iterable API." },
-    { label: "Auth (pull)", code: "ITERABLE_FEED_API_KEY (api_domain=3)" },
-    { label: "Code (pull)", code: "the-athletic/web/api.php lines 623-634" }
-  ]},
-  "ep-nyt-loupe": { title: "NYT Loupe (image asset management)", subtitle: "SFTP + REST", summary: "Distinct from NYT CMS REST. Handles image assets only.", sections: [
-    { label: "Upload", code: "SFTP: sftp.photo.nyt.net" },
-    { label: "Lookup", code: "REST: https://api.photo.nyt.net  (asset ID resolution)" },
-    { label: "Scope", text: "Images only. Article body sync uses NYT CMS REST (shown in section 1)." }
-  ]},
-  "ep-google-sitemap-ping": { title: "Google Sitemap Ping", subtitle: "notifySitemapUpdate Lambda", summary: "After sitemap regeneration, this Lambda pings Google with the updated sitemap URL.", sections: [
-    { label: "Outbound", code: "GET https://www.google.com/ping?sitemap=<encoded URL>" },
-    { label: "Trigger", text: "Fires after sitemap regen completes." }
+    { label: "Auth", code: "ITERABLE_FEED_API_KEY (api_domain=3)" },
+    { label: "Code", code: "the-athletic/web/api.php lines 623-634" }
   ]},
   "ep-apollo-federation": { title: "apollo-express:4444/monolith", subtitle: "Apollo GraphQL federation subgraph", summary: "Federation subgraph. May or may not be consumed by an NYT supergraph.", sections: [
     { label: "Features", list: ["Apollo Federation v2", "@key(fields: \"id\") on Article type"] },
@@ -825,6 +828,26 @@ const DATA = {
       { label: "Destination tables", list: ["origin_prd.Event", "origin_prd.Event_Binaries", "origin_prd.Notification"] }
     ]},
 
+  // New Section 1 push edges
+  "wp-to-sitemap-generator": { title: "WP publish → Sitemap Generator", summary: "Publish triggers sitemap regeneration.",
+    sections: [{ label: "Behavior", text: "Publish/save_post writes the 10 sitemap XML files, then publishes to the notifySitemapUpdate Lambda which pings Google." }] },
+  "wp-to-nyt-loupe": { title: "WP → NYT Loupe (images)", summary: "TA pushes image assets to Loupe via SFTP and resolves asset IDs via REST.",
+    sections: [
+      { label: "Upload", code: "SFTP sftp.photo.nyt.net" },
+      { label: "Lookup", code: "REST api.photo.nyt.net" },
+      { label: "Scope", text: "Image assets only. Not related to article body sync; that path is NYT CMS REST." }
+    ]},
+  "wp-to-iterable-push": { title: "WP → Iterable (digest push)", summary: "digestNewsletterSend Lambda posts newsletter digest payloads to Iterable.",
+    sections: [
+      { label: "Flow", text: "SQS queue drives the Lambda, which POSTs digest payloads to the Iterable API." },
+      { label: "Scope", text: "Digest newsletter sends. Iterable's pull feeds are a separate path (Section 3)." }
+    ]},
+  "sitemap-generator-to-google-ping": { title: "Sitemap Generator → Google Sitemap Ping", summary: "After regeneration, the Lambda calls google.com/ping with the updated sitemap URL.",
+    sections: [
+      { label: "Call", code: "GET https://www.google.com/ping?sitemap=<encoded URL>" },
+      { label: "Model", text: "Outbound push, fire-and-forget." }
+    ]},
+
   // Pull edges
   "flatplan-pulls": { title: "FlatPlan → /rss/flatplan/articles/", summary: "RSS poll for Apple News publishing.",
     sections: [{ label: "Method", text: "HTTP GET poll" }, { label: "Format", text: "Atom 1.0 XML" }] },
@@ -832,16 +855,8 @@ const DATA = {
     sections: [{ label: "Sitemaps", list: ["/sitemap-authors.xml.php", "/sitemap-tags.xml.php", "/sitemap-news.xml.php", "/sitemap-teams.xml.php", "/sitemap-cities.xml.php", "/sitemap-videos.xml.php", "/sitemap-schedule.xml.php", "/sitemap-roster.xml.php", "/sitemap-players.xml.php", "/sitemap-verticals.xml.php"] }] },
   "seo-rss": { title: "SEO bots → RSS", summary: "Search engines may also consume /rss/ and /feeds/rss/news for fresh content.",
     sections: [{ label: "Feeds", list: ["/rss/", "/feeds/rss/news"] }] },
-  "astro-pulls": { title: "Astro → /feeds/rss/astro", summary: "Partner-specific Atom feed.",
-    sections: [] },
   "iterable-pulls": { title: "Iterable → /v1iterable/* (pull)", summary: "Iterable polls TA feeds for email campaign content.",
     sections: [{ label: "Endpoints", list: ["/v1iterable/evergreen", "/v1iterable/recent_stories", "/v1iterable/unread_saved_stories"] }, { label: "Auth", code: "ITERABLE_FEED_API_KEY (api_domain=3)" }] },
-  "iterable-push": { title: "TA → Iterable API (push)", summary: "digestNewsletterSend Lambda pushes newsletter digests to Iterable.",
-    sections: [{ label: "Flow", text: "SQS queue drives the Lambda, which POSTs digest payloads to the Iterable API." }, { label: "Why article destination", text: "Digests contain article content. Iterable receives actual article data as a destination." }] },
-  "nyt-loupe-pulls": { title: "TA ↔ NYT Loupe (images only)", summary: "TA uploads images via SFTP and resolves Loupe asset IDs via REST.",
-    sections: [{ label: "Upload", code: "SFTP sftp.photo.nyt.net" }, { label: "Lookup", code: "REST api.photo.nyt.net" }, { label: "Scope", text: "Image assets only. Separate from NYT CMS REST (article body sync, section 1)." }] },
-  "google-sitemap-push": { title: "notifySitemapUpdate → Google ping", summary: "After sitemap regen, Lambda pings Google with the updated sitemap URL.",
-    sections: [{ label: "Call", code: "GET https://www.google.com/ping?sitemap=..." }] },
   "nyt-federation-pulls": { title: "NYT supergraph? → :4444/monolith", summary: "Apollo federation subgraph. Dormant or internal-only.",
     sections: [{ label: "Status", text: "Infrastructure exists; no verified active NYT consumer." }] },
   "ta-serverless-pulls": { title: "TA Serverless / Apollo → internal REST", summary: "TA's own Apollo consumes the REST API for article data.",
