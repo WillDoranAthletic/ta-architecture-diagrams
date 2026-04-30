@@ -84,7 +84,7 @@ footer code { background: var(--panel); padding: 2px 6px; border-radius: 3px; fo
 
 <header>
   <h1>Stride Distribution Topology</h1>
-  <p class="subtitle">Push vs pull distribution, with tier criticality and canonical artifacts · 9 push adapters + 4 pull-surface generators (Sitemap, FlatPlan, Astro, Iterable Content)</p>
+  <p class="subtitle">Push vs pull distribution, with tier criticality and canonical artifacts · 8 push adapters + 3 pull-surface generators (Sitemap, FlatPlan, Iterable Content)</p>
 </header>
 
 <div class="legend">
@@ -261,7 +261,7 @@ footer code { background: var(--panel); padding: 2px 6px; border-radius: 3px; fo
   <path class="edge push" marker-end="url(#arrow-push)" d="M 1075 380 L 1075 420"/>
 
   <!-- ----- ROW 2 (y=540) — 4 pull-surface generators + 2 push adapters ----- -->
-  <!-- Layout: Sitemap | FlatPlan RSS | Astro RSS | Iterable Content | Loupe | Iterable Digest -->
+  <!-- Layout: Sitemap | FlatPlan RSS | Iterable Content | Loupe | Iterable Digest (Astro removed; depends on briefs, out of scope) -->
 
   <g class="box push">
     <rect x="40" y="540" width="210" height="110" rx="10"/>
@@ -281,14 +281,6 @@ footer code { background: var(--panel); padding: 2px 6px; border-radius: 3px; fo
     <circle class="tier-dot tier2" cx="465" cy="556"/>
   </g>
 
-  <g class="box push">
-    <rect x="510" y="540" width="210" height="110" rx="10"/>
-    <text class="title" x="615" y="568" text-anchor="middle">Astro RSS Gen</text>
-    <text class="subtitle" x="615" y="587" text-anchor="middle">TA Platform</text>
-    <text class="tag" x="615" y="608" text-anchor="middle">push consumer</text>
-    <text class="tag" x="615" y="628" text-anchor="middle">maintains /feeds/rss/astro</text>
-    <circle class="tier-dot tier3" cx="700" cy="556"/>
-  </g>
 
   <g class="box push">
     <rect x="745" y="540" width="210" height="110" rx="10"/>
@@ -319,7 +311,6 @@ footer code { background: var(--panel); padding: 2px 6px; border-radius: 3px; fo
   <!-- Kafka -> row-2 adapters (fan-out from trunk) -->
   <path class="edge push" marker-end="url(#arrow-push)" d="M 925 268 Q 550 420 145 540"/>
   <path class="edge push" marker-end="url(#arrow-push)" d="M 928 268 Q 700 420 380 540"/>
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 930 268 L 615 540"/>
   <path class="edge push" marker-end="url(#arrow-push)" d="M 932 268 L 850 540"/>
   <path class="edge push" marker-end="url(#arrow-push)" d="M 934 268 Q 1000 420 1075 540"/>
   <path class="edge push" marker-end="url(#arrow-push)" d="M 936 268 Q 1150 420 1310 540"/>
@@ -338,13 +329,6 @@ footer code { background: var(--panel); padding: 2px 6px; border-radius: 3px; fo
     <rect x="275" y="700" width="210" height="70" rx="8"/>
     <text class="title" x="380" y="728" text-anchor="middle">FlatPlan RSS endpoint</text>
     <text class="subtitle" x="380" y="748" text-anchor="middle">PULL SURFACE</text>
-  </g>
-
-  <!-- /feeds/rss/astro (pull surface) -->
-  <g class="box pull">
-    <rect x="510" y="700" width="210" height="70" rx="8"/>
-    <text class="title" x="615" y="728" text-anchor="middle">/feeds/rss/astro</text>
-    <text class="subtitle" x="615" y="748" text-anchor="middle">PULL SURFACE</text>
   </g>
 
   <!-- /v1iterable/* (pull surface) -->
@@ -371,7 +355,6 @@ footer code { background: var(--panel); padding: 2px 6px; border-radius: 3px; fo
   <!-- Row-2 adapter -> destination arrows (short vertical) -->
   <path class="edge push" marker-end="url(#arrow-push)" d="M 145 650 L 145 700"/>
   <path class="edge push" marker-end="url(#arrow-push)" d="M 380 650 L 380 700"/>
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 615 650 L 615 700"/>
   <path class="edge push" marker-end="url(#arrow-push)" d="M 850 650 L 850 700"/>
   <path class="edge push" marker-end="url(#arrow-push)" d="M 1075 650 L 1075 700"/>
   <path class="edge push" marker-end="url(#arrow-push)" d="M 1310 650 L 1310 700"/>
@@ -392,13 +375,6 @@ footer code { background: var(--panel); padding: 2px 6px; border-radius: 3px; fo
     <text class="subtitle" x="380" y="865" text-anchor="middle">3rd-party RSS manager</text>
   </g>
 
-  <!-- Astro partnership -->
-  <g class="box destination">
-    <rect x="510" y="820" width="210" height="60" rx="8"/>
-    <text class="title" x="615" y="845" text-anchor="middle">Astro partnership</text>
-    <text class="subtitle" x="615" y="865" text-anchor="middle">Polls /feeds/rss/astro</text>
-  </g>
-
   <!-- Iterable content fetcher -->
   <g class="box destination">
     <rect x="745" y="820" width="210" height="60" rx="8"/>
@@ -413,9 +389,6 @@ footer code { background: var(--panel); padding: 2px 6px; border-radius: 3px; fo
   <!-- Pull arrows: destination polls pull surface (arrow reversed, arrowhead points at consumer) -->
   <path class="edge pull" marker-end="url(#arrow-pull)" d="M 380 820 L 380 770"/>
   <text class="edge-label" x="390" y="800" style="fill:var(--pull)">polls</text>
-
-  <path class="edge pull" marker-end="url(#arrow-pull)" d="M 615 820 L 615 770"/>
-  <text class="edge-label" x="625" y="800" style="fill:var(--pull)">polls</text>
 
   <path class="edge pull" marker-end="url(#arrow-pull)" d="M 850 820 L 850 770"/>
   <text class="edge-label" x="860" y="800" style="fill:var(--pull)">polls</text>
@@ -524,7 +497,7 @@ footer code { background: var(--panel); padding: 2px 6px; border-radius: 3px; fo
     <rect x="40" y="1080" width="1660" height="160" rx="10" fill="#fef2f2" stroke="#fca5a5"/>
     <text class="divider-label" x="60" y="1108" style="fill:var(--tier1)">RETRACT / UNPUBLISH (parallel event)</text>
     <text class="subtitle" x="60" y="1132" style="fill:var(--text); font-size:13px">storytelling.content.retracted — emitted by Scoop -> Stride -> Kafka. Every push adapter implements a retract handler; Apollo's surface is tombstoned in S3.</text>
-    <text class="subtitle" x="60" y="1156" style="fill:var(--text); font-size:13px">OpenSearch: delete by _id · Alice: retract message · PubP: gRPC retract · FlatPlan/Astro/Iterable RSS: remove item · Cache Purge: purge URL</text>
+    <text class="subtitle" x="60" y="1156" style="fill:var(--text); font-size:13px">OpenSearch: delete by _id · Alice: retract message · PubP: gRPC retract · FlatPlan/Iterable RSS: remove item · Cache Purge: purge URL</text>
     <text class="subtitle" x="60" y="1180" style="fill:var(--text); font-size:13px">Sitemap: regenerate without · Loupe: delete asset · Iterable Digest: suppress · CMS REST: delete · S3: tombstone.</text>
     <text class="subtitle" x="60" y="1210" style="fill:var(--muted); font-size:12px">Retract is Tier 1 regulated (legal takedowns, embargo). No retract handler = no cutover for that destination.</text>
   </g>
@@ -553,7 +526,7 @@ footer code { background: var(--panel); padding: 2px 6px; border-radius: 3px; fo
     <text class="subtitle" x="620" y="1356" style="fill:var(--muted); font-size:12px">OpenSearch · Alice · Cache Purge: real dual-delivery</text>
     <text class="subtitle" x="620" y="1380" style="fill:var(--muted); font-size:12px">Sitemap: staging bucket, daily diff</text>
     <text class="subtitle" x="620" y="1404" style="fill:var(--muted); font-size:12px">PubP: log-only + offline diff harness</text>
-    <text class="subtitle" x="620" y="1428" style="fill:var(--muted); font-size:12px">FlatPlan/Astro/Iterable RSS: byte-compare feeds</text>
+    <text class="subtitle" x="620" y="1428" style="fill:var(--muted); font-size:12px">FlatPlan/Iterable RSS: byte-compare feeds</text>
     <text class="subtitle" x="620" y="1452" style="fill:var(--muted); font-size:12px">CMS REST: log-only unless idempotent PUT</text>
     <text class="subtitle" x="620" y="1476" style="fill:var(--muted); font-size:12px">Loupe: dry-run SFTP, compare listings</text>
     <text class="subtitle" x="620" y="1500" style="fill:var(--muted); font-size:12px">Iterable Digest: test-list send</text>
@@ -568,7 +541,7 @@ footer code { background: var(--panel); padding: 2px 6px; border-radius: 3px; fo
     <text class="subtitle" x="1180" y="1378" style="fill:var(--text); font-size:13px">2. Loupe boundary</text>
     <text class="subtitle" x="1180" y="1398" style="fill:var(--muted); font-size:12px">Rendering dependency vs push destination.</text>
     <text class="subtitle" x="1180" y="1424" style="fill:var(--text); font-size:13px">3. RSS generator consolidation</text>
-    <text class="subtitle" x="1180" y="1444" style="fill:var(--muted); font-size:12px">FlatPlan/Astro/Iterable: one service or three?</text>
+    <text class="subtitle" x="1180" y="1444" style="fill:var(--muted); font-size:12px">FlatPlan/Iterable: one service or two?</text>
     <text class="subtitle" x="1180" y="1470" style="fill:var(--text); font-size:13px">4. Schema Registry hosting</text>
     <text class="subtitle" x="1180" y="1490" style="fill:var(--muted); font-size:12px">Confluent Cloud vs self-hosted.</text>
     <text class="subtitle" x="1180" y="1516" style="fill:var(--text); font-size:13px">5. State-change stream</text>
