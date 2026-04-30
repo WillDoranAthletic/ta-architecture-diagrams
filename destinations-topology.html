@@ -367,7 +367,7 @@ svg { display: block; width: 100%; height: auto; background: transparent; }
 
 <div class="section">
   <h2>3. Pull destinations (consumers fetch on their schedule)</h2>
-  <svg viewBox="0 0 1720 610">
+  <svg viewBox="0 0 1720 520">
     <!-- Consumers on left -->
     <g class="node pull-consumer" data-id="consumer-flatplan">
       <rect x="20" y="20" width="240" height="52" rx="8"/>
@@ -384,15 +384,10 @@ svg { display: block; width: 100%; height: auto; background: transparent; }
       <text class="title" x="140" y="202" text-anchor="middle">Iterable (pull feeds)</text>
       <text class="subtitle" x="140" y="220" text-anchor="middle">polls v1iterable/* endpoints</text>
     </g>
-    <g class="node pull-consumer" data-id="consumer-nyt-federation">
-      <rect x="20" y="260" width="240" height="52" rx="8"/>
-      <text class="title" x="140" y="282" text-anchor="middle">NYT supergraph?</text>
-      <text class="subtitle" x="140" y="300" text-anchor="middle">infra only; unverified</text>
-    </g>
     <g class="node pull-consumer" data-id="consumer-ta-serverless">
-      <rect x="20" y="340" width="240" height="52" rx="8"/>
-      <text class="title" x="140" y="362" text-anchor="middle">TA Serverless / Apollo</text>
-      <text class="subtitle" x="140" y="380" text-anchor="middle">internal consumers</text>
+      <rect x="20" y="260" width="240" height="52" rx="8"/>
+      <text class="title" x="140" y="282" text-anchor="middle">TA Serverless / Apollo</text>
+      <text class="subtitle" x="140" y="300" text-anchor="middle">internal consumers</text>
     </g>
 
     <!-- Endpoints on right, grouped -->
@@ -426,16 +421,10 @@ svg { display: block; width: 100%; height: auto; background: transparent; }
       <text class="title" x="990" y="409" text-anchor="middle" font-size="12">/v1iterable/evergreen   /v1iterable/recent_stories   /v1iterable/unread_saved_stories</text>
     </g>
 
-    <text x="680" y="446" font-size="12" font-weight="700" fill="#6b7280">APOLLO GRAPHQL FEDERATION</text>
-    <g class="node endpoint" data-id="ep-apollo-federation">
-      <rect x="660" y="458" width="660" height="40" rx="8"/>
-      <text class="title" x="990" y="483" text-anchor="middle" font-size="12">apollo-express:4444/monolith  (dormant?)</text>
-    </g>
-
-    <text x="680" y="518" font-size="12" font-weight="700" fill="#6b7280">SERVERLESS BACKOFFICE (api_domain=4)</text>
+    <text x="680" y="446" font-size="12" font-weight="700" fill="#6b7280">SERVERLESS BACKOFFICE (api_domain=4)</text>
     <g class="node endpoint" data-id="ep-serverless-articles">
-      <rect x="660" y="530" width="660" height="40" rx="8"/>
-      <text class="title" x="990" y="555" text-anchor="middle" font-size="11">/articles/{id}  /articles_by_date  /topics_by_post_ids  /search_articles_v2</text>
+      <rect x="660" y="458" width="660" height="40" rx="8"/>
+      <text class="title" x="990" y="483" text-anchor="middle" font-size="11">/articles/{id}  /articles_by_date  /topics_by_post_ids  /search_articles_v2</text>
     </g>
 
     <!-- Pull edges: each consumer to its specific endpoints -->
@@ -443,8 +432,7 @@ svg { display: block; width: 100%; height: auto; background: transparent; }
     <path class="edge pull" data-edge="seo-sitemaps" d="M 260 126 Q 400 210 660 304" marker-end="url(#arrow-pull3)"/>
     <path class="edge pull" data-edge="seo-rss" d="M 260 132 Q 440 160 660 162" marker-end="url(#arrow-pull3)"/>
     <path class="edge pull" data-edge="iterable-pulls" d="M 260 206 Q 450 310 660 404" marker-end="url(#arrow-pull3)"/>
-    <path class="edge pull" data-edge="nyt-federation-pulls" d="M 260 286 Q 450 380 660 478" marker-end="url(#arrow-pull3)"/>
-    <path class="edge pull" data-edge="ta-serverless-pulls" d="M 260 366 Q 450 450 660 550" marker-end="url(#arrow-pull3)"/>
+    <path class="edge pull" data-edge="ta-serverless-pulls" d="M 260 286 Q 450 380 660 478" marker-end="url(#arrow-pull3)"/>
 
     <defs>
       <marker id="arrow-pull3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c76a0c"/></marker>
@@ -675,10 +663,6 @@ const DATA = {
     { label: "Outbound call", code: "GET https://www.google.com/ping?sitemap=<encoded sitemap URL>" },
     { label: "Note", text: "Classic SEO ping. Simple, fire-and-forget." }
   ]},
-  "consumer-nyt-federation": { title: "NYT Apollo supergraph (unverified)", subtitle: "dormant or internal?", summary: "Federation subgraph infrastructure exists at port 4444; unclear if an NYT supergraph actively consumes it.", sections: [
-    { label: "What it would call", list: ["apollo-express:4444/monolith"] },
-    { label: "Status", text: "Uses Apollo Federation v2 with @key on Article. No evidence of an NYT supergraph consumer. May be dormant or TA-internal only." }
-  ]},
   "consumer-ta-serverless": { title: "TA Serverless / Apollo backoffice", subtitle: "internal consumers", summary: "TA's own Apollo and Lambda services that pull article data.", sections: [
     { label: "What it pulls", list: ["/articles/{id}", "/articles_by_date", "/topics_by_post_ids", "/search_articles_v2"] },
     { label: "Auth", code: "SERVERLESS_API_KEY (api_domain=4)" }
@@ -709,11 +693,6 @@ const DATA = {
     { label: "Pull endpoints (TA serves)", list: ["/v1iterable/evergreen", "/v1iterable/recent_stories", "/v1iterable/unread_saved_stories"] },
     { label: "Auth", code: "ITERABLE_FEED_API_KEY (api_domain=3)" },
     { label: "Code", code: "the-athletic/web/api.php lines 623-634" }
-  ]},
-  "ep-apollo-federation": { title: "apollo-express:4444/monolith", subtitle: "Apollo GraphQL federation subgraph", summary: "Federation subgraph. May or may not be consumed by an NYT supergraph.", sections: [
-    { label: "Features", list: ["Apollo Federation v2", "@key(fields: \"id\") on Article type"] },
-    { label: "Status", text: "Infrastructure exists; no evidence of active NYT supergraph consumer." },
-    { label: "Code", code: "theathletic-apollo-express/src/subgraphs/monolith/federationServer.ts" }
   ]},
   "ep-serverless-articles": { title: "Serverless backoffice article endpoints", subtitle: "internal REST API", summary: "Article fetch and search used by TA's own Apollo and backoffice.", sections: [
     { label: "Endpoints", list: ["/articles/{id}", "/articles_by_date", "/topics_by_post_ids", "/search_articles_v2"] },
@@ -858,8 +837,6 @@ const DATA = {
     sections: [{ label: "Feeds", list: ["/rss/", "/feeds/rss/news"] }] },
   "iterable-pulls": { title: "Iterable → /v1iterable/* (pull)", summary: "Iterable polls TA feeds for email campaign content.",
     sections: [{ label: "Endpoints", list: ["/v1iterable/evergreen", "/v1iterable/recent_stories", "/v1iterable/unread_saved_stories"] }, { label: "Auth", code: "ITERABLE_FEED_API_KEY (api_domain=3)" }] },
-  "nyt-federation-pulls": { title: "NYT supergraph? → :4444/monolith", summary: "Apollo federation subgraph. Dormant or internal-only.",
-    sections: [{ label: "Status", text: "Infrastructure exists; no verified active NYT consumer." }] },
   "ta-serverless-pulls": { title: "TA Serverless / Apollo → internal REST", summary: "TA's own Apollo consumes the REST API for article data.",
     sections: [{ label: "Endpoints", list: ["/articles/{id}", "/articles_by_date", "/topics_by_post_ids", "/search_articles_v2"] }] },
 
