@@ -769,15 +769,61 @@ const DATA = {
       { label: "Function", code: "publishToPubP({ dataSources, obj: post })" },
       { label: "Event types", list: ["post-publish", "post-delete"] }
     ]},
-  "pubp-handler-to-gateway": { title: "publishToPubP → PubP Gateway", summary: "Full article fetch + protobuf conversion + gRPC publish.",
+  "pubp-handler-to-gateway": { title: "publishToPubP handler → PubP Gateway", summary: "gRPC PublishRequest with AthleticArticle: metadata, tags (id+name), stripped body text, authors, URI (nyt://athleticarticle/<uuidv5>).",
     sections: [
-      { label: "Step 1", code: "GET /articles/{post_id}?pubp_metadata=1   (Bearer SERVERLESS_API_KEY)" },
-      { label: "Step 2 (header image)", text: "If header image exists: publish Image protobuf first, get back imageUri (nyt://image/<uuidv5>)." },
-      { label: "Step 3 (build)", text: "buildAthleticArticlePublishReq(post, imageUri) in pubpConverter.js." },
-      { label: "Step 4 (publish)", code: "gateway.publish(PublishRequest{ athleticArticle }, metadata)" },
-      { label: "URI", code: "nyt://athleticarticle/<uuidv5(article_id, 84da2fb8-1cb7-5f6e-b2ab-87506a7198d4)>" },
-      { label: "Payload (AthleticArticle protobuf top-level)", list: ["publicationproperties", "promotionalproperties", "creativework (title, wordcount, language, bylines)", "athleticproperties (league, desk, game, images, isteaser)", "athleticsection", "athletickeywords", "athleticauthors", "teamtags, leaguetags, playertags, topictags", "bodycontentforsearch (stripTags(article_body) — plain text only)"] },
-      { label: "Auth", text: "JWT RS256 (1h). Signed with GCP service account private key." }
+      { label: "Protocol", list: [
+        "gRPC to PubP Gateway (GCP_PUBP_GATEWAY_URL)",
+        "JWT authentication (see pubp.js — getPubPSlackChannel, token issuance)",
+        "Protobuf message: PublishRequest wrapping an AthleticArticle (from @nyt/pubp/types/schema/AthleticArticle_pb)"
+      ]},
+      { label: "Assembled by", list: [
+        "theathletic-apollo-express/src/helpers/pubpConverter.js — buildAthleticArticlePublishReq(post, image_ref)",
+        "Transform lives in Apollo Express but runs as part of the kafkaConsumer.js ECS task"
+      ]},
+      { label: "Top-level AthleticArticle fields", code: "| Field | Type | Source |\n| --- | --- | --- |\n| promotionalProperties | PromotionalProperties | headline (short_title), summary (excerpt), media (image ref) |\n| publicationProperties  | PublicationProperties | source/sourceApplication=\"Athletic\", sourceId=article_id, uri=nyt://athleticarticle/<uuidv5>, url=domain-transformed permalink, firstPublished, lastMajorModification, type=\"athleticarticle\" |\n| creativeWork           | CreativeWork          | title, excerpt, wordcount, language (hardcoded en), bylinesList with Person objects |\n| teamTagsList           | AthleticTag[]         | { tagid: String(post.team_ids[i]), name: post.team_names.split(',')[i] } |\n| leagueTagsList         | AthleticTag[]         | { tagid: String(post.league_ids[i]), name: post.league_names.split(',')[i] } |\n| playerTagsList         | AthleticTag[]         | { tagid: String(post.post_team_members[i].id), name: post.post_team_members[i].name } |\n| topicTagsList          | AthleticTag[]         | { tagid: String(post.wp_terms[i].id), name: post.wp_terms[i].name } — WP term_ids |\n| bodyContentForSearch   | string                | stripTags(post.article_body) — HTML stripped, plain text only |\n| athleticSection        | string                | post.primary_tag |\n| athleticProperties     | AthleticArticle.AthleticProperties | see below |\n| athleticAuthorsList    | AthleticAuthor[]      | Public + private authors merged |\n| athleticKeywords       | string                | post.entity_keywords (comma-joined if array) |" },
+      { label: "Tags — every tag is AthleticTag { tagid: String, name: String }", text: "Both the ID and the human name are sent. IDs are TA internal DB IDs for teams/leagues/players; WordPress term_ids for topics (wp_terms). All stringified via String(id)." },
+      { label: "Tag example (NBA Lakers article)", code: "leagueTagsList: [ { tagid: \"3\",    name: \"NBA\" } ]\nteamTagsList:   [ { tagid: \"42\",   name: \"Lakers\" } ]\nplayerTagsList: [ { tagid: \"1234\", name: \"LeBron James\" } ]\ntopicTagsList:  [ { tagid: \"789\",  name: \"trade-deadline\" } ]" },
+      { label: "athleticProperties contains", list: [
+        "posttitle (article title, distinct from short_title)",
+        "postauthorid",
+        "bylinetext",
+        "legacyheadlineid",
+        "isteaser",
+        "postType: { id: String, name: String } — from post_type_id / post_type_name",
+        "liveBlogBreakout: { liveBlogId, liveBlogPostId } — present if article breaks out from a live blog",
+        "primaryLeague: { id: int, name: String } — optional, duplicative with leagueTagsList but a distinguished slot",
+        "reportingDesk: { leagueid, name } — optional",
+        "game: { gameid, gamestate } — present for game-associated articles",
+        "imagesList — per image: id (String), caption, credit, and sizesList with mime_type/width/height/size/url"
+      ]},
+      { label: "creativeWork.bylinesList — Byline objects", list: [
+        "prefix: \"By\" (hardcoded)",
+        "creatorsList — array of Person objects:",
+        "  givenname (author.first_name)",
+        "  familyname (author.last_name)",
+        "  title (author.description)",
+        "  biourl (/author/{author.slug}, transformed)",
+        "  publiclyEmailable: false",
+        "  contactDetails.socialMedia[] — twitter account if author.twitter_username set"
+      ]},
+      { label: "athleticAuthorsList — merges two arrays", list: [
+        "Public authors: AthleticAuthor { authorid, authorname } from post.authors",
+        "Private authors / contributors: AthleticAuthor { contributorid, contributorname } from post.private_authors",
+        "Note the different field names: contributor* vs author*"
+      ]},
+      { label: "URI scheme", code: "nyt://athleticarticle/{uuidv5(String(article_id), \"84da2fb8-1cb7-5f6e-b2ab-87506a7198d4\")}" },
+      { label: "URI namespace", text: "The UUID namespace 84da2fb8-1cb7-5f6e-b2ab-87506a7198d4 is hardcoded and documented at https://pubp.tech.nyt.net/user-guide/uri/ as The Athletic's organization namespace. Deterministic so republishes of the same article_id produce the same URI." },
+      { label: "What is NOT sent", list: [
+        "Full rendered HTML article body (only stripTags'ed plain text in bodyContentForSearch)",
+        "Ad dropzone markers or ICM placeholders",
+        "Paywall state / entitlement metadata",
+        "Any user-specific data"
+      ]},
+      { label: "Key files", list: [
+        "theathletic-apollo-express/src/helpers/pubpConverter.js — buildAthleticArticlePublishReq",
+        "theathletic-apollo-express/src/helpers/pubp.js — gRPC client, JWT issuance, getPubPSlackChannel",
+        "theathletic-apollo-express/src/kafkaConsumer.js — publishToPubP handler entry point"
+      ]}
     ]},
   "gateway-to-monolog": { title: "PubP Gateway → Monolog", summary: "After validation the Gateway persists the event to the Kafka monolog.",
     sections: [
