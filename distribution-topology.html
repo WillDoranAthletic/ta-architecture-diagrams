@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TA Article Distribution: Stride Integration Topology</title>
+<style>
+:root {
+  --bg: #fafaf7;
+  --panel: #ffffff;
+  --border: #d1d5db;
+  --text: #111827;
+  --muted: #4b5563;
+  --soft: #6b7280;
+  --content: #1f4e79;
+  --metadata: #2d8f79;
+  --mixed: #5b3886;
+  --pull: #c76a0c;
+  --inbound: #8b1538;
+  --hook: #0e7490;
+  --new: #166534;
+  --extended: #92400e;
+  --rework: #991b1b;
+  --deferred: #94a3b8;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+header { padding: 24px 40px 0; }
+h1 { margin: 0 0 4px; font-size: 26px; font-weight: 700; }
+.subtitle { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+.legend { display: flex; flex-wrap: wrap; gap: 18px; padding: 12px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
+.legend .item { display: flex; align-items: center; gap: 8px; }
+.legend .swatch { display: inline-block; width: 40px; height: 3px; border-radius: 2px; }
+.legend .swatch.content { background: var(--content); }
+.legend .swatch.metadata { background: var(--metadata); background-image: repeating-linear-gradient(90deg, var(--metadata) 0 8px, transparent 8px 13px); }
+.legend .swatch.mixed { background: var(--mixed); }
+.legend .swatch.pull { background: var(--pull); background-image: repeating-linear-gradient(90deg, var(--pull) 0 3px, transparent 3px 7px); }
+.legend .swatch.inbound { background: var(--inbound); }
+.legend .swatch.hook { background: var(--hook); background-image: repeating-linear-gradient(90deg, var(--hook) 0 5px, transparent 5px 10px); }
+.legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+.legend .dot.new { background: var(--new); }
+.legend .dot.extended { background: var(--extended); }
+.legend .dot.rework { background: var(--rework); }
+.legend .dot.deferred { background: var(--deferred); }
+main { padding: 0 40px 40px; }
+.section { margin-bottom: 8px; }
+.section h2 { font-size: 18px; font-weight: 700; margin: 24px 0 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+.section .note { font-size: 12px; color: var(--muted); margin: 4px 0 8px; font-style: italic; }
+svg { display: block; width: 100%; height: auto; background: transparent; }
+
+/* Node styles */
+.node rect { fill: var(--panel); stroke: #333; stroke-width: 1.5; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.08)); cursor: pointer; transition: stroke-width 0.1s, fill 0.1s; }
+.node:hover rect { stroke-width: 2.5; fill: #f0f4f8; }
+.node text { pointer-events: none; }
+.node .title { font-size: 14px; font-weight: 700; fill: var(--text); }
+.node .subtitle { font-size: 11px; fill: var(--soft); }
+.node .kv { font-size: 11px; fill: var(--text); }
+.node .kv-key { font-weight: 600; fill: var(--muted); }
+.node .badge { font-size: 9px; font-weight: 700; letter-spacing: 0.06em; }
+.node.source rect { stroke: #6b4e00; stroke-width: 2; fill: #fffaf0; }
+.node.kafka rect { stroke: #5b3886; }
+.node.consumer rect { stroke: var(--content); }
+.node.handler rect { stroke: var(--mixed); }
+.node.pubp rect { stroke: #8a6d00; fill: #fefcf5; }
+.node.fanout rect { stroke: var(--mixed); fill: #f8f4fc; }
+.node.endpoint rect { stroke: var(--pull); stroke-dasharray: 4 3; fill: #fff8ee; }
+.node.pull-consumer rect { stroke: var(--pull); }
+.node.inbound-source rect { stroke: var(--inbound); }
+.node.stride rect { stroke: var(--new); stroke-width: 2.5; fill: #f0fdf4; }
+.node.scoop rect { stroke: #4338ca; stroke-width: 2; fill: #eef2ff; }
+.node.new-service rect { stroke: var(--new); stroke-width: 2; fill: #f0fdf4; }
+.node.extended-service rect { stroke: var(--extended); stroke-width: 2; fill: #fffbeb; }
+.node.rework rect { stroke: var(--rework); stroke-width: 2; stroke-dasharray: 5 3; fill: #fef2f2; }
+.node.apollo rect { stroke: var(--content); stroke-width: 2.5; fill: #eff6ff; }
+.node.deferred rect { stroke: var(--deferred); stroke-width: 1.2; stroke-dasharray: 6 4; fill: #f8fafc; opacity: 0.75; }
+.node.deferred text { opacity: 0.75; }
+
+/* Edge styles */
+.edge { fill: none; cursor: pointer; pointer-events: visibleStroke; }
+.edge.content { stroke: var(--content); stroke-width: 2.2; }
+.edge.metadata { stroke: var(--metadata); stroke-width: 2.2; stroke-dasharray: 8 5; }
+.edge.mixed { stroke: var(--mixed); stroke-width: 2.2; }
+.edge.pull { stroke: var(--pull); stroke-width: 1.8; stroke-dasharray: 2 4; }
+.edge.inbound { stroke: var(--inbound); stroke-width: 2; }
+.edge.hook { stroke: var(--hook); stroke-width: 2; stroke-dasharray: 5 5; }
+.edge.new-edge { stroke: var(--new); stroke-width: 2.4; }
+.edge.deferred-edge { stroke: var(--deferred); stroke-width: 1.5; stroke-dasharray: 4 4; opacity: 0.6; }
+.edge:hover { stroke-width: 4; filter: drop-shadow(0 0 6px rgba(0,0,0,0.2)); }
+
+/* Badges rendered inside node rects */
+.badge-pill { font-size: 9px; font-weight: 800; letter-spacing: 0.08em; }
+.badge-pill.new { fill: var(--new); }
+.badge-pill.extended { fill: var(--extended); }
+.badge-pill.rework { fill: var(--rework); }
+.badge-pill.deferred { fill: var(--deferred); }
+
+.annotation { font-size: 12px; fill: var(--muted); font-style: italic; }
+.annotation.strong { fill: var(--text); font-weight: 700; font-style: normal; }
+.section-divider { stroke: var(--border); stroke-width: 1; stroke-dasharray: 3 4; }
+
+/* Tooltip (hover) */
+#tooltip { position: fixed; background: #111827; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 12px; pointer-events: none; max-width: 360px; z-index: 1000; opacity: 0; transition: opacity 0.12s; line-height: 1.45; box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
+#tooltip.visible { opacity: 1; }
+#tooltip .tip-title { font-weight: 700; margin-bottom: 3px; color: #fbbf24; }
+#tooltip .tip-hint { color: #9ca3af; font-size: 10px; margin-top: 4px; font-style: italic; }
+
+/* Detail panel (click expand) */
+#panel { position: fixed; top: 0; right: 0; width: 560px; height: 100vh; background: var(--panel); border-left: 1px solid var(--border); box-shadow: -4px 0 16px rgba(0,0,0,0.08); transform: translateX(100%); transition: transform 0.2s; z-index: 500; overflow-y: auto; padding: 24px; }
+#panel.open { transform: translateX(0); }
+#panel h3 { margin: 0 0 4px; font-size: 20px; font-weight: 700; }
+#panel .subtitle { font-size: 13px; color: var(--muted); margin: 0 0 16px; }
+#panel .close { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 22px; cursor: pointer; color: var(--muted); padding: 4px 10px; border-radius: 4px; }
+#panel .close:hover { background: #f3f4f6; }
+#panel section { margin-bottom: 18px; }
+#panel .label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+#panel pre { background: #f9fafb; border: 1px solid var(--border); padding: 10px 12px; border-radius: 6px; font-size: 12px; overflow-x: auto; margin: 0; line-height: 1.5; white-space: pre-wrap; }
+#panel ul { margin: 4px 0; padding-left: 20px; font-size: 13px; line-height: 1.7; }
+#panel li code, #panel p code { background: #f3f4f6; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+#panel .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-right: 6px; }
+#panel .tag.content { background: #dbeafe; color: #1e40af; }
+#panel .tag.metadata { background: #d1fae5; color: #065f46; }
+#panel .tag.mixed { background: #ede9fe; color: #5b21b6; }
+#panel .tag.pull { background: #fed7aa; color: #9a3412; }
+#panel .tag.new { background: #dcfce7; color: #166534; }
+#panel .tag.extended { background: #fef3c7; color: #92400e; }
+#panel .tag.rework { background: #fee2e2; color: #991b1b; }
+
+#overlay { position: fixed; inset: 0; background: rgba(17,24,39,0.25); opacity: 0; transition: opacity 0.2s; z-index: 400; pointer-events: none; }
+#overlay.open { opacity: 1; pointer-events: auto; }
+
+footer { padding: 24px 40px 48px; border-top: 1px solid var(--border); background: #f3f4f6; color: var(--muted); font-size: 13px; margin-top: 24px; }
+footer h3 { font-size: 14px; margin: 0 0 8px; color: var(--text); }
+footer ul { margin: 0; padding-left: 20px; line-height: 1.8; }
+footer a { color: var(--content); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>TA Article Distribution: Stride Integration Topology</h1>
+  <p class="subtitle">Parallel pipelines: WordPress renders WP-authored articles; Stride renders Pitch-authored articles. Disjoint ID namespaces (WP integers vs Scoop UUIDs). Every article has exactly one authoritative renderer for its entire lifetime. Hover an edge for a summary. Click any node or edge for full detail. Last updated 2026-04-28.</p>
+  <div class="legend">
+    <div class="item"><span class="swatch content"></span>Content (body)</div>
+    <div class="item"><span class="swatch metadata"></span>Metadata only</div>
+    <div class="item"><span class="swatch mixed"></span>Both</div>
+    <div class="item"><span class="swatch pull"></span>Pull</div>
+    <div class="item"><span class="swatch inbound"></span>Inbound</div>
+    <div class="item"><span class="swatch hook"></span>WP hook</div>
+    <div class="item"><span class="dot new"></span>NEW</div>
+    <div class="item"><span class="dot extended"></span>EXTENDED</div>
+    <div class="item"><span class="dot rework"></span>REWORK</div>
+    <div class="item"><span class="dot deferred"></span>DEFERRED</div>
+  </div>
+</header>
+
+<main>
+
+<div class="section">
+  <h2>1. Two source/renderer pipelines — parallel, disjoint ID namespaces</h2>
+  <p class="note">WordPress renders WP-authored articles (integer IDs) forever. Stride renders Pitch-authored articles (Scoop UUIDs) forever. An article belongs to exactly one pipeline for life.</p>
+  <svg viewBox="0 0 1720 560">
+    <!-- Vertical divider between the two pipelines -->
+    <line class="section-divider" x1="860" y1="20" x2="860" y2="540"/>
+    <text class="annotation strong" x="300" y="38" text-anchor="middle">WordPress pipeline (legacy, WP-authored articles)</text>
+    <text class="annotation strong" x="1280" y="38" text-anchor="middle">Stride pipeline (new, Pitch-authored articles)</text>
+
+    <!-- LEFT: WordPress source -->
+    <g class="node source" data-id="wordpress">
+      <rect x="180" y="60" width="320" height="90" rx="10"/>
+      <text class="title" x="340" y="92" text-anchor="middle">WordPress publish</text>
+      <text class="subtitle" x="340" y="112" text-anchor="middle">the-athletic monolith (legacy renderer)</text>
+      <text class="kv" x="196" y="134" font-size="10"><tspan class="kv-key">IDs:</tspan> WordPress post_id integers</text>
+    </g>
+
+    <!-- WP renders + writes to existing S3 path -->
+    <g class="node handler" data-id="wp-rendered-s3">
+      <rect x="50" y="210" width="300" height="80" rx="10"/>
+      <text class="title" x="200" y="238" text-anchor="middle" font-size="13">WP rendered article S3</text>
+      <text class="subtitle" x="200" y="256" text-anchor="middle" font-size="10">existing S3 path, existing semantics</text>
+      <text class="kv" x="62" y="276" font-size="10"><tspan class="kv-key">scope:</tspan> WP-authored articles only</text>
+    </g>
+
+    <!-- WP fires existing publish path (collective) -->
+    <g class="node handler" data-id="wp-existing-side-effects">
+      <rect x="370" y="210" width="460" height="80" rx="10"/>
+      <text class="title" x="600" y="238" text-anchor="middle" font-size="13">WP existing publish side effects</text>
+      <text class="subtitle" x="600" y="256" text-anchor="middle" font-size="10">analytics Kafka, cache purge, OpenSearch, PubP via Apollo, Alice, sitemap, Loupe</text>
+      <text class="kv" x="382" y="276" font-size="10"><tspan class="kv-key">continues unchanged</tspan> for WP-authored articles (see section 3)</text>
+    </g>
+
+    <!-- WP caption -->
+    <text class="annotation" x="440" y="335" text-anchor="middle">save_post hook fires. Monolith runs the existing push fan-out. WP article IDs never enter the Stride pipeline.</text>
+
+    <!-- RIGHT: Scoop CMS source -->
+    <g class="node scoop" data-id="scoop-cms">
+      <rect x="1000" y="60" width="280" height="90" rx="10"/>
+      <text class="title" x="1140" y="92" text-anchor="middle">Scoop (CMS)</text>
+      <text class="subtitle" x="1140" y="112" text-anchor="middle">source for Pitch-authored articles</text>
+      <text class="kv" x="1016" y="134" font-size="10"><tspan class="kv-key">IDs:</tspan> Scoop UUIDs</text>
+    </g>
+
+    <!-- Scoop → Stride Kafka topic (article.published / article.retracted) -->
+    <g class="node kafka" data-id="scoop-events">
+      <rect x="1320" y="60" width="260" height="90" rx="10"/>
+      <text class="title" x="1450" y="86" text-anchor="middle" font-size="13">Scoop events (ENS)</text>
+      <text class="subtitle" x="1450" y="104" text-anchor="middle" font-size="10">article.published / article.retracted</text>
+      <text class="kv" x="1332" y="125" font-size="10"><tspan class="kv-key">key:</tspan> article UUID</text>
+      <text class="kv" x="1332" y="141" font-size="10"><tspan class="kv-key">delivery:</tspan> Scoop → Stride consumer</text>
+    </g>
+
+    <!-- Stride node (the big one) -->
+    <g class="node stride" data-id="stride">
+      <rect x="1000" y="210" width="580" height="130" rx="12"/>
+      <text class="badge-pill new" x="1020" y="232">NEW</text>
+      <text class="title" x="1290" y="244" text-anchor="middle">Stride render pipeline</text>
+      <text class="subtitle" x="1290" y="262" text-anchor="middle" font-size="11">6-stage DVSP service. Renders Pitch-authored articles.</text>
+      <text class="kv" x="1016" y="286" font-size="10"><tspan class="kv-key">input:</tspan> article.published / article.retracted (Scoop)</text>
+      <text class="kv" x="1016" y="302" font-size="10"><tspan class="kv-key">stages:</tspan> ingest → normalize → hydrate → render → persist → publish</text>
+      <text class="kv" x="1016" y="318" font-size="10"><tspan class="kv-key">output:</tspan> storytelling.content.rendered + .retracted on new MSK</text>
+    </g>
+
+    <!-- Stride → new MSK Kafka -->
+    <g class="node kafka new-service" data-id="storytelling-msk">
+      <rect x="1000" y="400" width="320" height="120" rx="12"/>
+      <text class="badge-pill new" x="1016" y="422">NEW</text>
+      <text class="title" x="1160" y="436" text-anchor="middle" font-size="13">Storytelling MSK (new)</text>
+      <text class="subtitle" x="1160" y="454" text-anchor="middle" font-size="10">TA-owned, dedicated Stride cluster</text>
+      <text class="kv" x="1014" y="476" font-size="10"><tspan class="kv-key">topics:</tspan> storytelling.content.rendered / .retracted</text>
+      <text class="kv" x="1014" y="492" font-size="10"><tspan class="kv-key">key:</tspan> article_id (Scoop UUID)</text>
+      <text class="kv" x="1014" y="508" font-size="10"><tspan class="kv-key">retention:</tspan> 30 days</text>
+    </g>
+
+    <!-- Stride → rendered article bucket -->
+    <g class="node new-service" data-id="ta-rendered-articles-s3">
+      <rect x="1360" y="400" width="240" height="120" rx="12"/>
+      <text class="badge-pill new" x="1376" y="422">NEW</text>
+      <text class="title" x="1480" y="440" text-anchor="middle" font-size="13">ta-rendered-articles</text>
+      <text class="subtitle" x="1480" y="458" text-anchor="middle" font-size="10">S3 bucket (versioned)</text>
+      <text class="kv" x="1374" y="480" font-size="10"><tspan class="kv-key">versioning:</tspan> S3 native</text>
+      <text class="kv" x="1374" y="496" font-size="10"><tspan class="kv-key">retention:</tspan> infinite</text>
+      <text class="kv" x="1374" y="512" font-size="10"><tspan class="kv-key">keys:</tspan> by Scoop UUID</text>
+    </g>
+
+    <!-- Disjoint ID namespace annotation -->
+    <rect x="440" y="455" width="840" height="70" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.2" stroke-dasharray="6 4"/>
+    <text class="annotation strong" x="860" y="478" text-anchor="middle">Disjoint ID namespaces</text>
+    <text class="annotation" x="860" y="498" text-anchor="middle">WP integer post_ids vs Scoop UUIDs. Destinations receive from both pipelines but never the same article from both.</text>
+    <text class="annotation" x="860" y="515" text-anchor="middle">Apollo body resolvers route by ID shape. Analytics, search, and PubP see both populations as one corpus.</text>
+
+    <!-- Edges: WP -->
+    <path class="edge hook" data-edge="wp-to-rendered-s3" d="M 280 150 L 200 210" marker-end="url(#arrow-hook-0)"/>
+    <path class="edge hook" data-edge="wp-to-existing-side-effects" d="M 400 150 Q 500 175 600 210" marker-end="url(#arrow-hook-0)"/>
+
+    <!-- Edges: Stride -->
+    <path class="edge new-edge" data-edge="scoop-to-stride" d="M 1140 150 L 1140 210" marker-end="url(#arrow-new-0)"/>
+    <path class="edge new-edge" data-edge="scoop-events-to-stride" d="M 1450 150 Q 1400 180 1380 210" marker-end="url(#arrow-new-0)"/>
+    <path class="edge new-edge" data-edge="stride-to-storytelling-msk" d="M 1200 340 L 1160 400" marker-end="url(#arrow-new-0)"/>
+    <path class="edge new-edge" data-edge="stride-to-s3" d="M 1400 340 L 1470 400" marker-end="url(#arrow-new-0)"/>
+  </svg>
+</div>
+
+<div class="section">
+  <h2>2. New push-adapter services (fan-out from Storytelling MSK)</h2>
+  <p class="note">Five services subscribe to the Stride MSK topic to ship Pitch-authored articles to downstream destinations. Four are new DVSP services; the fifth extends an existing Lambda.</p>
+  <svg viewBox="0 0 1720 520">
+    <!-- Storytelling MSK at top (repeated reference) -->
+    <g class="node kafka new-service" data-id="storytelling-msk-ref">
+      <rect x="640" y="20" width="440" height="70" rx="10"/>
+      <text class="badge-pill new" x="660" y="40">NEW</text>
+      <text class="title" x="860" y="50" text-anchor="middle">Storytelling MSK</text>
+      <text class="subtitle" x="860" y="70" text-anchor="middle" font-size="11">storytelling.content.rendered / .retracted  ·  partition key article_id  ·  retention 30d</text>
+    </g>
+
+    <!-- Row 1: Five adapter services -->
+    <!-- Five boxes: x positions 20, 360, 700, 1040, 1380, width 300, gap 40 -->
+
+    <g class="node new-service" data-id="opensearch-indexer">
+      <rect x="20" y="160" width="300" height="130" rx="10"/>
+      <text class="badge-pill new" x="34" y="180">NEW · Tier 2</text>
+      <text class="title" x="170" y="198" text-anchor="middle" font-size="13">OpenSearch Indexer</text>
+      <text class="subtitle" x="170" y="216" text-anchor="middle" font-size="10">DVSP service · CC-2380</text>
+      <text class="kv" x="34" y="240" font-size="10"><tspan class="kv-key">input:</tspan> storytelling.content.rendered</text>
+      <text class="kv" x="34" y="256" font-size="10"><tspan class="kv-key">output:</tspan> TA OpenSearch bulk upsert</text>
+      <text class="kv" x="34" y="272" font-size="10"><tspan class="kv-key">index:</tspan> search-articles-read</text>
+    </g>
+
+    <g class="node new-service" data-id="alice-shipper">
+      <rect x="360" y="160" width="300" height="130" rx="10"/>
+      <text class="badge-pill new" x="374" y="180">NEW · Tier 3</text>
+      <text class="title" x="510" y="198" text-anchor="middle" font-size="13">Alice Shipper</text>
+      <text class="subtitle" x="510" y="216" text-anchor="middle" font-size="10">DVSP service · cross-cloud push</text>
+      <text class="kv" x="374" y="240" font-size="10"><tspan class="kv-key">input:</tspan> storytelling.content.rendered</text>
+      <text class="kv" x="374" y="256" font-size="10"><tspan class="kv-key">output:</tspan> GCP Pub/Sub ta-asset-grapeshot</text>
+      <text class="kv" x="374" y="272" font-size="10"><tspan class="kv-key">consumer:</tspan> NYT ad targeting</text>
+    </g>
+
+    <g class="node new-service" data-id="pubp-shipper">
+      <rect x="700" y="160" width="300" height="130" rx="10"/>
+      <text class="badge-pill new" x="714" y="180">NEW · Tier 1</text>
+      <text class="title" x="850" y="198" text-anchor="middle" font-size="13">PubP Shipper</text>
+      <text class="subtitle" x="850" y="216" text-anchor="middle" font-size="10">DVSP service · replaces inline handler</text>
+      <text class="kv" x="714" y="240" font-size="10"><tspan class="kv-key">input:</tspan> storytelling.content.rendered</text>
+      <text class="kv" x="714" y="256" font-size="10"><tspan class="kv-key">output:</tspan> PubP Gateway (gRPC)</text>
+      <text class="kv" x="714" y="272" font-size="10"><tspan class="kv-key">payload:</tspan> AthleticArticle protobuf</text>
+    </g>
+
+    <g class="node new-service" data-id="sitemap-generator-stride">
+      <rect x="1040" y="160" width="300" height="130" rx="10"/>
+      <text class="badge-pill new" x="1054" y="180">NEW · Tier 3</text>
+      <text class="title" x="1190" y="198" text-anchor="middle" font-size="13">Sitemap Generator (Stride)</text>
+      <text class="subtitle" x="1190" y="216" text-anchor="middle" font-size="10">DVSP service</text>
+      <text class="kv" x="1054" y="240" font-size="10"><tspan class="kv-key">input:</tspan> storytelling.content.rendered</text>
+      <text class="kv" x="1054" y="256" font-size="10"><tspan class="kv-key">output:</tspan> sitemap-stride.xml (S3/CDN)</text>
+      <text class="kv" x="1054" y="272" font-size="10"><tspan class="kv-key">then:</tspan> Google sitemap ping</text>
+    </g>
+
+    <g class="node extended-service" data-id="cache-purge-lambda">
+      <rect x="1380" y="160" width="300" height="130" rx="10"/>
+      <text class="badge-pill extended" x="1394" y="180">EXTENDED</text>
+      <text class="title" x="1530" y="198" text-anchor="middle" font-size="13">Cache Purge Lambda</text>
+      <text class="subtitle" x="1530" y="216" text-anchor="middle" font-size="10">bustCacheForArticle (existing)</text>
+      <text class="kv" x="1394" y="240" font-size="10"><tspan class="kv-key">new trigger:</tspan> MSK event source</text>
+      <text class="kv" x="1394" y="256" font-size="10"><tspan class="kv-key">existing trigger:</tspan> DynamoDB Streams</text>
+      <text class="kv" x="1394" y="272" font-size="10"><tspan class="kv-key">calls:</tspan> Apollo bustCacheForArticle</text>
+    </g>
+
+    <!-- Row 2: downstream destinations -->
+
+    <g class="node consumer" data-id="ta-opensearch-stride">
+      <rect x="20" y="360" width="300" height="110" rx="10"/>
+      <text class="title" x="170" y="386" text-anchor="middle" font-size="13">TA OpenSearch</text>
+      <text class="subtitle" x="170" y="404" text-anchor="middle" font-size="10">TA-owned search index (shared with WP)</text>
+      <text class="kv" x="34" y="428" font-size="10"><tspan class="kv-key">scope:</tspan> receives both WP + Stride</text>
+      <text class="kv" x="34" y="444" font-size="10"><tspan class="kv-key">index:</tspan> search-articles-read</text>
+    </g>
+
+    <g class="node consumer" data-id="alice-pubsub-stride">
+      <rect x="360" y="360" width="300" height="110" rx="10"/>
+      <text class="title" x="510" y="386" text-anchor="middle" font-size="13">Alice → NYT ad targeting</text>
+      <text class="subtitle" x="510" y="404" text-anchor="middle" font-size="10">GCP Pub/Sub ta-asset-grapeshot</text>
+      <text class="kv" x="374" y="428" font-size="10"><tspan class="kv-key">scope:</tspan> receives both WP + Stride</text>
+      <text class="kv" x="374" y="444" font-size="10"><tspan class="kv-key">consumer:</tspan> Grapeshot keyword extraction</text>
+    </g>
+
+    <g class="node pubp" data-id="pubp-gateway-stride">
+      <rect x="700" y="360" width="300" height="110" rx="10"/>
+      <text class="title" x="850" y="386" text-anchor="middle" font-size="13">PubP Gateway → Monolog</text>
+      <text class="subtitle" x="850" y="404" text-anchor="middle" font-size="10">fans out to Bodega, BigQuery, Samizdat,</text>
+      <text class="kv" x="714" y="426" font-size="10"><tspan class="kv-key">fans to:</tspan> Content Search, cms-applenews</text>
+      <text class="kv" x="714" y="444" font-size="10"><tspan class="kv-key">scope:</tspan> receives both WP + Stride</text>
+    </g>
+
+    <g class="node endpoint" data-id="sitemap-stride-xml">
+      <rect x="1040" y="360" width="300" height="110" rx="10"/>
+      <text class="title" x="1190" y="386" text-anchor="middle" font-size="13">sitemap-stride.xml (+ ping)</text>
+      <text class="subtitle" x="1190" y="404" text-anchor="middle" font-size="10">S3/CDN · Google sitemap ping</text>
+      <text class="kv" x="1054" y="428" font-size="10"><tspan class="kv-key">index:</tspan> sitemap.xml → WP + Stride</text>
+      <text class="kv" x="1054" y="444" font-size="10"><tspan class="kv-key">consumer:</tspan> Google / Bing crawlers</text>
+    </g>
+
+    <g class="node consumer" data-id="cache-purge-targets">
+      <rect x="1380" y="360" width="300" height="110" rx="10"/>
+      <text class="title" x="1530" y="386" text-anchor="middle" font-size="13">Apollo Redis + Cloudflare + Fastly</text>
+      <text class="subtitle" x="1530" y="404" text-anchor="middle" font-size="10">via Apollo bustCacheForArticle mutation</text>
+      <text class="kv" x="1394" y="428" font-size="10"><tspan class="kv-key">scope:</tspan> receives both WP + Stride</text>
+      <text class="kv" x="1394" y="444" font-size="10"><tspan class="kv-key">lookup:</tspan> ID-shape routing in Apollo</text>
+    </g>
+
+    <!-- Edges from MSK to adapters -->
+    <path class="edge new-edge" data-edge="msk-to-opensearch-indexer" d="M 700 90 Q 500 130 170 160" marker-end="url(#arrow-new-1)"/>
+    <path class="edge new-edge" data-edge="msk-to-alice-shipper" d="M 760 90 Q 650 130 510 160" marker-end="url(#arrow-new-1)"/>
+    <path class="edge new-edge" data-edge="msk-to-pubp-shipper" d="M 860 90 L 850 160" marker-end="url(#arrow-new-1)"/>
+    <path class="edge new-edge" data-edge="msk-to-sitemap-stride" d="M 960 90 Q 1080 130 1190 160" marker-end="url(#arrow-new-1)"/>
+    <path class="edge new-edge" data-edge="msk-to-cache-purge" d="M 1060 90 Q 1280 130 1530 160" marker-end="url(#arrow-new-1)"/>
+
+    <!-- Edges from adapters down to their destinations -->
+    <path class="edge content" data-edge="opensearch-indexer-to-opensearch" d="M 170 290 L 170 360" marker-end="url(#arrow-content-1)"/>
+    <path class="edge mixed" data-edge="alice-shipper-to-pubsub" d="M 510 290 L 510 360" marker-end="url(#arrow-mixed-1)"/>
+    <path class="edge mixed" data-edge="pubp-shipper-to-gateway" d="M 850 290 L 850 360" marker-end="url(#arrow-mixed-1)"/>
+    <path class="edge content" data-edge="sitemap-stride-to-xml" d="M 1190 290 L 1190 360" marker-end="url(#arrow-content-1)"/>
+    <path class="edge mixed" data-edge="cache-purge-to-targets" d="M 1530 290 L 1530 360" marker-end="url(#arrow-mixed-1)"/>
+  </svg>
+</div>
+
+<div class="section">
+  <h2>3. Existing WordPress pipeline — continues in parallel (WP-authored articles only)</h2>
+  <p class="note">Every destination below keeps receiving WP-authored articles via the existing WP code paths. Stride does not replay these; the same destinations receive Stride articles via section 2.</p>
+  <svg viewBox="0 0 1720 500">
+    <!-- WordPress source at top -->
+    <g class="node source" data-id="wordpress-ref">
+      <rect x="700" y="20" width="320" height="70" rx="10"/>
+      <text class="title" x="860" y="50" text-anchor="middle">WordPress publish (legacy)</text>
+      <text class="subtitle" x="860" y="70" text-anchor="middle" font-size="11">save_post → existing fan-out (WP article IDs)</text>
+    </g>
+
+    <!-- Row 1: 6 destinations across -->
+    <g class="node consumer" data-id="wp-opensearch">
+      <rect x="20" y="160" width="260" height="130" rx="10"/>
+      <text class="title" x="150" y="186" text-anchor="middle" font-size="13">WP inline OpenSearch</text>
+      <text class="subtitle" x="150" y="204" text-anchor="middle" font-size="10">athArticleIndex write</text>
+      <text class="kv" x="32" y="226" font-size="10"><tspan class="kv-key">trigger:</tspan> save_post hook</text>
+      <text class="kv" x="32" y="242" font-size="10"><tspan class="kv-key">format:</tspan> JSON bulk upsert</text>
+      <text class="kv" x="32" y="258" font-size="10"><tspan class="kv-key">index:</tspan> search-articles-read</text>
+      <text class="kv" x="32" y="276" font-size="10"><tspan class="kv-key">status:</tspan> unchanged</text>
+    </g>
+
+    <g class="node consumer" data-id="wp-alice-pubsub">
+      <rect x="300" y="160" width="260" height="130" rx="10"/>
+      <text class="title" x="430" y="186" text-anchor="middle" font-size="13">WP publish_to_alice()</text>
+      <text class="subtitle" x="430" y="204" text-anchor="middle" font-size="10">GCP Pub/Sub ta-asset-grapeshot</text>
+      <text class="kv" x="312" y="226" font-size="10"><tspan class="kv-key">trigger:</tspan> save_post hook</text>
+      <text class="kv" x="312" y="242" font-size="10"><tspan class="kv-key">format:</tspan> JSON</text>
+      <text class="kv" x="312" y="258" font-size="10"><tspan class="kv-key">guard:</tspan> ALICE_PUBSUB + is_production()</text>
+      <text class="kv" x="312" y="276" font-size="10"><tspan class="kv-key">status:</tspan> unchanged</text>
+    </g>
+
+    <g class="node kafka" data-id="wp-analytics-kafka">
+      <rect x="580" y="160" width="260" height="130" rx="10"/>
+      <text class="title" x="710" y="186" text-anchor="middle" font-size="13">TA Analytics Event Bus</text>
+      <text class="subtitle" x="710" y="204" text-anchor="middle" font-size="10">Confluent (see section 5)</text>
+      <text class="kv" x="592" y="226" font-size="10"><tspan class="kv-key">topic:</tspan> {stage}-analytics</text>
+      <text class="kv" x="592" y="242" font-size="10"><tspan class="kv-key">events:</tspan> post-publish, post-delete</text>
+      <text class="kv" x="592" y="258" font-size="10"><tspan class="kv-key">then:</tspan> Apollo kafkaConsumer → PubP</text>
+      <text class="kv" x="592" y="276" font-size="10"><tspan class="kv-key">status:</tspan> WP-only article events</text>
+    </g>
+
+    <g class="node handler" data-id="wp-cache-purge">
+      <rect x="860" y="160" width="260" height="130" rx="10"/>
+      <text class="title" x="990" y="186" text-anchor="middle" font-size="13">WP purge_article_cache()</text>
+      <text class="subtitle" x="990" y="204" text-anchor="middle" font-size="10">Fastly + Cloudflare + Apollo Redis</text>
+      <text class="kv" x="872" y="226" font-size="10"><tspan class="kv-key">trigger:</tspan> save_post / transition</text>
+      <text class="kv" x="872" y="242" font-size="10"><tspan class="kv-key">method:</tspan> inline PHP calls</text>
+      <text class="kv" x="872" y="258" font-size="10"><tspan class="kv-key">scope:</tspan> WP article URL purge</text>
+      <text class="kv" x="872" y="276" font-size="10"><tspan class="kv-key">status:</tspan> unchanged</text>
+    </g>
+
+    <g class="node handler" data-id="wp-sitemap-writer">
+      <rect x="1140" y="160" width="260" height="130" rx="10"/>
+      <text class="title" x="1270" y="186" text-anchor="middle" font-size="13">WP sitemap writer</text>
+      <text class="subtitle" x="1270" y="204" text-anchor="middle" font-size="10">sitemap-*.xml.php (10 files)</text>
+      <text class="kv" x="1152" y="226" font-size="10"><tspan class="kv-key">trigger:</tspan> WP publish</text>
+      <text class="kv" x="1152" y="242" font-size="10"><tspan class="kv-key">output:</tspan> sitemap-wp.xml (role)</text>
+      <text class="kv" x="1152" y="258" font-size="10"><tspan class="kv-key">then:</tspan> Google sitemap ping</text>
+      <text class="kv" x="1152" y="276" font-size="10"><tspan class="kv-key">status:</tspan> unchanged</text>
+    </g>
+
+    <g class="node consumer deferred" data-id="wp-nyt-cms-rest">
+      <rect x="1420" y="160" width="260" height="130" rx="10"/>
+      <text class="badge-pill deferred" x="1434" y="180">DEFERRED</text>
+      <text class="title" x="1550" y="198" text-anchor="middle" font-size="13">NYT CMS REST (print)</text>
+      <text class="subtitle" x="1550" y="216" text-anchor="middle" font-size="10">editor-opt-in print workflow</text>
+      <text class="kv" x="1432" y="240" font-size="10"><tspan class="kv-key">trigger:</tspan> scheduled / manual</text>
+      <text class="kv" x="1432" y="256" font-size="10"><tspan class="kv-key">auth:</tspan> Bearer + x-api-key</text>
+      <text class="kv" x="1432" y="272" font-size="10"><tspan class="kv-key">status:</tspan> out of scope for Stride</text>
+    </g>
+
+    <!-- Row 2 (below row 1): annotations and key note -->
+    <rect x="20" y="330" width="1660" height="80" rx="8" fill="#f0f9ff" stroke="#0e7490" stroke-width="1.2"/>
+    <text class="annotation strong" x="860" y="355" text-anchor="middle">WP continues writing to the same destinations with its own article IDs.</text>
+    <text class="annotation" x="860" y="378" text-anchor="middle">Destinations receive from both pipelines but never the same article from both. Retirement of any destination is sequenced AFTER WP retires.</text>
+    <text class="annotation" x="860" y="398" text-anchor="middle">WP's Apollo kafkaConsumer path (analytics Kafka → publishToPubP) is superseded by PubP Shipper for Stride articles; for WP articles it continues unchanged.</text>
+
+    <!-- Edges from WP to each destination -->
+    <path class="edge hook" data-edge="wp-to-wp-opensearch" d="M 760 90 Q 450 120 150 160" marker-end="url(#arrow-hook-2)"/>
+    <path class="edge hook" data-edge="wp-to-wp-alice" d="M 790 90 Q 600 120 430 160" marker-end="url(#arrow-hook-2)"/>
+    <path class="edge mixed" data-edge="wp-to-wp-analytics" d="M 830 90 Q 770 120 710 160" marker-end="url(#arrow-mixed-2)"/>
+    <path class="edge hook" data-edge="wp-to-wp-cache-purge" d="M 890 90 Q 940 120 990 160" marker-end="url(#arrow-hook-2)"/>
+    <path class="edge hook" data-edge="wp-to-wp-sitemap" d="M 940 90 Q 1100 120 1270 160" marker-end="url(#arrow-hook-2)"/>
+    <path class="edge content deferred-edge" data-edge="wp-to-nyt-cms-rest" d="M 990 90 Q 1260 120 1550 160" marker-end="url(#arrow-deferred-2)"/>
+  </svg>
+</div>
+
+<div class="section">
+  <h2>4. Apollo unified reads and pull surfaces</h2>
+  <p class="note">Apollo is the unifying reader. New Scoop data source alongside the WP data source, merged internally (Pattern C). Body resolvers route by ID shape. Downstream pull consumers see one list.</p>
+  <svg viewBox="0 0 1720 540">
+    <!-- Source S3 buckets at top -->
+    <g class="node handler" data-id="wp-s3-ref">
+      <rect x="60" y="20" width="260" height="70" rx="10"/>
+      <text class="title" x="190" y="50" text-anchor="middle" font-size="13">WP rendered articles S3</text>
+      <text class="subtitle" x="190" y="70" text-anchor="middle" font-size="10">existing bucket · WP integer IDs</text>
+    </g>
+
+    <g class="node new-service" data-id="ta-rendered-s3-ref">
+      <rect x="360" y="20" width="260" height="70" rx="10"/>
+      <text class="badge-pill new" x="374" y="40">NEW</text>
+      <text class="title" x="490" y="58" text-anchor="middle" font-size="13">ta-rendered-articles S3</text>
+      <text class="subtitle" x="490" y="76" text-anchor="middle" font-size="10">versioned · Scoop UUIDs</text>
+    </g>
+
+    <g class="node kafka" data-id="wp-analytics-kafka-ref">
+      <rect x="1100" y="20" width="260" height="70" rx="10"/>
+      <text class="title" x="1230" y="50" text-anchor="middle" font-size="13">TA Analytics Event Bus</text>
+      <text class="subtitle" x="1230" y="70" text-anchor="middle" font-size="10">non-article events (section 5)</text>
+    </g>
+
+    <!-- Apollo center node -->
+    <g class="node apollo" data-id="apollo-unified">
+      <rect x="60" y="140" width="1200" height="170" rx="12"/>
+      <text class="title" x="660" y="170" text-anchor="middle" font-size="15">Apollo GraphQL (unified reader)</text>
+      <text class="subtitle" x="660" y="190" text-anchor="middle" font-size="11">theathletic-apollo-express · Pattern C merged data sources · body resolvers route by ID shape</text>
+      <text class="kv" x="80" y="218" font-size="11"><tspan class="kv-key">data sources:</tspan> WP data source (existing) + Scoop data source (NEW — reads ta-rendered-articles + Scoop metadata)</text>
+      <text class="kv" x="80" y="238" font-size="11"><tspan class="kv-key">list resolvers (latestArticles, feed lists):</tspan> merge WP + Scoop results internally; unified list output</text>
+      <text class="kv" x="80" y="258" font-size="11"><tspan class="kv-key">body resolver:</tspan> integer id → WP S3 · UUID id → ta-rendered-articles S3</text>
+      <text class="kv" x="80" y="278" font-size="11"><tspan class="kv-key">filter:</tspan> rendered_at IS NOT NULL excludes un-rendered articles from public lists</text>
+      <text class="kv" x="80" y="298" font-size="11"><tspan class="kv-key">kafkaConsumer (slimmed):</tspan> non-article events only. post-publish / post-delete / publishToPubP handlers extracted to PubP Shipper + Cache Purge Lambda.</text>
+    </g>
+
+    <!-- Row: pull consumers -->
+    <g class="node pull-consumer" data-id="pull-flatplan">
+      <rect x="20" y="360" width="260" height="90" rx="10"/>
+      <text class="title" x="150" y="386" text-anchor="middle" font-size="13">FlatPlan → Apple News</text>
+      <text class="subtitle" x="150" y="404" text-anchor="middle" font-size="10">Next.js /api/rss/flatplan/*</text>
+      <text class="kv" x="32" y="424" font-size="10"><tspan class="kv-key">receives:</tspan> unified list (WP + Stride)</text>
+      <text class="kv" x="32" y="440" font-size="10"><tspan class="kv-key">format:</tspan> Atom XML</text>
+    </g>
+
+    <g class="node pull-consumer" data-id="pull-google-bing">
+      <rect x="300" y="360" width="260" height="90" rx="10"/>
+      <text class="title" x="430" y="386" text-anchor="middle" font-size="13">Google / Bing crawlers</text>
+      <text class="subtitle" x="430" y="404" text-anchor="middle" font-size="10">Next.js /feeds/rss/*</text>
+      <text class="kv" x="312" y="424" font-size="10"><tspan class="kv-key">receives:</tspan> unified RSS</text>
+      <text class="kv" x="312" y="440" font-size="10"><tspan class="kv-key">format:</tspan> Atom 1.0</text>
+    </g>
+
+    <g class="node pull-consumer" data-id="pull-ta-clients">
+      <rect x="580" y="360" width="260" height="90" rx="10"/>
+      <text class="title" x="710" y="386" text-anchor="middle" font-size="13">TA web / iOS / Android</text>
+      <text class="subtitle" x="710" y="404" text-anchor="middle" font-size="10">GraphQL over Apollo</text>
+      <text class="kv" x="592" y="424" font-size="10"><tspan class="kv-key">receives:</tspan> unified list + body</text>
+      <text class="kv" x="592" y="440" font-size="10"><tspan class="kv-key">status:</tspan> unchanged shape</text>
+    </g>
+
+    <g class="node pull-consumer" data-id="pull-sitemap-index">
+      <rect x="860" y="360" width="260" height="90" rx="10"/>
+      <text class="title" x="990" y="386" text-anchor="middle" font-size="13">sitemap.xml (top-level)</text>
+      <text class="subtitle" x="990" y="404" text-anchor="middle" font-size="10">index of sitemap-wp + sitemap-stride</text>
+      <text class="kv" x="872" y="424" font-size="10"><tspan class="kv-key">children:</tspan> WP + Stride sitemaps</text>
+      <text class="kv" x="872" y="440" font-size="10"><tspan class="kv-key">crawlers:</tspan> Google / Bing</text>
+    </g>
+
+    <g class="node rework" data-id="iterable-php-endpoints">
+      <rect x="1140" y="360" width="260" height="90" rx="10"/>
+      <text class="badge-pill rework" x="1154" y="380">REWORK REQUIRED</text>
+      <text class="title" x="1270" y="398" text-anchor="middle" font-size="13">Iterable /v1iterable/*</text>
+      <text class="subtitle" x="1270" y="416" text-anchor="middle" font-size="10">PHP endpoints (currently MySQL-direct)</text>
+      <text class="kv" x="1152" y="436" font-size="10"><tspan class="kv-key">issue:</tspan> cannot see Pitch articles</text>
+    </g>
+
+    <!-- Edges: S3 / Kafka into Apollo -->
+    <path class="edge content" data-edge="wp-s3-to-apollo" d="M 190 90 L 250 140" marker-end="url(#arrow-content-3)"/>
+    <path class="edge new-edge" data-edge="ta-rendered-s3-to-apollo" d="M 490 90 L 490 140" marker-end="url(#arrow-new-3)"/>
+    <path class="edge mixed" data-edge="analytics-to-apollo-slim" d="M 1230 90 L 1100 140" marker-end="url(#arrow-mixed-3)"/>
+
+    <!-- Edges: Apollo down to consumers -->
+    <path class="edge pull" data-edge="apollo-to-flatplan" d="M 150 310 L 150 360" marker-end="url(#arrow-pull-3)"/>
+    <path class="edge pull" data-edge="apollo-to-google-bing" d="M 430 310 L 430 360" marker-end="url(#arrow-pull-3)"/>
+    <path class="edge pull" data-edge="apollo-to-ta-clients" d="M 710 310 L 710 360" marker-end="url(#arrow-pull-3)"/>
+    <path class="edge pull" data-edge="apollo-to-sitemap-index" d="M 990 310 L 990 360" marker-end="url(#arrow-pull-3)"/>
+    <path class="edge pull" data-edge="apollo-to-iterable-rework" d="M 1270 310 L 1270 360" marker-end="url(#arrow-pull-3)"/>
+
+    <!-- Annotation -->
+    <rect x="60" y="470" width="1200" height="50" rx="8" fill="#eff6ff" stroke="#1f4e79" stroke-width="1"/>
+    <text class="annotation strong" x="660" y="492" text-anchor="middle">Pattern C means downstream list consumers are unchanged. Iterable's PHP endpoints are the only consumer that must move off MySQL to Apollo-backed reads.</text>
+    <text class="annotation" x="660" y="510" text-anchor="middle">Before rework, Iterable cannot render Pitch articles. After rework, Iterable sees the unified list.</text>
+  </svg>
+</div>
+
+<div class="section">
+  <h2>5. Analytics Event Bus coexistence</h2>
+  <p class="note">The Confluent TA Analytics Event Bus and the new Storytelling MSK are separate clusters. Confluent is Data Platform owned and carries ~13 non-article topics. Stride MSK is TA-owned and carries article render events only.</p>
+  <svg viewBox="0 0 1720 360">
+    <!-- Confluent cluster -->
+    <g class="node kafka" data-id="confluent-analytics-bus">
+      <rect x="40" y="40" width="380" height="160" rx="12"/>
+      <text class="title" x="230" y="70" text-anchor="middle">Confluent Kafka</text>
+      <text class="subtitle" x="230" y="90" text-anchor="middle" font-size="11">TA Analytics Event Bus · Data Platform owned · 4 brokers</text>
+      <text class="kv" x="56" y="114" font-size="11"><tspan class="kv-key">topics:</tspan> ~13 non-article types</text>
+      <text class="kv" x="56" y="132" font-size="11"><tspan class="kv-key">e.g.:</tspan> podcast-*, update-customer,</text>
+      <text class="kv" x="56" y="150" font-size="11">user-add-*, update-notif-preferences</text>
+      <text class="kv" x="56" y="170" font-size="11"><tspan class="kv-key">article events:</tspan> WP post-publish /</text>
+      <text class="kv" x="56" y="188" font-size="11">post-delete still produced here (WP only)</text>
+    </g>
+
+    <!-- New Storytelling MSK -->
+    <g class="node kafka new-service" data-id="storytelling-msk-coexist">
+      <rect x="460" y="40" width="380" height="160" rx="12"/>
+      <text class="badge-pill new" x="478" y="60">NEW</text>
+      <text class="title" x="650" y="78" text-anchor="middle">Storytelling MSK</text>
+      <text class="subtitle" x="650" y="96" text-anchor="middle" font-size="11">TA-owned · Stride pipeline only</text>
+      <text class="kv" x="476" y="120" font-size="11"><tspan class="kv-key">topic:</tspan> storytelling.content.rendered</text>
+      <text class="kv" x="476" y="138" font-size="11"><tspan class="kv-key">topic:</tspan> storytelling.content.retracted</text>
+      <text class="kv" x="476" y="156" font-size="11"><tspan class="kv-key">scope:</tspan> article render events (Pitch only)</text>
+      <text class="kv" x="476" y="174" font-size="11"><tspan class="kv-key">retention:</tspan> 30 days</text>
+      <text class="kv" x="476" y="192" font-size="11"><tspan class="kv-key">not mixed with analytics</tspan></text>
+    </g>
+
+    <!-- Apollo slim consumer -->
+    <g class="node consumer" data-id="apollo-slim-consumer">
+      <rect x="880" y="40" width="360" height="160" rx="12"/>
+      <text class="title" x="1060" y="70" text-anchor="middle" font-size="13">Apollo slimmed kafkaConsumer</text>
+      <text class="subtitle" x="1060" y="90" text-anchor="middle" font-size="11">subscribes to Confluent only</text>
+      <text class="kv" x="896" y="114" font-size="11"><tspan class="kv-key">reads:</tspan> podcast-* / customer /</text>
+      <text class="kv" x="896" y="132" font-size="11">notification-preferences events</text>
+      <text class="kv" x="896" y="152" font-size="11"><tspan class="kv-key">no longer reads:</tspan> post-publish / delete</text>
+      <text class="kv" x="896" y="172" font-size="11">(handled by PubP Shipper + Cache Purge)</text>
+      <text class="kv" x="896" y="192" font-size="11"><tspan class="kv-key">file:</tspan> src/kafkaConsumer.js (reduced)</text>
+    </g>
+
+    <!-- Data warehouse side -->
+    <g class="node consumer" data-id="data-platform-warehouse">
+      <rect x="1280" y="40" width="400" height="160" rx="12"/>
+      <text class="title" x="1480" y="70" text-anchor="middle" font-size="13">Kafka Connect → S3 → EMR → Redshift</text>
+      <text class="subtitle" x="1480" y="90" text-anchor="middle" font-size="11">Data Platform analytics warehouse</text>
+      <text class="kv" x="1296" y="114" font-size="11"><tspan class="kv-key">source:</tspan> Confluent analytics bus</text>
+      <text class="kv" x="1296" y="132" font-size="11"><tspan class="kv-key">sink:</tspan> Redshift (dbt models, Mode)</text>
+      <text class="kv" x="1296" y="152" font-size="11"><tspan class="kv-key">open question:</tspan> article-publish</text>
+      <text class="kv" x="1296" y="170" font-size="11">analytics coordination for Stride events</text>
+      <text class="kv" x="1296" y="188" font-size="11">— still via WP path? Separate sink?</text>
+    </g>
+
+    <!-- Edges -->
+    <path class="edge mixed" data-edge="confluent-to-apollo-slim" d="M 420 140 L 880 140" marker-end="url(#arrow-mixed-4)"/>
+    <path class="edge mixed" data-edge="confluent-to-warehouse" d="M 420 100 Q 850 20 1280 100" marker-end="url(#arrow-mixed-4)"/>
+
+    <!-- Annotation -->
+    <rect x="40" y="240" width="1640" height="100" rx="8" fill="#faf5ff" stroke="#5b3886" stroke-width="1"/>
+    <text class="annotation strong" x="860" y="264" text-anchor="middle">Two clusters. Two ownership models.</text>
+    <text class="annotation" x="860" y="286" text-anchor="middle">Confluent stays for analytics and non-article events. Storytelling MSK is purpose-built for the article render stream.</text>
+    <text class="annotation" x="860" y="306" text-anchor="middle">Article-publish analytics — how Redshift sees Pitch-authored publishes — is an open question. Leading options: Stride emits an analytics projection to Confluent, or Data Platform adds a Connect sink on Storytelling MSK.</text>
+    <text class="annotation" x="860" y="326" text-anchor="middle">Apollo's kafkaConsumer is intentionally NOT extended to Storytelling MSK — article-event side effects are owned by the new adapter services.</text>
+  </svg>
+</div>
+
+<div class="section">
+  <h2>6. Deferred / out-of-scope</h2>
+  <p class="note">Not part of the Stride integration. Shown dimmed for completeness.</p>
+  <svg viewBox="0 0 1720 240">
+    <g class="node deferred" data-id="deferred-nyt-cms-rest">
+      <rect x="20" y="30" width="260" height="90" rx="10"/>
+      <text class="badge-pill deferred" x="34" y="48">DEFERRED</text>
+      <text class="title" x="150" y="68" text-anchor="middle" font-size="13">NYT CMS REST + Loupe</text>
+      <text class="subtitle" x="150" y="86" text-anchor="middle" font-size="10">editorial + image asset workflow</text>
+      <text class="kv" x="32" y="108" font-size="10">migrates with the Scoop editor</text>
+    </g>
+
+    <g class="node deferred" data-id="deferred-astro-rss">
+      <rect x="300" y="30" width="260" height="90" rx="10"/>
+      <text class="badge-pill deferred" x="314" y="48">OUT OF SCOPE</text>
+      <text class="title" x="430" y="68" text-anchor="middle" font-size="13">Astro partnership RSS</text>
+      <text class="subtitle" x="430" y="86" text-anchor="middle" font-size="10">depends on briefs program</text>
+      <text class="kv" x="312" y="108" font-size="10">no commitment, not in Stride scope</text>
+    </g>
+
+    <g class="node deferred" data-id="deferred-datalake">
+      <rect x="580" y="30" width="260" height="90" rx="10"/>
+      <text class="badge-pill deferred" x="594" y="48">COVERED BY S3</text>
+      <text class="title" x="710" y="68" text-anchor="middle" font-size="13">Datalake / archive</text>
+      <text class="subtitle" x="710" y="86" text-anchor="middle" font-size="10">long-term copy of rendered articles</text>
+      <text class="kv" x="592" y="108" font-size="10">S3 versioning is the current archive</text>
+    </g>
+
+    <g class="node deferred" data-id="deferred-supergraph">
+      <rect x="860" y="30" width="260" height="90" rx="10"/>
+      <text class="badge-pill deferred" x="874" y="48">REQUEST-TIME</text>
+      <text class="title" x="990" y="68" text-anchor="middle" font-size="13">NYT supergraph</text>
+      <text class="subtitle" x="990" y="86" text-anchor="middle" font-size="10">federated GraphQL integration</text>
+      <text class="kv" x="872" y="108" font-size="10">request-time, not an article destination</text>
+    </g>
+
+    <g class="node deferred" data-id="deferred-identity">
+      <rect x="1140" y="30" width="260" height="90" rx="10"/>
+      <text class="badge-pill deferred" x="1154" y="48">REQUEST-TIME</text>
+      <text class="title" x="1270" y="68" text-anchor="middle" font-size="13">NYT Identity / Lire</text>
+      <text class="subtitle" x="1270" y="86" text-anchor="middle" font-size="10">entitlements + auth</text>
+      <text class="kv" x="1152" y="108" font-size="10">read-time integration, not push</text>
+    </g>
+
+    <g class="node deferred" data-id="deferred-push-notifications">
+      <rect x="1420" y="30" width="260" height="90" rx="10"/>
+      <text class="badge-pill deferred" x="1434" y="48">NOT ARTICLE-DRIVEN</text>
+      <text class="title" x="1550" y="68" text-anchor="middle" font-size="13">MEMO / Hermes push</text>
+      <text class="subtitle" x="1550" y="86" text-anchor="middle" font-size="10">user / event-driven notifications</text>
+      <text class="kv" x="1432" y="108" font-size="10">not triggered by article render</text>
+    </g>
+
+    <rect x="20" y="150" width="1660" height="70" rx="8" fill="#f8fafc" stroke="#94a3b8" stroke-width="1" stroke-dasharray="6 4"/>
+    <text class="annotation" x="860" y="176" text-anchor="middle">These systems are either retiring alongside WP, consumed at read time rather than pushed, or driven by non-article events.</text>
+    <text class="annotation" x="860" y="196" text-anchor="middle">None of them need a new Stride adapter. If that changes, new adapters slot into section 2 alongside the existing five.</text>
+  </svg>
+</div>
+
+</main>
+
+<footer>
+  <h3>Source pages in Coda</h3>
+  <ul>
+    <li><a href="https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/_sufrRMx5blo" target="_blank">Stride design (canvas-NfrRMx5blo)</a></li>
+    <li><a href="https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/_suYEXV4r-0gh" target="_blank">Apollo + FlatPlan routing (canvas-YEXV4r-0gh)</a></li>
+    <li><a href="https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/_suXXSonCvgvZ" target="_blank">Sitemap (canvas-XXSonCvgvZ)</a></li>
+    <li><a href="https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/_suPjBbIDu10P" target="_blank">Iterable (canvas-PjBbIDu10P)</a></li>
+    <li><a href="https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/_suumYJ4ECyIF" target="_blank">OpenSearch Indexer (canvas-umYJ4ECyIF)</a></li>
+    <li><a href="https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/_suZONuRaQCL1" target="_blank">Alice Shipper (canvas-ZONuRaQCL1)</a></li>
+    <li><a href="https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/_suYxPweOhO8r" target="_blank">PubP Shipper (canvas-YxPweOhO8r)</a></li>
+    <li><a href="https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/_sub-93Zj2InM" target="_blank">Cache Purge (canvas-b-93Zj2InM)</a></li>
+    <li><a href="https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/_su-jvOH2lGMh" target="_blank">Analytics Event Bus (canvas--jvOH2lGMh)</a></li>
+    <li><a href="https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/_suzLWXldffEH" target="_blank">NYT CMS REST + Loupe (canvas-zLWXldffEH)</a></li>
+  </ul>
+</footer>
+
+<div id="tooltip"></div>
+<div id="overlay"></div>
+<aside id="panel">
+  <button class="close" onclick="closePanel()">&times;</button>
+  <div id="panel-content">Select a node or edge for details.</div>
+</aside>
+
+<script>
+const DATA = {
+  // ===== SECTION 1 NODES =====
+  "wordpress": { title: "WordPress publish (legacy)", subtitle: "the-athletic monolith", summary: "Legacy renderer. Continues to render WP-authored articles until WordPress retires. Disjoint ID namespace from Stride.",
+    sections: [
+      { label: "Role", text: "Authoritative renderer for WP-authored articles for their entire lifetime. Stride never takes over these articles." },
+      { label: "IDs", text: "WordPress post_id integers. Never overlap with Scoop UUIDs." },
+      { label: "Hooks", list: ["save_post", "transition_post_status"] },
+      { label: "Side effects at publish time", list: ["WP S3 rendered article write", "OpenSearch index_post()", "publish_to_alice() Pub/Sub push", "post-publish event → TA Analytics Event Bus (Confluent)", "sitemap regen → Google sitemap ping", "NYT CMS REST push (editor-opt-in print workflow)"] }
+    ]},
+  "wp-rendered-s3": { title: "WP rendered article S3", subtitle: "existing S3 path", summary: "Existing bucket where the monolith writes rendered WP articles. Keyed by integer post_id. Unchanged by the Stride rollout.",
+    sections: [
+      { label: "Scope", text: "WP-authored articles only. Keys are WordPress post_ids." },
+      { label: "Consumer", text: "Apollo body resolver reads from here when the incoming article ID is an integer." }
+    ]},
+  "wp-existing-side-effects": { title: "WP existing publish side effects", subtitle: "analytics Kafka, cache purge, OpenSearch, PubP, Alice, sitemap, Loupe", summary: "The existing fan-out. For WP-authored articles it all keeps running; for Pitch-authored articles the same destinations are driven by Stride adapters instead (section 2).",
+    sections: [
+      { label: "Unchanged for WP articles", list: [
+        "athArticleIndex → TA OpenSearch",
+        "publish_to_alice() → Alice Pub/Sub",
+        "post-publish event → TA Analytics Event Bus → Apollo kafkaConsumer → publishToPubP → PubP Gateway",
+        "purge_article_cache() → Fastly + Cloudflare + Apollo Redis",
+        "sitemap writer → sitemap-*.xml.php + Google ping",
+        "NYT Loupe image uploads (SFTP + REST)"
+      ]},
+      { label: "Detail", text: "See the existing destinations-topology.html for full detail. This node is a reference only." }
+    ]},
+  "scoop-cms": { title: "Scoop (CMS)", subtitle: "source for Pitch-authored articles", summary: "Emits article.published and article.retracted events as articles are authored in the Pitch editor. Scoop article IDs are UUIDs.",
+    sections: [
+      { label: "IDs", text: "Scoop UUIDs. Disjoint from WP post_ids." },
+      { label: "Events", list: ["article.published", "article.retracted"] },
+      { label: "Delivery", text: "Scoop → Stride consumer via the Scoop event system (ENS)." }
+    ]},
+  "scoop-events": { title: "Scoop events (ENS)", subtitle: "article.published / article.retracted", summary: "Event stream from Scoop to Stride. One topic per event type; key is the Scoop article UUID.",
+    sections: [
+      { label: "Event shape", list: ["article.published — full Scoop entity payload", "article.retracted — article UUID + retraction metadata"] },
+      { label: "Delivery", text: "Stride consumes these as its input. They do not touch the new Storytelling MSK cluster." }
+    ]},
+  "stride": { title: "Stride render pipeline", subtitle: "6-stage DVSP service · NEW", summary: "Renders Pitch-authored articles. 6-stage pipeline: ingest → normalize → hydrate → render → persist → publish. Emits storytelling.content.rendered on the new MSK.",
+    sections: [
+      { label: "Status", tag: "new", text: "NEW service. The authoritative renderer for Pitch-authored articles for the entire lifetime of those articles." },
+      { label: "Stages", list: [
+        "Ingest — consume article.published / article.retracted from Scoop ENS",
+        "Normalize — translate Scoop payload into the internal article model",
+        "Hydrate — resolve entities (teams, leagues, authors, players, etc.) from reference services",
+        "Render — produce rendered HTML and metadata",
+        "Persist — write versioned object to ta-rendered-articles S3",
+        "Publish — emit storytelling.content.rendered / .retracted to Storytelling MSK"
+      ]},
+      { label: "Emitted event shape (summary)", code: "{\n  article_id: UUID (Scoop),\n  version: integer,\n  rendered_at: ISO8601,\n  content: { rendered_html, plain_text, ... },\n  metadata: { title, authors, tags, teams, leagues, players, topics, ... },\n  s3_key: string (ta-rendered-articles),\n  source: \"stride\"\n}" },
+      { label: "Cross-repo", text: "Stride repo scaffolded. IaC complete. Adapters (section 2) are separate services subscribing to the MSK topic." }
+    ]},
+  "storytelling-msk": { title: "Storytelling MSK (new)", subtitle: "TA-owned, Stride-only cluster", summary: "New MSK cluster dedicated to article render events. Separate from the Confluent TA Analytics Event Bus.",
+    sections: [
+      { label: "Status", tag: "new" },
+      { label: "Topics", list: ["storytelling.content.rendered", "storytelling.content.retracted"] },
+      { label: "Partition key", code: "article_id (Scoop UUID)" },
+      { label: "Retention", text: "30 days. Not an archive — archival is handled by S3 versioning on ta-rendered-articles." },
+      { label: "Consumers", list: ["OpenSearch Indexer", "Alice Shipper", "PubP Shipper", "Sitemap Generator (Stride)", "Cache Purge Lambda (extended trigger)"] }
+    ]},
+  "ta-rendered-articles-s3": { title: "ta-rendered-articles S3", subtitle: "versioned, infinite retention", summary: "Authoritative store of rendered Stride articles. Versioned. Apollo body resolver reads from here when the article ID is a UUID.",
+    sections: [
+      { label: "Status", tag: "new" },
+      { label: "Versioning", text: "S3 native object versioning. Each Stride render creates a new version; retractions mark tombstones." },
+      { label: "Retention", text: "Infinite (serves as the current archive answer)." },
+      { label: "Keys", text: "By Scoop UUID." }
+    ]},
+
+  // ===== SECTION 1 EDGES =====
+  "wp-to-rendered-s3": { title: "WP → rendered article S3", summary: "Existing WP publish path writes the rendered article to its existing S3 bucket.",
+    sections: [{ label: "Note", text: "Unchanged. WP article IDs, existing bucket." }]},
+  "wp-to-existing-side-effects": { title: "WP → existing side effects", summary: "WP continues firing analytics Kafka, cache purge, OpenSearch, PubP, Alice, sitemap, Loupe for WP-authored articles.",
+    sections: [{ label: "See", text: "Section 3 for the per-destination view of what still fires from WP." }]},
+  "scoop-to-stride": { title: "Scoop → Stride", summary: "Scoop emits article.published and article.retracted; Stride consumes them.",
+    sections: [{ label: "Events", list: ["article.published", "article.retracted"] }]},
+  "scoop-events-to-stride": { title: "Scoop events → Stride consumer", summary: "Stride ingest stage subscribes to the Scoop ENS topics.", sections: []},
+  "stride-to-storytelling-msk": { title: "Stride → Storytelling MSK", summary: "Stride publish stage emits storytelling.content.rendered and .retracted, partitioned by article_id.",
+    sections: [
+      { label: "Topics", list: ["storytelling.content.rendered", "storytelling.content.retracted"] },
+      { label: "Key", code: "article_id (Scoop UUID)" }
+    ]},
+  "stride-to-s3": { title: "Stride → ta-rendered-articles S3", summary: "Stride persist stage writes the rendered article (versioned) to S3 before publishing the event.",
+    sections: [{ label: "Order", text: "S3 write precedes MSK publish so consumers can always resolve the body by article_id." }]},
+
+  // ===== SECTION 2 NODES =====
+  "storytelling-msk-ref": { title: "Storytelling MSK", subtitle: "see section 1", summary: "Same cluster as section 1. Repeated here for fan-out clarity.", sections: []},
+  "opensearch-indexer": { title: "OpenSearch Indexer", subtitle: "DVSP service · NEW · CC-2380 · Tier 2", summary: "Subscribes to storytelling.content.rendered and writes bulk upserts to TA OpenSearch.",
+    sections: [
+      { label: "Status", tag: "new" },
+      { label: "Input", code: "storytelling.content.rendered" },
+      { label: "Output", text: "JSON bulk upsert to TA OpenSearch (same search-articles-read index WP writes to)." },
+      { label: "Tier", text: "Tier 2 — availability matters for search freshness but not hard real-time." },
+      { label: "Ticket", code: "CC-2380" }
+    ]},
+  "alice-shipper": { title: "Alice Shipper", subtitle: "DVSP service · NEW · Tier 3", summary: "Subscribes to storytelling.content.rendered and publishes to the Alice GCP Pub/Sub topic for NYT ad targeting.",
+    sections: [
+      { label: "Status", tag: "new" },
+      { label: "Input", code: "storytelling.content.rendered" },
+      { label: "Output", code: "GCP Pub/Sub topic ta-asset-grapeshot" },
+      { label: "Why cross-cloud", text: "NYT Alice/Grapeshot runs in GCP. TA publishes from AWS into GCP Pub/Sub directly." },
+      { label: "Payload", text: "Same general shape as the existing WP publish_to_alice() payload, translated for Pitch-authored articles." },
+      { label: "Tier", text: "Tier 3 — ad targeting tolerates minutes of lag." }
+    ]},
+  "pubp-shipper": { title: "PubP Shipper", subtitle: "DVSP service · NEW · Tier 1", summary: "Subscribes to storytelling.content.rendered and pushes to the NYT PubP Gateway (gRPC). Replaces the inline publishToPubP handler in Apollo's kafkaConsumer for Stride articles.",
+    sections: [
+      { label: "Status", tag: "new" },
+      { label: "Input", code: "storytelling.content.rendered" },
+      { label: "Output", text: "gRPC call to PubP Gateway with an AthleticArticle protobuf. Then the Gateway persists to the PubP Kafka Monolog which fans out to Bodega, BigQuery, Samizdat, Content Search, and cms-applenews." },
+      { label: "Tier", text: "Tier 1 — PubP must see Stride articles promptly for NYT-wide distribution." },
+      { label: "Protocol", list: [
+        "gRPC to PubP Gateway (GCP_PUBP_GATEWAY_URL)",
+        "JWT authentication (GCP service account, 1h expiry)",
+        "Protobuf message: PublishRequest wrapping an AthleticArticle (from @nyt/pubp/types/schema/AthleticArticle_pb)"
+      ]},
+      { label: "Assembled by", list: [
+        "Transform moved out of theathletic-apollo-express/src/helpers/pubpConverter.js into the PubP Shipper service. Structure unchanged.",
+        "Runs as a standalone DVSP service subscribing to Storytelling MSK — not inside the Apollo Express Kafka consumer."
+      ]},
+      { label: "Top-level AthleticArticle fields", code: "| Field | Type | Source |\n| --- | --- | --- |\n| promotionalProperties | PromotionalProperties | headline (short_title), summary (excerpt), media (image ref) |\n| publicationProperties  | PublicationProperties | source/sourceApplication=\"Athletic\", sourceId=article_id, uri=nyt://athleticarticle/<uuidv5>, url=domain-transformed permalink, firstPublished, lastMajorModification, type=\"athleticarticle\" |\n| creativeWork           | CreativeWork          | title, excerpt, wordcount, language (hardcoded en), bylinesList with Person objects |\n| teamTagsList           | AthleticTag[]         | { tagid: String(post.team_ids[i]), name: post.team_names[i] } |\n| leagueTagsList         | AthleticTag[]         | { tagid: String(post.league_ids[i]), name: post.league_names[i] } |\n| playerTagsList         | AthleticTag[]         | { tagid: String(post.post_team_members[i].id), name: post.post_team_members[i].name } |\n| topicTagsList          | AthleticTag[]         | { tagid: String(post.wp_terms[i].id), name: post.wp_terms[i].name } |\n| bodyContentForSearch   | string                | stripTags(post.article_body) — plain text only |\n| athleticSection        | string                | post.primary_tag |\n| athleticProperties     | AthleticArticle.AthleticProperties | see below |\n| athleticAuthorsList    | AthleticAuthor[]      | Public + private authors merged |\n| athleticKeywords       | string                | post.entity_keywords |" },
+      { label: "Tags — every tag is AthleticTag { tagid: String, name: String }", text: "Both the ID and the human name are sent. For Stride articles, IDs remain stringified strings. Topic tags use WP-style term_ids carried through Scoop." },
+      { label: "Tag example (NBA Lakers article)", code: "leagueTagsList: [ { tagid: \"3\",    name: \"NBA\" } ]\nteamTagsList:   [ { tagid: \"42\",   name: \"Lakers\" } ]\nplayerTagsList: [ { tagid: \"1234\", name: \"LeBron James\" } ]\ntopicTagsList:  [ { tagid: \"789\",  name: \"trade-deadline\" } ]" },
+      { label: "URI scheme", code: "nyt://athleticarticle/{uuidv5(String(article_id), \"84da2fb8-1cb7-5f6e-b2ab-87506a7198d4\")}" },
+      { label: "URI namespace", text: "The UUID namespace 84da2fb8-1cb7-5f6e-b2ab-87506a7198d4 is The Athletic's documented PubP org namespace. Deterministic: republishes of the same article_id produce the same URI." },
+      { label: "What is NOT sent", list: [
+        "Full rendered HTML article body (only stripTags plain text in bodyContentForSearch)",
+        "Ad dropzone markers or ICM placeholders",
+        "Paywall / entitlement metadata",
+        "Any user-specific data"
+      ]},
+      { label: "Error handling", text: "On publish failure, alerts to Slack (#pubp-alerts-prd / -stg). Retries on gRPC transient errors." }
+    ]},
+  "sitemap-generator-stride": { title: "Sitemap Generator (Stride)", subtitle: "DVSP service · NEW · Tier 3", summary: "Writes sitemap-stride.xml to S3/CDN and pings Google after new Stride renders.",
+    sections: [
+      { label: "Status", tag: "new" },
+      { label: "Input", code: "storytelling.content.rendered" },
+      { label: "Output", list: ["sitemap-stride.xml written to S3/CDN", "Google sitemap ping (fire-and-forget GET)"] },
+      { label: "Top-level sitemap.xml", text: "Sitemap index references both sitemap-wp.xml and sitemap-stride.xml as children. Crawlers fetch the index then the children." }
+    ]},
+  "cache-purge-lambda": { title: "Cache Purge Lambda", subtitle: "bustCacheForArticle (existing) · EXTENDED", summary: "Existing Lambda. Its DynamoDB Streams trigger stays. A new Kafka (MSK) event source is added so that storytelling.content.rendered / .retracted also drive cache purge.",
+    sections: [
+      { label: "Status", tag: "extended", text: "EXTENDED — existing bustCacheForArticle Lambda gets a new Kafka event source alongside its existing DynamoDB Streams trigger." },
+      { label: "Triggers", list: ["DynamoDB Streams (existing)", "MSK event source on storytelling.content.rendered + .retracted (NEW)"] },
+      { label: "Action", text: "Calls the Apollo bustCacheForArticle GraphQL mutation, which fans out to Redis + Cloudflare + Fastly." },
+      { label: "Why extend rather than replace", text: "The existing Lambda already knows how to invalidate at the three CDN/cache layers. A second trigger is cheaper than duplicating that logic." },
+      { label: "ID routing", text: "The Apollo mutation looks at the article ID shape (integer vs UUID) to select the right backend resolver." }
+    ]},
+  "ta-opensearch-stride": { title: "TA OpenSearch (shared index)", subtitle: "search-articles-read", summary: "Single index receives writes from both the WP inline path and the new OpenSearch Indexer.",
+    sections: [
+      { label: "Scope", text: "Receives WP article upserts (via athArticleIndex) AND Stride article upserts (via the new OpenSearch Indexer service). Both populations coexist in one index." },
+      { label: "ID collisions", text: "None. WP IDs are integers, Stride IDs are UUIDs — disjoint doc-id namespace." }
+    ]},
+  "alice-pubsub-stride": { title: "Alice → NYT ad targeting", subtitle: "GCP Pub/Sub ta-asset-grapeshot", summary: "Single Pub/Sub topic receives messages from both WP publish_to_alice() and the new Alice Shipper.",
+    sections: [
+      { label: "Scope", text: "Grapeshot consumer sees one stream of TA articles — both WP- and Stride-sourced." },
+      { label: "Payload", text: "Metadata + article body text, used for contextual keyword extraction for ad targeting." }
+    ]},
+  "pubp-gateway-stride": { title: "PubP Gateway → Monolog", subtitle: "AthleticArticle protobuf · NYT-wide fan-out", summary: "PubP Gateway (gRPC) persists to the PubP Kafka Monolog, which fans out to Bodega, BigQuery, Samizdat, Content Search, and cms-applenews.",
+    sections: [
+      { label: "Scope", text: "Receives WP articles (via Apollo kafkaConsumer → publishToPubP) AND Stride articles (via PubP Shipper). Downstream NYT consumers see one AthleticArticle stream." },
+      { label: "Consumers", list: ["Apple News (nytm/cms-applenews)", "Content Search (Denormalizer → ES)", "Alice Assets Consumer", "Bodega (GCS + Memcached content cache)", "Samizdat (GraphQL, reads Bodega)", "BigQuery (Dataflow → Pub/Sub → BQ)"] }
+    ]},
+  "sitemap-stride-xml": { title: "sitemap-stride.xml + Google ping", subtitle: "S3/CDN served file", summary: "Sitemap-stride.xml carries the Stride article corpus. The top-level sitemap.xml indexes both it and sitemap-wp.xml.",
+    sections: [
+      { label: "Top-level index", text: "sitemap.xml lists sitemap-wp.xml + sitemap-stride.xml as children." },
+      { label: "Crawlers", text: "Google / Bing fetch the index then the children on their own schedule." }
+    ]},
+  "cache-purge-targets": { title: "Apollo Redis + Cloudflare + Fastly", subtitle: "bustCacheForArticle fan-out", summary: "The Apollo bustCacheForArticle mutation invalidates all three layers. Same mutation is called by the DynamoDB Streams trigger (today) and by the new MSK trigger (Stride).",
+    sections: [
+      { label: "Layers", list: ["Apollo Redis — REST DataSource cache", "Cloudflare — edge cache purge", "Fastly — CDN purge"] },
+      { label: "ID routing", text: "Apollo resolvers route by ID shape. Integer IDs hit the WP cache keys; UUIDs hit Scoop-backed cache keys." }
+    ]},
+
+  // ===== SECTION 2 EDGES =====
+  "msk-to-opensearch-indexer": { title: "MSK → OpenSearch Indexer", summary: "Kafka subscription on storytelling.content.rendered; consumer group for the Indexer service.",
+    sections: [{ label: "Side effect", text: "Bulk upsert to search-articles-read." }]},
+  "msk-to-alice-shipper": { title: "MSK → Alice Shipper", summary: "Kafka subscription on storytelling.content.rendered; produces to GCP Pub/Sub.",
+    sections: [{ label: "Cross-cloud", text: "AWS (MSK) → GCP (Pub/Sub). Managed via GCP service account." }]},
+  "msk-to-pubp-shipper": { title: "MSK → PubP Shipper", summary: "Kafka subscription that drives the gRPC publish to PubP Gateway.",
+    sections: [{ label: "Tier", text: "Tier 1 — consumer lag monitored closely." }]},
+  "msk-to-sitemap-stride": { title: "MSK → Sitemap Generator (Stride)", summary: "Kafka subscription that triggers sitemap-stride.xml regeneration.", sections: []},
+  "msk-to-cache-purge": { title: "MSK → Cache Purge Lambda", summary: "New Kafka event source on the existing bustCacheForArticle Lambda. Adds Kafka trigger alongside the existing DynamoDB Streams trigger.",
+    sections: [{ label: "Integration", text: "AWS Lambda Event Source Mapping on MSK." }]},
+  "opensearch-indexer-to-opensearch": { title: "OpenSearch Indexer → TA OpenSearch", summary: "HTTP bulk upsert to the shared search-articles-read index.",
+    sections: [
+      { label: "Payload", tag: "content", list: ["title", "body (rendered + plain text)", "authors", "team/league/player/topic tags", "published/updated timestamps", "image URLs"] }
+    ]},
+  "alice-shipper-to-pubsub": { title: "Alice Shipper → GCP Pub/Sub", summary: "JSON message published to ta-asset-grapeshot.",
+    sections: [
+      { label: "Payload", tag: "mixed", text: "Metadata + post_content (article body) for Grapeshot keyword extraction." }
+    ]},
+  "pubp-shipper-to-gateway": { title: "PubP Shipper → PubP Gateway", summary: "gRPC PublishRequest with AthleticArticle: metadata, tags (id+name), stripped body text, authors, URI (nyt://athleticarticle/<uuidv5>).",
+    sections: [
+      { label: "Protocol", list: [
+        "gRPC to PubP Gateway (GCP_PUBP_GATEWAY_URL)",
+        "JWT authentication (GCP service account, 1h expiry)",
+        "Protobuf message: PublishRequest wrapping an AthleticArticle"
+      ]},
+      { label: "Transform origin", text: "Code previously lived in theathletic-apollo-express/src/helpers/pubpConverter.js. Moved to the PubP Shipper service; structure unchanged." },
+      { label: "URI", code: "nyt://athleticarticle/{uuidv5(article_id, namespace)}" },
+      { label: "See node", text: "Click the PubP Shipper node for the full AthleticArticle field table." }
+    ]},
+  "sitemap-stride-to-xml": { title: "Sitemap Generator (Stride) → sitemap-stride.xml", summary: "Regenerates sitemap-stride.xml and pings Google.",
+    sections: [{ label: "Ping", code: "GET https://www.google.com/ping?sitemap=<encoded sitemap-stride.xml URL>" }]},
+  "cache-purge-to-targets": { title: "Cache Purge Lambda → Apollo bustCacheForArticle", summary: "The Lambda invokes the Apollo GraphQL mutation, which invalidates Apollo Redis, Cloudflare, and Fastly.",
+    sections: [{ label: "Note", text: "Same mutation as the existing DynamoDB Streams path. Apollo does the routing by ID shape." }]},
+
+  // ===== SECTION 3 NODES =====
+  "wordpress-ref": { title: "WordPress publish (legacy, section 3 view)", subtitle: "same as section 1", summary: "Repeated node. WP keeps its existing publish fan-out for WP-authored articles.", sections: []},
+  "wp-opensearch": { title: "WP inline OpenSearch write", subtitle: "athArticleIndex / index_post()", summary: "Existing PHP path: save_post fires index_post() which writes to TA OpenSearch. Unchanged by Stride rollout.",
+    sections: [
+      { label: "File", code: "the-athletic/web/app/themes/athletic/inc/class.athArticleIndex.inc.php" },
+      { label: "Index", code: "search-articles-read" },
+      { label: "Status", text: "Continues to run for WP-authored articles." }
+    ]},
+  "wp-alice-pubsub": { title: "WP publish_to_alice()", subtitle: "GCP Pub/Sub ta-asset-grapeshot", summary: "Existing WP publish pushes to Alice for NYT ad targeting. Includes body content for Grapeshot.",
+    sections: [
+      { label: "File", code: "the-athletic/web/app/themes/athletic/functions.php:8770" },
+      { label: "Guards", text: "ALICE_PUBSUB env flag AND is_production()" },
+      { label: "Status", text: "Continues to run for WP-authored articles." }
+    ]},
+  "wp-analytics-kafka": { title: "TA Analytics Event Bus (from WP)", subtitle: "Confluent · post-publish / post-delete", summary: "WP still produces post-publish / post-delete (and 15+ other event types) to {stage}-analytics. Apollo's slimmed kafkaConsumer still processes article events for WP-only articles.",
+    sections: [
+      { label: "Topic", code: "{stage}-analytics" },
+      { label: "Note", text: "This is NOT an article-specific topic. It carries analytics events. Article publish events remain on it for WP content; for Stride the new Storytelling MSK is used instead." },
+      { label: "Downstream", text: "Apollo kafkaConsumer → publishToPubP → PubP Gateway (WP path). For Stride articles the PubP Shipper service replaces this step." }
+    ]},
+  "wp-cache-purge": { title: "WP purge_article_cache()", subtitle: "Fastly + Cloudflare + Apollo Redis", summary: "Existing inline PHP on save_post / transition. Purges article URLs from CDN + app cache.",
+    sections: [
+      { label: "Triggers", list: ["save_post hook", "transition_post_status hook"] },
+      { label: "Layers purged", list: ["Fastly edge", "Cloudflare edge", "Apollo Redis keys"] },
+      { label: "Status", text: "Continues to run for WP-authored articles. Mirrored by Cache Purge Lambda (extended) for Stride articles." }
+    ]},
+  "wp-sitemap-writer": { title: "WP sitemap writer", subtitle: "sitemap-*.xml.php (10 files)", summary: "Existing WP sitemap regeneration. Now rebranded conceptually as sitemap-wp.xml for Stride-era routing.",
+    sections: [
+      { label: "Files", list: [
+        "/sitemap-authors.xml.php",
+        "/sitemap-tags.xml.php",
+        "/sitemap-news.xml.php",
+        "/sitemap-teams.xml.php",
+        "/sitemap-cities.xml.php",
+        "/sitemap-videos.xml.php",
+        "/sitemap-schedule.xml.php",
+        "/sitemap-roster.xml.php",
+        "/sitemap-players.xml.php",
+        "/sitemap-verticals.xml.php"
+      ]},
+      { label: "Top-level", text: "The new sitemap.xml index references these as children alongside sitemap-stride.xml." }
+    ]},
+  "wp-nyt-cms-rest": { title: "NYT CMS REST (print)", subtitle: "editor-opt-in · DEFERRED", summary: "Editor-triggered push to NYT CMS for print workflows. Out of scope for Stride rollout. Retires / migrates when the Scoop editor replaces the WP editor.",
+    sections: [
+      { label: "Status", tag: "metadata", text: "Deferred. No Stride adapter planned — migrates with the editor cutover." },
+      { label: "Auth", text: "OAuth2 Bearer + x-api-key" }
+    ]},
+
+  // ===== SECTION 3 EDGES =====
+  "wp-to-wp-opensearch": { title: "WP save_post → athArticleIndex", summary: "Existing hook triggers OpenSearch bulk upsert.", sections: []},
+  "wp-to-wp-alice": { title: "WP save_post → publish_to_alice()", summary: "Existing hook publishes to GCP Pub/Sub ta-asset-grapeshot.", sections: []},
+  "wp-to-wp-analytics": { title: "WP → TA Analytics Event Bus", summary: "post-publish / post-delete events produced to Confluent {stage}-analytics.", sections: []},
+  "wp-to-wp-cache-purge": { title: "WP → purge_article_cache()", summary: "Inline purge of Fastly, Cloudflare, and Apollo Redis.", sections: []},
+  "wp-to-wp-sitemap": { title: "WP → sitemap writer", summary: "Regenerates the 10 sitemap XML files.", sections: []},
+  "wp-to-nyt-cms-rest": { title: "WP → NYT CMS REST (print, deferred)", summary: "Editor-opt-in push. Not part of Stride scope.", sections: []},
+
+  // ===== SECTION 4 NODES =====
+  "wp-s3-ref": { title: "WP rendered article S3 (ref)", subtitle: "existing bucket", summary: "Apollo body resolver reads from here when article_id is an integer.", sections: []},
+  "ta-rendered-s3-ref": { title: "ta-rendered-articles S3 (ref)", subtitle: "new bucket", summary: "Apollo body resolver reads from here when article_id is a Scoop UUID.", sections: []},
+  "wp-analytics-kafka-ref": { title: "TA Analytics Event Bus (ref)", subtitle: "non-article events", summary: "Apollo slimmed kafkaConsumer still reads non-article event types (podcast, customer, notification prefs, etc.).",
+    sections: [{ label: "See", text: "Section 5 for full detail on Analytics Event Bus coexistence." }]},
+  "apollo-unified": { title: "Apollo GraphQL (unified reader)", subtitle: "Pattern C merged data sources", summary: "Central role in the parallel-pipelines era. Reads from both S3 buckets, routes by ID shape, merges WP + Scoop lists internally so downstream consumers see one list.",
+    sections: [
+      { label: "Data sources", list: [
+        "WP data source (existing) — queries WP MySQL + reads WP S3 rendered bodies",
+        "Scoop data source (NEW) — queries Scoop metadata + reads ta-rendered-articles S3"
+      ]},
+      { label: "List resolvers (Pattern C)", list: [
+        "latestArticles merges results from both data sources internally",
+        "Feed/list resolvers produce a unified list output — callers see one stream",
+        "Filter rendered_at IS NOT NULL excludes un-rendered articles (e.g., Scoop articles mid-publish)"
+      ]},
+      { label: "Body resolver routing", list: [
+        "Integer article_id → WP S3 rendered body",
+        "UUID article_id → ta-rendered-articles S3 rendered body"
+      ]},
+      { label: "Slimmed kafkaConsumer", list: [
+        "Reads Confluent TA Analytics Event Bus only (same as today)",
+        "Retains podcast-*, customer, notification-preferences, user-add / remove, etc. handlers",
+        "post-publish / post-delete / publishToPubP handlers EXTRACTED for Stride path — now owned by PubP Shipper + Cache Purge Lambda",
+        "For WP articles the in-Apollo handlers continue to run"
+      ]},
+      { label: "File", code: "theathletic-apollo-express/src/kafkaConsumer.js (reduced)" }
+    ]},
+  "pull-flatplan": { title: "FlatPlan → Apple News", subtitle: "polls /api/rss/flatplan/*", summary: "Consumes the unified feed. Thanks to Pattern C, FlatPlan sees WP and Stride articles in one stream without change.",
+    sections: [
+      { label: "Format", text: "Atom 1.0 XML" },
+      { label: "Status", text: "Unchanged consumer-side. Only the Apollo data-source layer changed." }
+    ]},
+  "pull-google-bing": { title: "Google / Bing crawlers", subtitle: "/feeds/rss/* and sitemap crawl", summary: "Consumes unified RSS and sitemap index. Sees WP + Stride as one corpus.",
+    sections: [
+      { label: "Format", text: "Atom / RSS" },
+      { label: "Indexing", text: "Discovery via sitemap.xml index (WP + Stride children)." }
+    ]},
+  "pull-ta-clients": { title: "TA web / iOS / Android clients", subtitle: "GraphQL over Apollo", summary: "Native apps and web call Apollo. They remain on the same GraphQL shape — merge happens server-side.",
+    sections: [{ label: "Status", text: "No client-side changes. Pattern C hides the split." }]},
+  "pull-sitemap-index": { title: "sitemap.xml (top-level)", subtitle: "index over sitemap-wp + sitemap-stride", summary: "New top-level sitemap index. Children are the WP sitemaps (unchanged file names, roled as -wp) and sitemap-stride.xml.",
+    sections: [
+      { label: "Children", list: ["sitemap-wp.xml (role — backed by existing WP sitemap-*.xml.php files)", "sitemap-stride.xml"] },
+      { label: "Crawlers", text: "Google / Bing fetch the index then the children on their own schedule." }
+    ]},
+  "iterable-php-endpoints": { title: "Iterable /v1iterable/*", subtitle: "REWORK REQUIRED", summary: "Currently queries WP MySQL directly. Must move to Apollo-backed reads under the new constraint, otherwise cannot see Pitch-authored articles.",
+    sections: [
+      { label: "Status", tag: "rework", text: "REWORK REQUIRED." },
+      { label: "Current", text: "PHP endpoints in the-athletic/web/api.php read WordPress MySQL directly — they will not see Scoop/Stride articles at all." },
+      { label: "Target", text: "Re-implement against Apollo (or a thin service in front of Apollo) so the unified list is visible to Iterable." },
+      { label: "Endpoints affected", list: ["/v1iterable/evergreen", "/v1iterable/recent_stories", "/v1iterable/unread_saved_stories"] },
+      { label: "Auth", code: "ITERABLE_FEED_API_KEY (api_domain=3)" }
+    ]},
+
+  // ===== SECTION 4 EDGES =====
+  "wp-s3-to-apollo": { title: "WP S3 → Apollo", summary: "Apollo body resolver reads from WP S3 when article_id is an integer.", sections: []},
+  "ta-rendered-s3-to-apollo": { title: "ta-rendered-articles → Apollo", summary: "Apollo body resolver (Scoop data source) reads from the new bucket when article_id is a UUID.", sections: []},
+  "analytics-to-apollo-slim": { title: "Analytics → Apollo slimmed consumer", summary: "Apollo still consumes podcast / customer / notification events from Confluent. Article events are routed through the Stride adapters instead.", sections: []},
+  "apollo-to-flatplan": { title: "Apollo → FlatPlan", summary: "FlatPlan polls Next.js /api/rss/flatplan/* which calls Apollo for the unified list.", sections: []},
+  "apollo-to-google-bing": { title: "Apollo → Google / Bing", summary: "Crawlers poll Next.js RSS endpoints backed by Apollo.", sections: []},
+  "apollo-to-ta-clients": { title: "Apollo → TA clients", summary: "Web, iOS, Android call Apollo directly.", sections: []},
+  "apollo-to-sitemap-index": { title: "Apollo → sitemap.xml index", summary: "Not a direct pull — the index simply references the two child sitemaps. Shown here as the unified crawl surface.", sections: []},
+  "apollo-to-iterable-rework": { title: "Apollo → Iterable endpoints (post-rework)", summary: "After rework, Iterable's /v1iterable/* endpoints read via Apollo and see the unified list.", sections: []},
+
+  // ===== SECTION 5 NODES =====
+  "confluent-analytics-bus": { title: "TA Analytics Event Bus (Confluent)", subtitle: "Data Platform owned · 4 brokers", summary: "Confluent Kafka cluster. Carries ~13 non-article topics. Apollo's slimmed kafkaConsumer still reads podcast/customer/notification events from here.",
+    sections: [
+      { label: "Ownership", text: "Data Platform." },
+      { label: "Brokers", text: "4 Confluent brokers." },
+      { label: "Topics (non-exhaustive)", list: [
+        "podcast-comment / delete / update",
+        "update-customer",
+        "update-notif-preferences",
+        "update-staff",
+        "user-add-* / user-remove-*",
+        "article-view / save / unsave",
+        "feed-article-read",
+        "update_user_end_date",
+        "gift_card_purchase / redeemed"
+      ]},
+      { label: "Article events here", text: "WP still produces post-publish and post-delete to {stage}-analytics. For WP articles those drive Apollo's handlers. Stride does NOT produce to this bus." }
+    ]},
+  "storytelling-msk-coexist": { title: "Storytelling MSK (ref)", subtitle: "see section 1", summary: "The new cluster. Purpose-built for article render events. Not mixed with analytics.", sections: []},
+  "apollo-slim-consumer": { title: "Apollo slimmed kafkaConsumer", subtitle: "Confluent subscriber only", summary: "Same code file as today (src/kafkaConsumer.js) but with article-event handlers extracted.",
+    sections: [
+      { label: "Still handles", list: ["podcast-* (refreshPodcastEpisode)", "update-customer, user-add / remove (refreshCustomer, refreshUserFollowing*, etc.)", "update-notif-preferences (refreshGameStartNotifyByPreference)", "update-staff (refreshStaff, refreshAnnouncements)", "article-view / save / unsave (refreshUserData, refreshSavedArticles)", "feed-article-read, update_user_end_date"] },
+      { label: "No longer handles in the Stride pipeline", list: ["post-publish → publishToPubP + refreshArticle chain (moved to PubP Shipper + Cache Purge Lambda for Stride)"] },
+      { label: "Note", text: "For WP-authored articles these handlers still run from Confluent. For Stride-authored articles the work is done by the new adapter services." }
+    ]},
+  "data-platform-warehouse": { title: "Data Platform warehouse", subtitle: "Kafka Connect → S3 → EMR → Redshift", summary: "Standard Data Platform pipeline. Reads from Confluent today.",
+    sections: [
+      { label: "Path", text: "Confluent (Kafka Connect) → S3 → EMR → Redshift → dbt models → Mode Analytics." },
+      { label: "Open question", text: "How do article-publish analytics flow for Stride-authored articles? Options under discussion: Stride emits an analytics projection back to Confluent for the warehouse to consume unchanged; Data Platform adds a Connect sink on Storytelling MSK; dual-path with reconciliation." }
+    ]},
+
+  // ===== SECTION 5 EDGES =====
+  "confluent-to-apollo-slim": { title: "Confluent → Apollo slimmed consumer", summary: "Apollo subscribes to Confluent for non-article events.", sections: []},
+  "confluent-to-warehouse": { title: "Confluent → Data Platform warehouse", summary: "Kafka Connect sinks into the warehouse pipeline.", sections: []},
+
+  // ===== SECTION 6 NODES =====
+  "deferred-nyt-cms-rest": { title: "NYT CMS REST + Loupe (deferred)", subtitle: "editorial workflow", summary: "Migrates alongside the Scoop editor. Not a Stride destination.",
+    sections: [{ label: "Why deferred", text: "Retires with WP editor cutover. No Stride adapter planned." }]},
+  "deferred-astro-rss": { title: "Astro partnership RSS (out of scope)", subtitle: "depends on briefs", summary: "Contractual / program dependency. Not in Stride scope.", sections: []},
+  "deferred-datalake": { title: "Datalake / archive", subtitle: "covered by S3 versioning", summary: "S3 versioning on ta-rendered-articles is the current archive answer.", sections: []},
+  "deferred-supergraph": { title: "NYT supergraph (request-time)", subtitle: "federated GraphQL", summary: "Read-time integration, not an article destination.", sections: []},
+  "deferred-identity": { title: "NYT Identity / Lire (request-time)", subtitle: "auth + entitlements", summary: "Request-time integration, not article-driven.", sections: []},
+  "deferred-push-notifications": { title: "MEMO / Hermes push (not article-driven)", subtitle: "user and event-driven notifications", summary: "Not triggered by article render. Not a Stride destination.", sections: []}
+};
+
+const tooltip = document.getElementById('tooltip');
+const panel = document.getElementById('panel');
+const overlay = document.getElementById('overlay');
+const panelContent = document.getElementById('panel-content');
+
+function tooltipFor(id) {
+  const d = DATA[id];
+  if (!d) return { title: id, summary: '' };
+  return { title: d.title || id, summary: d.summary || '' };
+}
+
+function buildPanelHTML(d) {
+  if (!d) return 'No data';
+  const tag = d.tag ? `<span class="tag ${d.tag}">${d.tag.toUpperCase()}</span>` : '';
+  let html = `<h3>${d.title || ''}</h3>`;
+  if (d.subtitle) html += `<p class="subtitle">${d.subtitle}</p>`;
+  if (d.summary) html += `<p>${tag}${d.summary}</p>`;
+  (d.sections || []).forEach(s => {
+    html += `<section><div class="label">${s.label}</div>`;
+    if (s.tag) html += `<span class="tag ${s.tag}">${s.tag.toUpperCase()}</span> `;
+    if (s.text) html += `<p>${s.text}</p>`;
+    if (s.code) html += `<pre>${s.code}</pre>`;
+    if (s.list) html += `<ul>${s.list.map(item => `<li>${item}</li>`).join('')}</ul>`;
+    html += '</section>';
+  });
+  return html;
+}
+
+function openPanel(id) {
+  const d = DATA[id];
+  panelContent.innerHTML = buildPanelHTML(d);
+  panel.classList.add('open');
+  overlay.classList.add('open');
+}
+function closePanel() {
+  panel.classList.remove('open');
+  overlay.classList.remove('open');
+}
+overlay.addEventListener('click', closePanel);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+function showTooltip(e, id) {
+  const { title, summary } = tooltipFor(id);
+  if (!title && !summary) return;
+  tooltip.innerHTML = `<div class="tip-title">${title}</div>${summary}<div class="tip-hint">click to expand</div>`;
+  tooltip.classList.add('visible');
+  positionTooltip(e);
+}
+function positionTooltip(e) {
+  const pad = 14;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  const rect = tooltip.getBoundingClientRect();
+  if (x + rect.width > window.innerWidth) x = e.clientX - rect.width - pad;
+  if (y + rect.height > window.innerHeight) y = e.clientY - rect.height - pad;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+}
+function hideTooltip() { tooltip.classList.remove('visible'); }
+
+document.querySelectorAll('[data-id]').forEach(el => {
+  const id = el.dataset.id;
+  el.addEventListener('mouseenter', e => showTooltip(e, id));
+  el.addEventListener('mousemove', positionTooltip);
+  el.addEventListener('mouseleave', hideTooltip);
+  el.addEventListener('click', e => { e.stopPropagation(); openPanel(id); });
+});
+document.querySelectorAll('[data-edge]').forEach(el => {
+  const id = el.dataset.edge;
+  el.addEventListener('mouseenter', e => showTooltip(e, id));
+  el.addEventListener('mousemove', positionTooltip);
+  el.addEventListener('mouseleave', hideTooltip);
+  el.addEventListener('click', e => { e.stopPropagation(); openPanel(id); });
+});
+
+// Shared SVG defs
+function ensureMarkers() {
+  const svgs = document.querySelectorAll('svg');
+  svgs.forEach((svg, idx) => {
+    if (svg.querySelector('defs')) return;
+    const ns = 'http://www.w3.org/2000/svg';
+    const defs = document.createElementNS(ns, 'defs');
+    const markers = [
+      { id: `arrow-content-${idx}`, fill: '#1f4e79' },
+      { id: `arrow-metadata-${idx}`, fill: '#2d8f79' },
+      { id: `arrow-mixed-${idx}`, fill: '#5b3886' },
+      { id: `arrow-pull-${idx}`, fill: '#c76a0c' },
+      { id: `arrow-inbound-${idx}`, fill: '#8b1538' },
+      { id: `arrow-hook-${idx}`, fill: '#0e7490' },
+      { id: `arrow-new-${idx}`, fill: '#166534' },
+      { id: `arrow-deferred-${idx}`, fill: '#94a3b8' }
+    ];
+    markers.forEach(m => {
+      const marker = document.createElementNS(ns, 'marker');
+      marker.setAttribute('id', m.id);
+      marker.setAttribute('viewBox', '0 0 10 10');
+      marker.setAttribute('refX', '9');
+      marker.setAttribute('refY', '5');
+      marker.setAttribute('markerWidth', '8');
+      marker.setAttribute('markerHeight', '8');
+      marker.setAttribute('orient', 'auto-start-reverse');
+      const p = document.createElementNS(ns, 'path');
+      p.setAttribute('d', 'M0,0 L10,5 L0,10 z');
+      p.setAttribute('fill', m.fill);
+      marker.appendChild(p);
+      defs.appendChild(marker);
+    });
+    svg.appendChild(defs);
+  });
+}
+ensureMarkers();
+</script>
+</body>
+</html>
