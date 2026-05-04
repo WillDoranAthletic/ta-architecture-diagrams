@@ -199,11 +199,11 @@ footer a:hover { text-decoration: underline; }
       <text class="kv" x="1016" y="134" font-size="10"><tspan class="kv-key">IDs:</tspan> Scoop UUIDs</text>
     </g>
 
-    <!-- Scoop → Stride Kafka topic (article.published / article.retracted) -->
+    <!-- Scoop → Stride Kafka topic (storytelling.content.published / storytelling.content.retracted) -->
     <g class="node kafka" data-id="scoop-events">
       <rect x="1320" y="60" width="260" height="90" rx="10"/>
       <text class="title" x="1450" y="86" text-anchor="middle" font-size="13">Scoop events (ENS)</text>
-      <text class="subtitle" x="1450" y="104" text-anchor="middle" font-size="10">article.published / article.retracted</text>
+      <text class="subtitle" x="1450" y="104" text-anchor="middle" font-size="10"><a xlink:href="https://coda.io/d/_dVZxUojIlfv#3-6-Contracts_tug-nJ_y/r0&amp;view=right" target="_blank"><tspan>storytelling.content.published</tspan></a> / storytelling.content.retracted</text>
       <text class="kv" x="1332" y="125" font-size="10"><tspan class="kv-key">key:</tspan> article UUID</text>
       <text class="kv" x="1332" y="141" font-size="10"><tspan class="kv-key">delivery:</tspan> Scoop → Stride consumer</text>
     </g>
@@ -214,7 +214,7 @@ footer a:hover { text-decoration: underline; }
       <text class="badge-pill new" x="1020" y="232">NEW</text>
       <text class="title" x="1290" y="244" text-anchor="middle">Stride render pipeline</text>
       <text class="subtitle" x="1290" y="262" text-anchor="middle" font-size="11">6-stage DVSP service. Renders Pitch-authored articles.</text>
-      <text class="kv" x="1016" y="286" font-size="10"><tspan class="kv-key">input:</tspan> article.published / article.retracted (Scoop)</text>
+      <text class="kv" x="1016" y="286" font-size="10"><tspan class="kv-key">input:</tspan> <a xlink:href="https://coda.io/d/_dVZxUojIlfv#3-6-Contracts_tug-nJ_y/r0&amp;view=right" target="_blank"><tspan>storytelling.content.published</tspan></a> / storytelling.content.retracted (Scoop)</text>
       <text class="kv" x="1016" y="302" font-size="10"><tspan class="kv-key">stages:</tspan> ingest → normalize → hydrate → render → persist → publish</text>
       <text class="kv" x="1016" y="318" font-size="10"><tspan class="kv-key">output:</tspan> storytelling.content.rendered + .retracted on new MSK</text>
     </g>
@@ -742,22 +742,22 @@ const DATA = {
       ]},
       { label: "Detail", text: "See the existing destinations-topology.html for full detail. This node is a reference only." }
     ]},
-  "scoop-cms": { title: "Scoop (CMS)", subtitle: "source for Pitch-authored articles", summary: "Emits article.published and article.retracted events as articles are authored in the Pitch editor. Scoop article IDs are UUIDs.",
+  "scoop-cms": { title: "Scoop (CMS)", subtitle: "source for Pitch-authored articles", summary: "Emits <a href=\"https://coda.io/d/_dVZxUojIlfv#3-6-Contracts_tug-nJ_y/r0&view=right\" target=\"_blank\">storytelling.content.published</a> and storytelling.content.retracted events as articles are authored in the Pitch editor. Scoop article IDs are UUIDs.",
     sections: [
       { label: "IDs", text: "Scoop UUIDs. Disjoint from WP post_ids." },
-      { label: "Events", list: ["article.published", "article.retracted"] },
+      { label: "Events", list: ["storytelling.content.published", "storytelling.content.retracted"] },
       { label: "Delivery", text: "Scoop → Stride consumer via the Scoop event system (ENS)." }
     ]},
-  "scoop-events": { title: "Scoop events (ENS)", subtitle: "article.published / article.retracted", summary: "Event stream from Scoop to Stride. One topic per event type; key is the Scoop article UUID.",
+  "scoop-events": { title: "Scoop events (ENS)", subtitle: "<a href=\"https://coda.io/d/_dVZxUojIlfv#3-6-Contracts_tug-nJ_y/r0&view=right\" target=\"_blank\">storytelling.content.published</a> / storytelling.content.retracted", summary: "Event stream from Scoop to Stride. One topic per event type; key is the Scoop article UUID.",
     sections: [
-      { label: "Event shape", list: ["article.published — full Scoop entity payload", "article.retracted — article UUID + retraction metadata"] },
+      { label: "Event shape", list: ["storytelling.content.published — full Scoop entity payload", "storytelling.content.retracted — article UUID + retraction metadata"] },
       { label: "Delivery", text: "Stride consumes these as its input. They do not touch the new Storytelling MSK cluster." }
     ]},
   "stride": { title: "Stride render pipeline", subtitle: "6-stage DVSP service · NEW", summary: "Renders Pitch-authored articles. 6-stage pipeline: ingest → normalize → hydrate → render → persist → publish. Emits storytelling.content.rendered on the new MSK.",
     sections: [
       { label: "Status", tag: "new", text: "NEW service. The authoritative renderer for Pitch-authored articles for the entire lifetime of those articles." },
       { label: "Stages", list: [
-        "Ingest — consume article.published / article.retracted from Scoop ENS",
+        "Ingest — consume <a href=\"https://coda.io/d/_dVZxUojIlfv#3-6-Contracts_tug-nJ_y/r0&view=right\" target=\"_blank\">storytelling.content.published</a> / storytelling.content.retracted from Scoop ENS",
         "Normalize — translate Scoop payload into the internal article model",
         "Hydrate — resolve entities (teams, leagues, authors, players, etc.) from reference services",
         "Render — produce rendered HTML and metadata",
@@ -788,8 +788,8 @@ const DATA = {
     sections: [{ label: "Note", text: "Unchanged. WP article IDs, existing bucket." }]},
   "wp-to-existing-side-effects": { title: "WP → existing side effects", summary: "WP continues firing analytics Kafka, cache purge, OpenSearch, PubP, Alice, sitemap, Loupe for WP-authored articles.",
     sections: [{ label: "See", text: "Section 3 for the per-destination view of what still fires from WP." }]},
-  "scoop-to-stride": { title: "Scoop → Stride", summary: "Scoop emits article.published and article.retracted; Stride consumes them.",
-    sections: [{ label: "Events", list: ["article.published", "article.retracted"] }]},
+  "scoop-to-stride": { title: "Scoop → Stride", summary: "Scoop emits <a href=\"https://coda.io/d/_dVZxUojIlfv#3-6-Contracts_tug-nJ_y/r0&view=right\" target=\"_blank\">storytelling.content.published</a> and storytelling.content.retracted; Stride consumes them.",
+    sections: [{ label: "Events", list: ["storytelling.content.published", "storytelling.content.retracted"] }]},
   "scoop-events-to-stride": { title: "Scoop events → Stride consumer", summary: "Stride ingest stage subscribes to the Scoop ENS topics.", sections: []},
   "stride-to-storytelling-msk": { title: "Stride → Storytelling MSK", summary: "Stride publish stage emits storytelling.content.rendered and .retracted, partitioned by article_id.",
     sections: [
