@@ -213,10 +213,10 @@ footer a:hover { text-decoration: underline; }
       <rect x="1000" y="210" width="580" height="130" rx="12"/>
       <text class="badge-pill new" x="1020" y="232">NEW</text>
       <text class="title" x="1290" y="244" text-anchor="middle">Stride render pipeline</text>
-      <text class="subtitle" x="1290" y="262" text-anchor="middle" font-size="11">6-stage DVSP service. Renders Pitch-authored articles.</text>
+      <text class="subtitle" x="1290" y="262" text-anchor="middle" font-size="11">6-stage DVSP service. Renders Pitch-authored articles (pre-sprinkle).</text>
       <text class="kv" x="1016" y="286" font-size="10"><tspan class="kv-key">input:</tspan> <a xlink:href="https://coda.io/d/_dVZxUojIlfv#3-6-Contracts_tug-nJ_y/r0&amp;view=right" target="_blank"><tspan>storytelling.content.published</tspan></a> / storytelling.content.retracted (Scoop)</text>
       <text class="kv" x="1016" y="302" font-size="10"><tspan class="kv-key">stages:</tspan> ingest → normalize → hydrate → render → persist → publish</text>
-      <text class="kv" x="1016" y="318" font-size="10"><tspan class="kv-key">output:</tspan> storytelling.content.rendered + .retracted on new MSK</text>
+      <text class="kv" x="1016" y="318" font-size="10"><tspan class="kv-key">output:</tspan> pre-sprinkle HTML on S3; Apollo sprinkles ads + ICMs on read</text>
     </g>
 
     <!-- Stride → new MSK Kafka -->
@@ -261,8 +261,8 @@ footer a:hover { text-decoration: underline; }
 
 <div class="section">
   <h2>2. New push-adapter services (fan-out from Storytelling MSK)</h2>
-  <p class="note">Four services subscribe to the Stride MSK topic to ship Pitch-authored articles to downstream destinations. Three are new DVSP services; the fourth extends an existing Lambda.</p>
-  <svg viewBox="0 0 1720 520">
+  <p class="note">Five services subscribe to the Stride MSK topic to ship Pitch-authored articles to downstream destinations. Four are new DVSP services (OpenSearch Indexer, Alice Shipper, PubP Shipper, Push Shipper); Cache Purge extends an existing Lambda.</p>
+  <svg viewBox="0 0 1720 640">
     <!-- Storytelling MSK at top (repeated reference) -->
     <g class="node kafka new-service" data-id="storytelling-msk-ref">
       <rect x="640" y="20" width="440" height="70" rx="10"/>
@@ -271,94 +271,131 @@ footer a:hover { text-decoration: underline; }
       <text class="subtitle" x="860" y="70" text-anchor="middle" font-size="11">storytelling.content.rendered / .retracted  ·  partition key article_id  ·  retention 30d</text>
     </g>
 
-    <!-- Row 1: Four adapter services -->
-    <!-- Four boxes: x positions 40, 460, 880, 1300, width 380, gap 40 -->
+    <!-- Row 1: Five adapter services -->
+    <!-- Five boxes: x positions 40, 384, 728, 1072, 1416, width 304, gap 40 -->
 
     <g class="node new-service" data-id="opensearch-indexer">
-      <rect x="40" y="160" width="380" height="130" rx="10"/>
+      <rect x="40" y="160" width="304" height="130" rx="10"/>
       <text class="badge-pill new" x="54" y="180">NEW · Tier 2</text>
-      <text class="title" x="230" y="198" text-anchor="middle" font-size="13">OpenSearch Indexer</text>
-      <text class="subtitle" x="230" y="216" text-anchor="middle" font-size="10">DVSP service · CC-2380</text>
+      <text class="title" x="192" y="198" text-anchor="middle" font-size="13">OpenSearch Indexer</text>
+      <text class="subtitle" x="192" y="216" text-anchor="middle" font-size="10">DVSP service · CC-2380</text>
       <text class="kv" x="54" y="240" font-size="10"><tspan class="kv-key">input:</tspan> storytelling.content.rendered</text>
       <text class="kv" x="54" y="256" font-size="10"><tspan class="kv-key">output:</tspan> TA OpenSearch bulk upsert</text>
       <text class="kv" x="54" y="272" font-size="10"><tspan class="kv-key">index:</tspan> search-articles-read</text>
     </g>
 
     <g class="node new-service" data-id="alice-shipper">
-      <rect x="460" y="160" width="380" height="130" rx="10"/>
-      <text class="badge-pill new" x="474" y="180">NEW · Tier 3</text>
-      <text class="title" x="650" y="198" text-anchor="middle" font-size="13">Alice Shipper</text>
-      <text class="subtitle" x="650" y="216" text-anchor="middle" font-size="10">DVSP service · cross-cloud push</text>
-      <text class="kv" x="474" y="240" font-size="10"><tspan class="kv-key">input:</tspan> storytelling.content.rendered</text>
-      <text class="kv" x="474" y="256" font-size="10"><tspan class="kv-key">output:</tspan> GCP Pub/Sub ta-asset-grapeshot</text>
-      <text class="kv" x="474" y="272" font-size="10"><tspan class="kv-key">consumer:</tspan> NYT ad targeting</text>
+      <rect x="384" y="160" width="304" height="130" rx="10"/>
+      <text class="badge-pill new" x="398" y="180">NEW · Tier 3</text>
+      <text class="title" x="536" y="198" text-anchor="middle" font-size="13">Alice Shipper</text>
+      <text class="subtitle" x="536" y="216" text-anchor="middle" font-size="10">DVSP service · cross-cloud push</text>
+      <text class="kv" x="398" y="240" font-size="10"><tspan class="kv-key">input:</tspan> storytelling.content.rendered</text>
+      <text class="kv" x="398" y="256" font-size="10"><tspan class="kv-key">output:</tspan> GCP Pub/Sub ta-asset-grapeshot</text>
+      <text class="kv" x="398" y="272" font-size="10"><tspan class="kv-key">consumer:</tspan> NYT ad targeting</text>
     </g>
 
     <g class="node new-service" data-id="pubp-shipper">
-      <rect x="880" y="160" width="380" height="130" rx="10"/>
-      <text class="badge-pill new" x="894" y="180">NEW · Tier 1</text>
-      <text class="title" x="1070" y="198" text-anchor="middle" font-size="13">PubP Shipper</text>
-      <text class="subtitle" x="1070" y="216" text-anchor="middle" font-size="10">DVSP service · replaces inline handler</text>
-      <text class="kv" x="894" y="240" font-size="10"><tspan class="kv-key">input:</tspan> storytelling.content.rendered</text>
-      <text class="kv" x="894" y="256" font-size="10"><tspan class="kv-key">output:</tspan> PubP Gateway (gRPC)</text>
-      <text class="kv" x="894" y="272" font-size="10"><tspan class="kv-key">payload:</tspan> AthleticArticle protobuf</text>
+      <rect x="728" y="160" width="304" height="130" rx="10"/>
+      <text class="badge-pill new" x="742" y="180">NEW · Tier 1</text>
+      <text class="title" x="880" y="198" text-anchor="middle" font-size="13">PubP Shipper</text>
+      <text class="subtitle" x="880" y="216" text-anchor="middle" font-size="10">DVSP service · replaces inline handler</text>
+      <text class="kv" x="742" y="240" font-size="10"><tspan class="kv-key">input:</tspan> storytelling.content.rendered</text>
+      <text class="kv" x="742" y="256" font-size="10"><tspan class="kv-key">output:</tspan> PubP Gateway (gRPC)</text>
+      <text class="kv" x="742" y="272" font-size="10"><tspan class="kv-key">payload:</tspan> AthleticArticle protobuf</text>
+    </g>
+
+    <g class="node new-service" data-id="push-shipper">
+      <rect x="1072" y="160" width="304" height="130" rx="10"/>
+      <text class="badge-pill new" x="1086" y="180">NEW · Tier 3</text>
+      <text class="title" x="1224" y="198" text-anchor="middle" font-size="13">Push Shipper</text>
+      <text class="subtitle" x="1224" y="216" text-anchor="middle" font-size="10">Provider-agnostic: Iterable + MEMO</text>
+      <text class="kv" x="1086" y="240" font-size="10"><tspan class="kv-key">input:</tspan> storytelling.content.rendered</text>
+      <text class="kv" x="1086" y="256" font-size="10"><tspan class="kv-key">+ likely:</tspan> storytelling.push.requested</text>
+      <text class="kv" x="1086" y="272" font-size="10"><tspan class="kv-key">factory:</tspan> PushProviderFactory</text>
     </g>
 
     <g class="node extended-service" data-id="cache-purge-lambda">
-      <rect x="1300" y="160" width="380" height="130" rx="10"/>
-      <text class="badge-pill extended" x="1314" y="180">EXTENDED</text>
-      <text class="title" x="1490" y="198" text-anchor="middle" font-size="13">Cache Purge Lambda</text>
-      <text class="subtitle" x="1490" y="216" text-anchor="middle" font-size="10">bustCacheForArticle (existing)</text>
-      <text class="kv" x="1314" y="240" font-size="10"><tspan class="kv-key">new trigger:</tspan> MSK event source</text>
-      <text class="kv" x="1314" y="256" font-size="10"><tspan class="kv-key">existing trigger:</tspan> DynamoDB Streams</text>
-      <text class="kv" x="1314" y="272" font-size="10"><tspan class="kv-key">calls:</tspan> Apollo bustCacheForArticle</text>
+      <rect x="1416" y="160" width="304" height="130" rx="10"/>
+      <text class="badge-pill extended" x="1430" y="180">EXTENDED</text>
+      <text class="title" x="1568" y="198" text-anchor="middle" font-size="13">Cache Purge Lambda</text>
+      <text class="subtitle" x="1568" y="216" text-anchor="middle" font-size="10">bustCacheForArticle (existing)</text>
+      <text class="kv" x="1430" y="240" font-size="10"><tspan class="kv-key">new trigger:</tspan> MSK event source</text>
+      <text class="kv" x="1430" y="256" font-size="10"><tspan class="kv-key">existing trigger:</tspan> DynamoDB Streams</text>
+      <text class="kv" x="1430" y="272" font-size="10"><tspan class="kv-key">calls:</tspan> Apollo bustCacheForArticle</text>
     </g>
 
     <!-- Row 2: downstream destinations -->
 
     <g class="node consumer" data-id="ta-opensearch-stride">
-      <rect x="40" y="360" width="380" height="110" rx="10"/>
-      <text class="title" x="230" y="386" text-anchor="middle" font-size="13">TA OpenSearch</text>
-      <text class="subtitle" x="230" y="404" text-anchor="middle" font-size="10">TA-owned search index (shared with WP)</text>
+      <rect x="40" y="360" width="304" height="110" rx="10"/>
+      <text class="title" x="192" y="386" text-anchor="middle" font-size="13">TA OpenSearch</text>
+      <text class="subtitle" x="192" y="404" text-anchor="middle" font-size="10">shared with WP</text>
       <text class="kv" x="54" y="428" font-size="10"><tspan class="kv-key">scope:</tspan> receives both WP + Stride</text>
       <text class="kv" x="54" y="444" font-size="10"><tspan class="kv-key">index:</tspan> search-articles-read</text>
     </g>
 
     <g class="node consumer" data-id="alice-pubsub-stride">
-      <rect x="460" y="360" width="380" height="110" rx="10"/>
-      <text class="title" x="650" y="386" text-anchor="middle" font-size="13">Alice → NYT ad targeting</text>
-      <text class="subtitle" x="650" y="404" text-anchor="middle" font-size="10">GCP Pub/Sub ta-asset-grapeshot</text>
-      <text class="kv" x="474" y="428" font-size="10"><tspan class="kv-key">scope:</tspan> receives both WP + Stride</text>
-      <text class="kv" x="474" y="444" font-size="10"><tspan class="kv-key">consumer:</tspan> Grapeshot keyword extraction</text>
+      <rect x="384" y="360" width="304" height="110" rx="10"/>
+      <text class="title" x="536" y="386" text-anchor="middle" font-size="13">Alice → NYT ad targeting</text>
+      <text class="subtitle" x="536" y="404" text-anchor="middle" font-size="10">GCP Pub/Sub ta-asset-grapeshot</text>
+      <text class="kv" x="398" y="428" font-size="10"><tspan class="kv-key">scope:</tspan> receives both WP + Stride</text>
+      <text class="kv" x="398" y="444" font-size="10"><tspan class="kv-key">consumer:</tspan> Grapeshot keywords</text>
     </g>
 
     <g class="node pubp" data-id="pubp-gateway-stride">
-      <rect x="880" y="360" width="380" height="110" rx="10"/>
-      <text class="title" x="1070" y="386" text-anchor="middle" font-size="13">PubP Gateway → Monolog</text>
-      <text class="subtitle" x="1070" y="404" text-anchor="middle" font-size="10">fans out to Bodega, BigQuery, Samizdat,</text>
-      <text class="kv" x="894" y="426" font-size="10"><tspan class="kv-key">fans to:</tspan> Content Search, cms-applenews</text>
-      <text class="kv" x="894" y="444" font-size="10"><tspan class="kv-key">scope:</tspan> receives both WP + Stride</text>
+      <rect x="728" y="360" width="304" height="110" rx="10"/>
+      <text class="title" x="880" y="386" text-anchor="middle" font-size="13">PubP Gateway → Monolog</text>
+      <text class="subtitle" x="880" y="404" text-anchor="middle" font-size="10">Bodega, BigQuery, Samizdat, ...</text>
+      <text class="kv" x="742" y="426" font-size="10"><tspan class="kv-key">fans to:</tspan> Content Search, cms-applenews</text>
+      <text class="kv" x="742" y="444" font-size="10"><tspan class="kv-key">scope:</tspan> receives both WP + Stride</text>
+    </g>
+
+    <!-- Push Shipper has three external targets stacked vertically -->
+    <g class="node endpoint" data-id="push-target-iterable">
+      <rect x="1072" y="360" width="304" height="60" rx="10"/>
+      <text class="title" x="1224" y="382" text-anchor="middle" font-size="12">Iterable API</text>
+      <text class="subtitle" x="1224" y="400" text-anchor="middle" font-size="10">campaigns/trigger + email/target</text>
+      <text class="kv" x="1086" y="414" font-size="9"><tspan class="kv-key">auth:</tspan> Iterable API key (Vault)</text>
+    </g>
+
+    <g class="node endpoint" data-id="push-target-memo">
+      <rect x="1072" y="430" width="304" height="60" rx="10"/>
+      <text class="title" x="1224" y="452" text-anchor="middle" font-size="12">MEMO Scheduler</text>
+      <text class="subtitle" x="1224" y="470" text-anchor="middle" font-size="10">/v1/send_now/push · Google JWT</text>
+      <text class="kv" x="1086" y="484" font-size="9"><tspan class="kv-key">host:</tspan> scheduler.messaging-prd.awsma.nyt.net</text>
+    </g>
+
+    <g class="node endpoint" data-id="push-target-mis">
+      <rect x="1072" y="500" width="304" height="70" rx="10"/>
+      <text class="title" x="1224" y="522" text-anchor="middle" font-size="12">MIS bridge (legacy, flagged)</text>
+      <text class="subtitle" x="1224" y="540" text-anchor="middle" font-size="10">/story-campaign · X-API-Key</text>
+      <text class="kv" x="1086" y="554" font-size="9"><tspan class="kv-key">host:</tspan> messaging-iterable-syncer...nyti.nyt.net</text>
+      <text class="kv" x="1086" y="566" font-size="9"><tspan class="kv-key">flag:</tspan> FEATURE_FLAG_USE_MESSAGING_ITERABLE_SYNCER</text>
     </g>
 
     <g class="node consumer" data-id="cache-purge-targets">
-      <rect x="1300" y="360" width="380" height="110" rx="10"/>
-      <text class="title" x="1490" y="386" text-anchor="middle" font-size="13">Apollo Redis + Cloudflare + Fastly</text>
-      <text class="subtitle" x="1490" y="404" text-anchor="middle" font-size="10">via Apollo bustCacheForArticle mutation</text>
-      <text class="kv" x="1314" y="428" font-size="10"><tspan class="kv-key">scope:</tspan> receives both WP + Stride</text>
-      <text class="kv" x="1314" y="444" font-size="10"><tspan class="kv-key">lookup:</tspan> ID-shape routing in Apollo</text>
+      <rect x="1416" y="360" width="304" height="110" rx="10"/>
+      <text class="title" x="1568" y="386" text-anchor="middle" font-size="13">Apollo Redis + Cloudflare + Fastly</text>
+      <text class="subtitle" x="1568" y="404" text-anchor="middle" font-size="10">via Apollo bustCacheForArticle</text>
+      <text class="kv" x="1430" y="428" font-size="10"><tspan class="kv-key">scope:</tspan> receives both WP + Stride</text>
+      <text class="kv" x="1430" y="444" font-size="10"><tspan class="kv-key">lookup:</tspan> ID-shape routing in Apollo</text>
     </g>
 
     <!-- Edges from MSK to adapters -->
-    <path class="edge new-edge" data-edge="msk-to-opensearch-indexer" d="M 700 90 Q 480 130 230 160" marker-end="url(#arrow-new-1)"/>
-    <path class="edge new-edge" data-edge="msk-to-alice-shipper" d="M 780 90 Q 720 130 650 160" marker-end="url(#arrow-new-1)"/>
-    <path class="edge new-edge" data-edge="msk-to-pubp-shipper" d="M 940 90 Q 1000 130 1070 160" marker-end="url(#arrow-new-1)"/>
-    <path class="edge new-edge" data-edge="msk-to-cache-purge" d="M 1020 90 Q 1250 130 1490 160" marker-end="url(#arrow-new-1)"/>
+    <path class="edge new-edge" data-edge="msk-to-opensearch-indexer" d="M 700 90 Q 450 130 192 160" marker-end="url(#arrow-new-1)"/>
+    <path class="edge new-edge" data-edge="msk-to-alice-shipper" d="M 760 90 Q 650 130 536 160" marker-end="url(#arrow-new-1)"/>
+    <path class="edge new-edge" data-edge="msk-to-pubp-shipper" d="M 860 90 L 880 160" marker-end="url(#arrow-new-1)"/>
+    <path class="edge new-edge" data-edge="msk-to-push-shipper" d="M 960 90 Q 1090 130 1224 160" marker-end="url(#arrow-new-1)"/>
+    <path class="edge new-edge" data-edge="msk-to-cache-purge" d="M 1020 90 Q 1290 130 1568 160" marker-end="url(#arrow-new-1)"/>
 
     <!-- Edges from adapters down to their destinations -->
-    <path class="edge content" data-edge="opensearch-indexer-to-opensearch" d="M 230 290 L 230 360" marker-end="url(#arrow-content-1)"/>
-    <path class="edge mixed" data-edge="alice-shipper-to-pubsub" d="M 650 290 L 650 360" marker-end="url(#arrow-mixed-1)"/>
-    <path class="edge mixed" data-edge="pubp-shipper-to-gateway" d="M 1070 290 L 1070 360" marker-end="url(#arrow-mixed-1)"/>
-    <path class="edge mixed" data-edge="cache-purge-to-targets" d="M 1490 290 L 1490 360" marker-end="url(#arrow-mixed-1)"/>
+    <path class="edge content" data-edge="opensearch-indexer-to-opensearch" d="M 192 290 L 192 360" marker-end="url(#arrow-content-1)"/>
+    <path class="edge mixed" data-edge="alice-shipper-to-pubsub" d="M 536 290 L 536 360" marker-end="url(#arrow-mixed-1)"/>
+    <path class="edge mixed" data-edge="pubp-shipper-to-gateway" d="M 880 290 L 880 360" marker-end="url(#arrow-mixed-1)"/>
+    <path class="edge content" data-edge="push-shipper-to-iterable" d="M 1180 290 L 1180 360" marker-end="url(#arrow-content-1)"/>
+    <path class="edge content" data-edge="push-shipper-to-memo" d="M 1224 290 Q 1224 360 1224 430" marker-end="url(#arrow-content-1)"/>
+    <path class="edge content deferred-edge" data-edge="push-shipper-to-mis" d="M 1270 290 Q 1340 420 1270 500" marker-end="url(#arrow-content-1)"/>
+    <path class="edge mixed" data-edge="cache-purge-to-targets" d="M 1568 290 L 1568 360" marker-end="url(#arrow-mixed-1)"/>
   </svg>
 </div>
 
@@ -441,20 +478,20 @@ footer a:hover { text-decoration: underline; }
 
 <div class="section">
   <h2>4. Apollo unified reads and pull surfaces</h2>
-  <p class="note">Apollo is the unifying reader. New Scoop data source alongside the WP data source, merged internally (Pattern C). Body resolvers route by ID shape. Downstream pull consumers see one list.</p>
+  <p class="note">Apollo is the unifying reader. Body-fetch routing by ID shape is BUILT on feature branches (CC-1845 PR #7526 on theathletic-apollo-express, awaiting merge from cc-1560 / cc-1560-1 / jl/cc-1846-sitemap): integer → athleticRestDataSource → WP REST → wpdb; UUID → s3ArticleDataSource → ta-rendered-articles S3 via Cognito Identity Pool. Apollo sprinkles ads (sprinkleDropzonesDesktop/Mobile) and ICMs (sprinkleInContentModules via graphicsDataSource) + dark-mode theme on read for BOTH paths; Stride's S3 output is pre-sprinkle HTML. Remaining Apollo work: add the Scoop data source alongside the WP data source for list resolvers (Pattern C merge), plus reworking Iterable off direct MySQL.</p>
   <svg viewBox="0 0 1720 540">
     <!-- Source S3 buckets at top -->
     <g class="node handler" data-id="wp-s3-ref">
       <rect x="60" y="20" width="260" height="70" rx="10"/>
-      <text class="title" x="190" y="50" text-anchor="middle" font-size="13">WP rendered articles S3</text>
-      <text class="subtitle" x="190" y="70" text-anchor="middle" font-size="10">existing bucket · WP integer IDs</text>
+      <text class="title" x="190" y="50" text-anchor="middle" font-size="13">WP REST + wpdb</text>
+      <text class="subtitle" x="190" y="70" text-anchor="middle" font-size="10">athleticRestDataSource · WP integer IDs</text>
     </g>
 
     <g class="node new-service" data-id="ta-rendered-s3-ref">
       <rect x="360" y="20" width="260" height="70" rx="10"/>
-      <text class="badge-pill new" x="374" y="40">NEW</text>
+      <text class="badge-pill new" x="374" y="40">BUILT</text>
       <text class="title" x="490" y="58" text-anchor="middle" font-size="13">ta-rendered-articles S3</text>
-      <text class="subtitle" x="490" y="76" text-anchor="middle" font-size="10">versioned · Scoop UUIDs</text>
+      <text class="subtitle" x="490" y="76" text-anchor="middle" font-size="10">s3ArticleDataSource · Scoop UUIDs · Cognito auth</text>
     </g>
 
     <g class="node kafka" data-id="wp-analytics-kafka-ref">
@@ -467,11 +504,11 @@ footer a:hover { text-decoration: underline; }
     <g class="node apollo" data-id="apollo-unified">
       <rect x="60" y="140" width="1200" height="170" rx="12"/>
       <text class="title" x="660" y="170" text-anchor="middle" font-size="15">Apollo GraphQL (unified reader)</text>
-      <text class="subtitle" x="660" y="190" text-anchor="middle" font-size="11">theathletic-apollo-express · Pattern C merged data sources · body resolvers route by ID shape</text>
-      <text class="kv" x="80" y="218" font-size="11"><tspan class="kv-key">data sources:</tspan> WP data source (existing) + Scoop data source (NEW — reads ta-rendered-articles + Scoop metadata)</text>
-      <text class="kv" x="80" y="238" font-size="11"><tspan class="kv-key">list resolvers (latestArticles, feed lists):</tspan> merge WP + Scoop results internally; unified list output</text>
-      <text class="kv" x="80" y="258" font-size="11"><tspan class="kv-key">body resolver:</tspan> integer id → WP S3 · UUID id → ta-rendered-articles S3</text>
-      <text class="kv" x="80" y="278" font-size="11"><tspan class="kv-key">filter:</tspan> rendered_at IS NOT NULL excludes un-rendered articles from public lists</text>
+      <text class="subtitle" x="660" y="190" text-anchor="middle" font-size="11">theathletic-apollo-express · body-fetch routing BUILT (CC-1845 PR #7526) pending merge from cc-1560 · Scoop list-resolver data source still to do</text>
+      <text class="kv" x="80" y="218" font-size="11"><tspan class="kv-key">body resolver (built, pending merge):</tspan> integer id → athleticRestDataSource → WP REST → wpdb · UUID id → s3ArticleDataSource → ta-rendered-articles S3 (Cognito Identity Pool)</text>
+      <text class="kv" x="80" y="238" font-size="11"><tspan class="kv-key">Apollo sprinkles on read:</tspan> ads (sprinkleDropzonesDesktop/Mobile) + ICMs (sprinkleInContentModules via graphicsDataSource) + dark-mode theme injection — for BOTH paths</text>
+      <text class="kv" x="80" y="258" font-size="11"><tspan class="kv-key">list resolvers (Pattern C, still to do):</tspan> add Scoop data source alongside WP; merge WP + Scoop internally. Filter rendered_at IS NOT NULL for public lists.</text>
+      <text class="kv" x="80" y="278" font-size="11"><tspan class="kv-key">caching:</tspan> assembled bodies cached by Apollo after sprinkle; s3ArticleDataSource signatures match athleticRestDataSource (getArticle, getArticleBodyDesktop/Mobile)</text>
       <text class="kv" x="80" y="298" font-size="11"><tspan class="kv-key">kafkaConsumer (slimmed):</tspan> non-article events only. post-publish / post-delete / publishToPubP handlers extracted to PubP Shipper + Cache Purge Lambda.</text>
     </g>
 
@@ -516,9 +553,11 @@ footer a:hover { text-decoration: underline; }
       <text class="kv" x="1152" y="436" font-size="10"><tspan class="kv-key">issue:</tspan> cannot see Pitch articles</text>
     </g>
 
-    <!-- Edges: S3 / Kafka into Apollo -->
+    <!-- Edges: REST / S3 / Kafka into Apollo -->
     <path class="edge content" data-edge="wp-s3-to-apollo" d="M 190 90 L 250 140" marker-end="url(#arrow-content-3)"/>
     <path class="edge new-edge" data-edge="ta-rendered-s3-to-apollo" d="M 490 90 L 490 140" marker-end="url(#arrow-new-3)"/>
+    <text x="220" y="115" font-size="10" fill="#1f4e79">athleticRestDataSource</text>
+    <text x="500" y="115" font-size="10" fill="#166534">s3ArticleDataSource (reads via Cognito)</text>
     <path class="edge mixed" data-edge="analytics-to-apollo-slim" d="M 1230 90 L 1100 140" marker-end="url(#arrow-mixed-3)"/>
 
     <!-- Edges: Apollo down to consumers -->
@@ -530,8 +569,8 @@ footer a:hover { text-decoration: underline; }
 
     <!-- Annotation -->
     <rect x="60" y="470" width="1200" height="50" rx="8" fill="#eff6ff" stroke="#1f4e79" stroke-width="1"/>
-    <text class="annotation strong" x="660" y="492" text-anchor="middle">Pattern C means downstream list consumers are unchanged. Iterable's PHP endpoints are the only consumer that must move off MySQL to Apollo-backed reads.</text>
-    <text class="annotation" x="660" y="510" text-anchor="middle">Before rework, Iterable cannot render Pitch articles. After rework, Iterable sees the unified list.</text>
+    <text class="annotation strong" x="660" y="492" text-anchor="middle">Body-fetch routing (s3ArticleDataSource + Cognito) is BUILT on feature branches (CC-1845 PR #7526, CC-1846 PR #7633) — pending merge from cc-1560 / cc-1560-1 / jl/cc-1846-sitemap. Apollo sprinkles ads + ICMs on read for BOTH paths.</text>
+    <text class="annotation" x="660" y="510" text-anchor="middle">Pattern C list-resolver merge (Scoop data source alongside WP) is the remaining Apollo work. Iterable /v1iterable/* must also move off direct WP MySQL to Apollo-backed reads.</text>
   </svg>
 </div>
 
@@ -647,15 +686,15 @@ footer a:hover { text-decoration: underline; }
 
     <g class="node deferred" data-id="deferred-push-notifications">
       <rect x="1420" y="30" width="260" height="90" rx="10"/>
-      <text class="badge-pill deferred" x="1434" y="48">NOT ARTICLE-DRIVEN</text>
-      <text class="title" x="1550" y="68" text-anchor="middle" font-size="13">MEMO / Hermes push</text>
+      <text class="badge-pill deferred" x="1434" y="48">NON-ARTICLE PATHS</text>
+      <text class="title" x="1550" y="68" text-anchor="middle" font-size="13">Hermes + non-article MEMO</text>
       <text class="subtitle" x="1550" y="86" text-anchor="middle" font-size="10">user / event-driven notifications</text>
-      <text class="kv" x="1432" y="108" font-size="10">not triggered by article render</text>
+      <text class="kv" x="1432" y="108" font-size="10">article-driven push now via Push Shipper</text>
     </g>
 
     <rect x="20" y="150" width="1660" height="70" rx="8" fill="#f8fafc" stroke="#94a3b8" stroke-width="1" stroke-dasharray="6 4"/>
     <text class="annotation" x="860" y="176" text-anchor="middle">These systems are either retiring alongside WP, consumed at read time rather than pushed, or driven by non-article events.</text>
-    <text class="annotation" x="860" y="196" text-anchor="middle">None of them need a new Stride adapter. If that changes, new adapters slot into section 2 alongside the existing four.</text>
+    <text class="annotation" x="860" y="196" text-anchor="middle">None of them need a new Stride adapter. If that changes, new adapters slot into section 2 alongside the existing five.</text>
   </svg>
 </div>
 
@@ -671,6 +710,7 @@ footer a:hover { text-decoration: underline; }
     <li><a href="https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/_suumYJ4ECyIF" target="_blank">OpenSearch Indexer (canvas-umYJ4ECyIF)</a></li>
     <li><a href="https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/_suZONuRaQCL1" target="_blank">Alice Shipper (canvas-ZONuRaQCL1)</a></li>
     <li><a href="https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/_suYxPweOhO8r" target="_blank">PubP Shipper (canvas-YxPweOhO8r)</a></li>
+    <li>Push Shipper + MEMO detail (new, to be created)</li>
     <li><a href="https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/_sub-93Zj2InM" target="_blank">Cache Purge (canvas-b-93Zj2InM)</a></li>
     <li><a href="https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/_su-jvOH2lGMh" target="_blank">Analytics Event Bus (canvas--jvOH2lGMh)</a></li>
     <li><a href="https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/_suzLWXldffEH" target="_blank">NYT CMS REST + Loupe (canvas-zLWXldffEH)</a></li>
@@ -723,9 +763,10 @@ const DATA = {
       { label: "Event shape", list: ["storytelling.content.published — full Scoop entity payload", "storytelling.content.retracted — article UUID + retraction metadata"] },
       { label: "Delivery", text: "Stride consumes these as its input. They do not touch the new Storytelling MSK cluster." }
     ]},
-  "stride": { title: "Stride render pipeline", subtitle: "6-stage DVSP service · NEW", summary: "Renders Pitch-authored articles. 6-stage pipeline: ingest → normalize → hydrate → render → persist → publish. Emits storytelling.content.rendered on the new MSK.",
+  "stride": { title: "Stride render pipeline", subtitle: "6-stage DVSP service · NEW · emits pre-sprinkle HTML", summary: "Renders Pitch-authored articles. 6-stage pipeline: ingest → normalize → hydrate → render → persist → publish. Emits storytelling.content.rendered on the new MSK. Output is pre-sprinkle — Apollo sprinkles ads and ICMs at resolver time on every read.",
     sections: [
       { label: "Status", tag: "new", text: "NEW service. The authoritative renderer for Pitch-authored articles for the entire lifetime of those articles." },
+      { label: "Sprinkling boundary", text: "Stride does NOT sprinkle ads or ICMs. That work is owned by Apollo at resolver time (sprinkleDropzonesDesktop/Mobile, sprinkleInContentModules via graphicsDataSource), because sprinkle decisions depend on request-time context (device, entitlement, page type)." },
       { label: "Stages", list: [
         "Ingest — consume <a href=\"https://coda.io/d/_dVZxUojIlfv#3-6-Contracts_tug-nJ_y/r0&view=right\" target=\"_blank\">storytelling.content.published</a> / storytelling.content.retracted from Scoop ENS",
         "Normalize — translate Scoop payload into the internal article model",
@@ -743,14 +784,16 @@ const DATA = {
       { label: "Topics", list: ["storytelling.content.rendered", "storytelling.content.retracted"] },
       { label: "Partition key", code: "article_id (Scoop UUID)" },
       { label: "Retention", text: "30 days. Not an archive — archival is handled by S3 versioning on ta-rendered-articles." },
-      { label: "Consumers", list: ["OpenSearch Indexer", "Alice Shipper", "PubP Shipper", "Cache Purge Lambda (extended trigger)"] }
+      { label: "Consumers", list: ["OpenSearch Indexer", "Alice Shipper", "PubP Shipper", "Push Shipper", "Cache Purge Lambda (extended trigger)"] }
     ]},
-  "ta-rendered-articles-s3": { title: "ta-rendered-articles S3", subtitle: "versioned, infinite retention", summary: "Authoritative store of rendered Stride articles. Versioned. Apollo body resolver reads from here when the article ID is a UUID.",
+  "ta-rendered-articles-s3": { title: "ta-rendered-articles S3", subtitle: "versioned, infinite retention · pre-sprinkle HTML", summary: "Authoritative store of rendered Stride articles. Versioned. Contents are pre-sprinkle — Apollo applies ad dropzones + ICMs + dark-mode theme on read via s3ArticleDataSource.",
     sections: [
       { label: "Status", tag: "new" },
       { label: "Versioning", text: "S3 native object versioning. Each Stride render creates a new version; retractions mark tombstones." },
       { label: "Retention", text: "Infinite (serves as the current archive answer)." },
-      { label: "Keys", text: "By Scoop UUID." }
+      { label: "Keys", text: "By Scoop UUID. Object key pattern: {id}.json" },
+      { label: "Read path", text: "Apollo's s3ArticleDataSource (built on feature branches, CC-1845 PR #7526) reads here via Cognito Identity Pool when article_id is a UUID. transformS3Article() maps the shape. Apollo sprinkles on read." },
+      { label: "Why pre-sprinkle", text: "Sprinkling depends on request-time context (device, entitlement, page type) — it must happen at resolver time, not at render time. Stride stays stateless and renders once." }
     ]},
 
   // ===== SECTION 1 EDGES =====
@@ -875,6 +918,77 @@ const DATA = {
     ]},
   "cache-purge-to-targets": { title: "Cache Purge Lambda → Apollo bustCacheForArticle", summary: "The Lambda invokes the Apollo GraphQL mutation, which invalidates Apollo Redis, Cloudflare, and Fastly.",
     sections: [{ label: "Note", text: "Same mutation as the existing DynamoDB Streams path. Apollo does the routing by ID shape." }]},
+  "push-shipper": { title: "Push Shipper", subtitle: "DVSP service · NEW · Tier 3 · provider-agnostic (Iterable + MEMO)", summary: "New DVSP service that fans out article-driven push/email campaigns. Provider-agnostic: a PushProviderFactory selects Iterable or MEMO per event, mirroring WP's athPushProviderFactory pattern.",
+    sections: [
+      { label: "Status", tag: "new", text: "NEW service. Replaces the WP monolith's inline push/email fan-out for Stride-rendered articles." },
+      { label: "Event source", list: [
+        "storytelling.content.rendered (Storytelling MSK)",
+        "storytelling.push.requested — likely, pending Pitch-team conversation. Scoop-originated explicit push request for editor-initiated sends."
+      ]},
+      { label: "Provider-agnostic design", list: [
+        "PushProviderFactory mirrors WP's athPushProviderFactory pattern",
+        "Per-event selection: either a platform field on the event OR an editor-initiated action payload",
+        "Providers: IterableProvider (campaigns/trigger + email/target), MemoProvider (Scheduler /v1/send_now/push)",
+        "Legacy path: MisProvider (messaging-iterable-syncer /story-campaign) still supported behind a feature flag"
+      ]},
+      { label: "AudQ construction for MEMO", text: "AudQ (audience query) construction is ported from WP's athMemoProvider::build_audq() into src/providers/memo/audq.ts. Same semantics, TypeScript-native." },
+      { label: "Feature-flag parity", code: "FEATURE_FLAG_USE_MESSAGING_ITERABLE_SYNCER" },
+      { label: "Feature-flag behavior", text: "When the flag is on, the Iterable path goes through the MIS bridge (legacy). When off, Iterable campaigns/trigger is called directly and MEMO campaigns route through Scheduler. Parity with WordPress ensures an in-place cutover without behavior change." },
+      { label: "Credentials (Vault-managed)", list: [
+        "Iterable API key (Vault)",
+        "MEMO service-account JSON → Google-signed JWT for Scheduler",
+        "MIS bridge X-API-Key (Vault)"
+      ]},
+      { label: "Downstream targets", list: [
+        "Iterable API — campaigns/trigger + email/target",
+        "MEMO Scheduler — scheduler.messaging-prd.awsma.nyt.net/v1/send_now/push (Google JWT)",
+        "MIS bridge — messaging-iterable-syncer.messaging-platforms.nyti.nyt.net/story-campaign (X-API-Key, legacy)"
+      ]},
+      { label: "Related Coda pages", list: [
+        "<a href=\"https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/_suPjBbIDu10P\" target=\"_blank\">Iterable sub-page (canvas-PjBbIDu10P)</a>",
+        "Push + MEMO detail page (new, to be created)"
+      ]},
+      { label: "Tier", text: "Tier 3 — campaign delivery tolerates minutes of lag; editor-initiated sends are scheduled, not real-time." }
+    ]},
+  "push-target-iterable": { title: "Iterable API", subtitle: "external destination", summary: "Iterable campaigns/trigger and email/target endpoints. External Iterable tenant; auth via API key held in Vault.",
+    sections: [
+      { label: "Endpoints", list: ["campaigns/trigger — triggered campaign sends", "email/target — targeted email sends"] },
+      { label: "Auth", text: "Iterable API key (Vault)." },
+      { label: "Called by", text: "Push Shipper (direct) when FEATURE_FLAG_USE_MESSAGING_ITERABLE_SYNCER is off; via MIS bridge when the flag is on." }
+    ]},
+  "push-target-memo": { title: "MEMO Scheduler", subtitle: "external destination · scheduler.messaging-prd.awsma.nyt.net", summary: "NYT MEMO Scheduler /v1/send_now/push endpoint. Authenticated via Google-signed service-account JWT.",
+    sections: [
+      { label: "Endpoint", code: "POST https://scheduler.messaging-prd.awsma.nyt.net/v1/send_now/push" },
+      { label: "Auth", text: "Google-signed JWT minted from a service-account JSON key held in Vault." },
+      { label: "AudQ payload", text: "Constructed by Push Shipper's src/providers/memo/audq.ts — port of WP's athMemoProvider::build_audq()." }
+    ]},
+  "push-target-mis": { title: "MIS bridge (legacy path)", subtitle: "messaging-iterable-syncer · X-API-Key · feature-flagged", summary: "Legacy bridge that fronted Iterable from WP. Still supported behind FEATURE_FLAG_USE_MESSAGING_ITERABLE_SYNCER for in-place parity with the WP cutover.",
+    sections: [
+      { label: "Status", tag: "deferred", text: "Legacy path. Default off for new Stride rollout; kept for feature-flag parity with WordPress behavior." },
+      { label: "Endpoint", code: "POST https://messaging-iterable-syncer.messaging-platforms.nyti.nyt.net/story-campaign" },
+      { label: "Auth", text: "X-API-Key (Vault)." },
+      { label: "Retirement path", text: "Once WP is retired and Iterable migrations are complete, FEATURE_FLAG_USE_MESSAGING_ITERABLE_SYNCER can be removed and this path deleted." }
+    ]},
+  "msk-to-push-shipper": { title: "MSK → Push Shipper", summary: "Kafka subscription on storytelling.content.rendered (and likely storytelling.push.requested). Drives provider fan-out to Iterable and MEMO.",
+    sections: [
+      { label: "Topics", list: ["storytelling.content.rendered", "storytelling.push.requested (likely — pending Pitch-team conversation)"] },
+      { label: "Consumer group", text: "push-shipper." }
+    ]},
+  "push-shipper-to-iterable": { title: "Push Shipper → Iterable API", summary: "HTTP call to Iterable campaigns/trigger + email/target. Direct when the MIS feature flag is off; routed via MIS bridge when the flag is on.",
+    sections: [
+      { label: "Auth", text: "Iterable API key (Vault)." },
+      { label: "Feature flag", code: "FEATURE_FLAG_USE_MESSAGING_ITERABLE_SYNCER" }
+    ]},
+  "push-shipper-to-memo": { title: "Push Shipper → MEMO Scheduler", summary: "HTTP POST to scheduler.messaging-prd.awsma.nyt.net/v1/send_now/push with a Google-signed JWT and an AudQ payload built from the Stride event.",
+    sections: [
+      { label: "Auth", text: "Google-signed JWT (service-account JSON from Vault)." },
+      { label: "AudQ", text: "Built by src/providers/memo/audq.ts, ported from WP's athMemoProvider::build_audq()." }
+    ]},
+  "push-shipper-to-mis": { title: "Push Shipper → MIS bridge (legacy)", summary: "Legacy path retained behind FEATURE_FLAG_USE_MESSAGING_ITERABLE_SYNCER. POSTs to messaging-iterable-syncer.messaging-platforms.nyti.nyt.net/story-campaign with X-API-Key.",
+    sections: [
+      { label: "Auth", text: "X-API-Key (Vault)." },
+      { label: "Feature flag", code: "FEATURE_FLAG_USE_MESSAGING_ITERABLE_SYNCER (on → MIS bridge; off → direct Iterable)" }
+    ]},
 
   // ===== SECTION 3 NODES =====
   "wordpress-ref": { title: "WordPress publish (legacy, section 3 view)", subtitle: "same as section 1", summary: "Repeated node. WP keeps its existing publish fan-out for WP-authored articles.", sections: []},
@@ -916,32 +1030,52 @@ const DATA = {
   "wp-to-nyt-cms-rest": { title: "WP → NYT CMS REST (print, deferred)", summary: "Editor-opt-in push. Not part of Stride scope.", sections: []},
 
   // ===== SECTION 4 NODES =====
-  "wp-s3-ref": { title: "WP rendered article S3 (ref)", subtitle: "existing bucket", summary: "Apollo body resolver reads from here when article_id is an integer.", sections: []},
-  "ta-rendered-s3-ref": { title: "ta-rendered-articles S3 (ref)", subtitle: "new bucket", summary: "Apollo body resolver reads from here when article_id is a Scoop UUID.", sections: []},
+  "wp-s3-ref": { title: "WP REST + wpdb (ref)", subtitle: "athleticRestDataSource path", summary: "For integer article IDs, Apollo's body resolver calls athleticRestDataSource which hits the PHP WP REST endpoint; the endpoint reads the assembled body from wpdb. The WP rendered article S3 bucket is the sink of the WP save_post path (section 1) but Apollo's body-fetch goes through REST, not direct S3.",
+    sections: [
+      { label: "Data source", code: "athleticRestDataSource" },
+      { label: "Methods", list: ["getArticle(id)", "getArticleBodyDesktop(...)", "getArticleBodyMobile(...)"] },
+      { label: "Sprinkling", text: "Apollo applies ad sprinkle + ICM sprinkle + dark-mode theme on read." }
+    ]},
+  "ta-rendered-s3-ref": { title: "ta-rendered-articles S3 (ref)", subtitle: "s3ArticleDataSource · Cognito Identity Pool", summary: "For UUID article IDs, Apollo's body resolver calls s3ArticleDataSource which reads s3://ta-rendered-articles/{id}.json directly via a Cognito Identity Pool (env AWS_CMS_INTEGRATION_IDENTITY_POOL_ID). transformS3Article() maps Stride's S3 shape into Apollo's article model.",
+    sections: [
+      { label: "Status", text: "BUILT on feature branches (CC-1845 PR #7526 + CC-1846 PR #7633). Merged into origin/cc-1560, origin/cc-1560-1, origin/jl/cc-1846-sitemap. Not yet on main." },
+      { label: "Data source", code: "s3ArticleDataSource" },
+      { label: "Methods (match athleticRestDataSource signatures)", list: ["getArticle(id)", "getArticleBodyDesktop(...)", "getArticleBodyMobile(...)"] },
+      { label: "Auth", code: "Cognito Identity Pool (AWS_CMS_INTEGRATION_IDENTITY_POOL_ID)" },
+      { label: "Sprinkling", text: "Apollo applies ad sprinkle (sprinkleDropzonesDesktop/Mobile) + ICM sprinkle (sprinkleInContentModules via graphicsDataSource) + dark-mode theme on read. Stride's S3 content is pre-sprinkle." },
+      { label: "Caching", text: "Assembled bodies cached by Apollo after sprinkle." }
+    ]},
   "wp-analytics-kafka-ref": { title: "TA Analytics Event Bus (ref)", subtitle: "non-article events", summary: "Apollo slimmed kafkaConsumer still reads non-article event types (podcast, customer, notification prefs, etc.).",
     sections: [{ label: "See", text: "Section 5 for full detail on Analytics Event Bus coexistence." }]},
-  "apollo-unified": { title: "Apollo GraphQL (unified reader)", subtitle: "Pattern C merged data sources", summary: "Central role in the parallel-pipelines era. Reads from both S3 buckets, routes by ID shape, merges WP + Scoop lists internally so downstream consumers see one list.",
+  "apollo-unified": { title: "Apollo GraphQL (unified reader)", subtitle: "body-fetch routing BUILT (CC-1845 PR #7526); list-resolver Pattern C merge still to do", summary: "Central role in the parallel-pipelines era. Body-fetch routing already exists on feature branches in theathletic-apollo-express (merged into origin/cc-1560, origin/cc-1560-1, origin/jl/cc-1846-sitemap but not yet on main). Apollo does ad + ICM sprinkling on read for BOTH paths — Stride emits pre-sprinkle HTML.",
     sections: [
-      { label: "Data sources", list: [
-        "WP data source (existing) — queries WP MySQL + reads WP S3 rendered bodies",
-        "Scoop data source (NEW) — queries Scoop metadata + reads ta-rendered-articles S3"
+      { label: "Body resolver routing (BUILT, pending merge from cc-1560 branches)", list: [
+        "Integer article_id → athleticRestDataSource → PHP WP REST endpoint → wpdb (existing path)",
+        "UUID article_id → s3ArticleDataSource → reads s3://ta-rendered-articles/{id}.json via Cognito Identity Pool (env AWS_CMS_INTEGRATION_IDENTITY_POOL_ID)",
+        "s3ArticleDataSource method signatures match athleticRestDataSource: getArticle(id), getArticleBodyDesktop(...), getArticleBodyMobile(...)",
+        "transformS3Article() maps Stride S3 shape → Apollo's article model",
+        "PRs: CC-1845 PR #7526 (routing + s3ArticleDataSource), CC-1846 PR #7633 (supporting work)"
       ]},
-      { label: "List resolvers (Pattern C)", list: [
-        "latestArticles merges results from both data sources internally",
-        "Feed/list resolvers produce a unified list output — callers see one stream",
+      { label: "Apollo sprinkles on read — for BOTH WP and Stride paths", list: [
+        "Ads: sprinkleDropzonesDesktop / sprinkleDropzonesMobile inject ad dropzones into rendered HTML",
+        "ICMs: sprinkleInContentModules via graphicsDataSource injects in-content modules",
+        "Dark-mode theme injection applied at resolver time",
+        "Stride's S3 output is pre-sprinkle HTML — Apollo performs the sprinkle on every read",
+        "Assembled bodies are cached by Apollo after sprinkle"
+      ]},
+      { label: "List resolvers (Pattern C merge — still to do)", list: [
+        "Need to add Scoop data source alongside the WP data source for list resolvers (latestArticles, feed lists, articlesByDate)",
+        "Merge WP + Scoop results internally so callers see one stream",
         "Filter rendered_at IS NOT NULL excludes un-rendered articles (e.g., Scoop articles mid-publish)"
       ]},
-      { label: "Body resolver routing", list: [
-        "Integer article_id → WP S3 rendered body",
-        "UUID article_id → ta-rendered-articles S3 rendered body"
-      ]},
+      { label: "Cognito auth for S3", text: "s3ArticleDataSource authenticates to ta-rendered-articles via a Cognito Identity Pool (AWS_CMS_INTEGRATION_IDENTITY_POOL_ID). Not plain IAM; the Identity Pool exchanges scoped credentials for S3 GetObject." },
       { label: "Slimmed kafkaConsumer", list: [
         "Reads Confluent TA Analytics Event Bus only (same as today)",
         "Retains podcast-*, customer, notification-preferences, user-add / remove, etc. handlers",
         "post-publish / post-delete / publishToPubP handlers EXTRACTED for Stride path — now owned by PubP Shipper + Cache Purge Lambda",
         "For WP articles the in-Apollo handlers continue to run"
       ]},
-      { label: "File", code: "theathletic-apollo-express/src/kafkaConsumer.js (reduced)" }
+      { label: "Files", code: "theathletic-apollo-express/src/datasources/s3ArticleDataSource (on feature branches)\ntheathletic-apollo-express/src/datasources/athleticRestDataSource.ts (existing)\ntheathletic-apollo-express/src/kafkaConsumer.js (reduced)" }
     ]},
   "pull-flatplan": { title: "FlatPlan → Apple News", subtitle: "polls /api/rss/flatplan/*", summary: "Consumes the unified feed. Thanks to Pattern C, FlatPlan sees WP and Stride articles in one stream without change.",
     sections: [
@@ -973,8 +1107,18 @@ const DATA = {
     ]},
 
   // ===== SECTION 4 EDGES =====
-  "wp-s3-to-apollo": { title: "WP S3 → Apollo", summary: "Apollo body resolver reads from WP S3 when article_id is an integer.", sections: []},
-  "ta-rendered-s3-to-apollo": { title: "ta-rendered-articles → Apollo", summary: "Apollo body resolver (Scoop data source) reads from the new bucket when article_id is a UUID.", sections: []},
+  "wp-s3-to-apollo": { title: "WP REST + wpdb → Apollo", summary: "For integer article IDs, Apollo calls athleticRestDataSource which hits the PHP WP REST endpoint; the endpoint returns the body assembled from wpdb. Apollo then sprinkles ads + ICMs + dark-mode theme on read.",
+    sections: [
+      { label: "Data source", code: "athleticRestDataSource" },
+      { label: "Path", text: "Apollo body resolver → athleticRestDataSource → WP REST → wpdb → return body → Apollo sprinkles → cached assembled body." }
+    ]},
+  "ta-rendered-s3-to-apollo": { title: "ta-rendered-articles → Apollo (s3ArticleDataSource)", summary: "For UUID article IDs, Apollo's s3ArticleDataSource reads s3://ta-rendered-articles/{id}.json via Cognito Identity Pool. transformS3Article() maps Stride's shape → Apollo's article model. Apollo then sprinkles ads + ICMs + dark-mode theme on read. BUILT on feature branches (CC-1845 PR #7526) — pending merge from cc-1560 / cc-1560-1 / jl/cc-1846-sitemap.",
+    sections: [
+      { label: "Status", text: "BUILT on feature branches; not yet on main." },
+      { label: "Auth", code: "Cognito Identity Pool (AWS_CMS_INTEGRATION_IDENTITY_POOL_ID)" },
+      { label: "Path", text: "Apollo body resolver → s3ArticleDataSource.getArticleBodyDesktop/Mobile → S3 GetObject via Cognito → transformS3Article → Apollo sprinkles dropzones + ICMs + dark-mode → cached assembled body." },
+      { label: "PRs", list: ["CC-1845 PR #7526 — routing + s3ArticleDataSource", "CC-1846 PR #7633 — supporting work (sitemap, metadata)"] }
+    ]},
   "analytics-to-apollo-slim": { title: "Analytics → Apollo slimmed consumer", summary: "Apollo still consumes podcast / customer / notification events from Confluent. Article events are routed through the Stride adapters instead.", sections: []},
   "apollo-to-flatplan": { title: "Apollo → FlatPlan", summary: "FlatPlan polls Next.js /api/rss/flatplan/* which calls Apollo for the unified list.", sections: []},
   "apollo-to-google-bing": { title: "Apollo → Google / Bing", summary: "Crawlers poll Next.js RSS endpoints backed by Apollo.", sections: []},
@@ -1024,7 +1168,11 @@ const DATA = {
   "deferred-datalake": { title: "Datalake / archive", subtitle: "covered by S3 versioning", summary: "S3 versioning on ta-rendered-articles is the current archive answer.", sections: []},
   "deferred-supergraph": { title: "NYT supergraph (request-time)", subtitle: "federated GraphQL", summary: "Read-time integration, not an article destination.", sections: []},
   "deferred-identity": { title: "NYT Identity / Lire (request-time)", subtitle: "auth + entitlements", summary: "Request-time integration, not article-driven.", sections: []},
-  "deferred-push-notifications": { title: "MEMO / Hermes push (not article-driven)", subtitle: "user and event-driven notifications", summary: "Not triggered by article render. Not a Stride destination.", sections: []}
+  "deferred-push-notifications": { title: "Hermes + non-article MEMO paths", subtitle: "user and event-driven notifications", summary: "Non-article-driven push paths (Hermes, MEMO user/event notifications) are not Stride destinations. Article-driven push/email to Iterable and MEMO is handled by the new Push Shipper (section 2).",
+    sections: [
+      { label: "In scope for Stride (via Push Shipper)", text: "Article-driven Iterable campaigns/trigger and MEMO Scheduler /v1/send_now/push. See the Push Shipper node in section 2." },
+      { label: "Out of scope (this node)", list: ["Hermes (Swift push worker, ECS/Fargate) — user-event-driven", "MEMO paths not tied to article publish (customer events, entitlement changes, etc.)"] }
+    ]}
 };
 
 const tooltip = document.getElementById('tooltip');
