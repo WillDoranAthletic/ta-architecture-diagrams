@@ -172,12 +172,12 @@ footer a:hover { text-decoration: underline; }
       <text class="kv" x="196" y="134" font-size="10"><tspan class="kv-key">IDs:</tspan> WordPress post_id integers</text>
     </g>
 
-    <!-- WP renders + writes to existing S3 path -->
-    <g class="node handler" data-id="wp-rendered-s3">
+    <!-- WP article body lives in wpdb; no publish-time S3 write -->
+    <g class="node handler" data-id="wp-body-wpdb">
       <rect x="50" y="210" width="300" height="80" rx="10"/>
-      <text class="title" x="200" y="238" text-anchor="middle" font-size="13">WP rendered article S3</text>
-      <text class="subtitle" x="200" y="256" text-anchor="middle" font-size="10">existing S3 path, existing semantics</text>
-      <text class="kv" x="62" y="276" font-size="10"><tspan class="kv-key">scope:</tspan> WP-authored articles only</text>
+      <text class="title" x="200" y="238" text-anchor="middle" font-size="13">WP article body (wpdb)</text>
+      <text class="subtitle" x="200" y="256" text-anchor="middle" font-size="10">stored in WP MySQL · read via WP REST</text>
+      <text class="kv" x="62" y="276" font-size="10"><tspan class="kv-key">no publish-time S3 write</tspan></text>
     </g>
 
     <!-- WP fires existing publish path (collective) -->
@@ -248,7 +248,7 @@ footer a:hover { text-decoration: underline; }
     <text class="annotation" x="860" y="515" text-anchor="middle">Apollo body resolvers route by ID shape. Analytics, search, and PubP see both populations as one corpus.</text>
 
     <!-- Edges: WP -->
-    <path class="edge hook" data-edge="wp-to-rendered-s3" d="M 280 150 L 200 210" marker-end="url(#arrow-hook-0)"/>
+    <path class="edge hook" data-edge="wp-to-body-wpdb" d="M 280 150 L 200 210" marker-end="url(#arrow-hook-0)"/>
     <path class="edge hook" data-edge="wp-to-existing-side-effects" d="M 400 150 Q 500 175 600 210" marker-end="url(#arrow-hook-0)"/>
 
     <!-- Edges: Stride -->
@@ -478,7 +478,7 @@ footer a:hover { text-decoration: underline; }
 
 <div class="section">
   <h2>4. Apollo unified reads and pull surfaces</h2>
-  <p class="note">Apollo is the unifying reader. Body-fetch routing by ID shape is BUILT on feature branches (CC-1845 PR #7526 on theathletic-apollo-express, awaiting merge from cc-1560 / cc-1560-1 / jl/cc-1846-sitemap): integer → athleticRestDataSource → WP REST → wpdb; UUID → s3ArticleDataSource → ta-rendered-articles S3 via Cognito Identity Pool. Apollo sprinkles ads (sprinkleDropzonesDesktop/Mobile) and ICMs (sprinkleInContentModules via graphicsDataSource) + dark-mode theme on read for BOTH paths; Stride's S3 output is pre-sprinkle HTML. Remaining Apollo work: add the Scoop data source alongside the WP data source for list resolvers (Pattern C merge), plus reworking Iterable off direct MySQL.</p>
+  <p class="note">Apollo is the unifying reader. Body-fetch routing by ID shape is BUILT on feature branches (CC-1845 PR #7526 on theathletic-apollo-express, awaiting merge from cc-1560 / cc-1560-1 / jl/cc-1846-sitemap): integer → athleticRestDataSource → WP REST → wpdb; UUID → s3ArticleDataSource → ta-rendered-articles S3 via Cognito Identity Pool. Apollo sprinkles ads (sprinkleDropzonesDesktop/Mobile) and ICMs (sprinkleInContentModules via graphicsDataSource) + dark-mode theme on read for BOTH paths; Stride's S3 output is pre-sprinkle HTML. Remaining Apollo work: add the Scoop data source alongside the WP data source for list resolvers (Pattern C merge).</p>
   <svg viewBox="0 0 1720 540">
     <!-- Source S3 buckets at top -->
     <g class="node handler" data-id="wp-s3-ref">
@@ -545,14 +545,6 @@ footer a:hover { text-decoration: underline; }
       <text class="kv" x="872" y="440" font-size="10"><tspan class="kv-key">scope:</tspan> unified list (WP + Stride)</text>
     </g>
 
-    <g class="node rework" data-id="iterable-php-endpoints">
-      <rect x="1140" y="360" width="260" height="90" rx="10"/>
-      <text class="badge-pill rework" x="1154" y="380">REWORK REQUIRED</text>
-      <text class="title" x="1270" y="398" text-anchor="middle" font-size="13">Iterable /v1iterable/*</text>
-      <text class="subtitle" x="1270" y="416" text-anchor="middle" font-size="10">PHP endpoints (currently MySQL-direct)</text>
-      <text class="kv" x="1152" y="436" font-size="10"><tspan class="kv-key">issue:</tspan> cannot see Pitch articles</text>
-    </g>
-
     <!-- Edges: REST / S3 / Kafka into Apollo -->
     <path class="edge content" data-edge="wp-s3-to-apollo" d="M 190 90 L 250 140" marker-end="url(#arrow-content-3)"/>
     <path class="edge new-edge" data-edge="ta-rendered-s3-to-apollo" d="M 490 90 L 490 140" marker-end="url(#arrow-new-3)"/>
@@ -565,12 +557,11 @@ footer a:hover { text-decoration: underline; }
     <path class="edge pull" data-edge="apollo-to-google-bing" d="M 430 310 L 430 360" marker-end="url(#arrow-pull-3)"/>
     <path class="edge pull" data-edge="apollo-to-ta-clients" d="M 710 310 L 710 360" marker-end="url(#arrow-pull-3)"/>
     <path class="edge pull" data-edge="apollo-to-sitemap-nextjs" d="M 990 310 L 990 360" marker-end="url(#arrow-pull-3)"/>
-    <path class="edge pull" data-edge="apollo-to-iterable-rework" d="M 1270 310 L 1270 360" marker-end="url(#arrow-pull-3)"/>
 
     <!-- Annotation -->
     <rect x="60" y="470" width="1200" height="50" rx="8" fill="#eff6ff" stroke="#1f4e79" stroke-width="1"/>
     <text class="annotation strong" x="660" y="492" text-anchor="middle">Body-fetch routing (s3ArticleDataSource + Cognito) is BUILT on feature branches (CC-1845 PR #7526, CC-1846 PR #7633) — pending merge from cc-1560 / cc-1560-1 / jl/cc-1846-sitemap. Apollo sprinkles ads + ICMs on read for BOTH paths.</text>
-    <text class="annotation" x="660" y="510" text-anchor="middle">Pattern C list-resolver merge (Scoop data source alongside WP) is the remaining Apollo work. Iterable /v1iterable/* must also move off direct WP MySQL to Apollo-backed reads.</text>
+    <text class="annotation" x="660" y="510" text-anchor="middle">Pattern C list-resolver merge (Scoop data source alongside WP) is the remaining Apollo work. The PHP /v1iterable/* endpoints are a dead-code retirement candidate (last touched 2023-06-06), unrelated to Stride.</text>
   </svg>
 </div>
 
@@ -688,8 +679,8 @@ footer a:hover { text-decoration: underline; }
       <rect x="1420" y="30" width="260" height="90" rx="10"/>
       <text class="badge-pill deferred" x="1434" y="48">NON-ARTICLE PATHS</text>
       <text class="title" x="1550" y="68" text-anchor="middle" font-size="13">Hermes + non-article MEMO</text>
-      <text class="subtitle" x="1550" y="86" text-anchor="middle" font-size="10">user / event-driven notifications</text>
-      <text class="kv" x="1432" y="108" font-size="10">article-driven push now via Push Shipper</text>
+      <text class="subtitle" x="1550" y="86" text-anchor="middle" font-size="10">social (Hermes) · game events (MEMO)</text>
+      <text class="kv" x="1432" y="108" font-size="10">different domain, not Push Shipper scope</text>
     </g>
 
     <rect x="20" y="150" width="1660" height="70" rx="8" fill="#f8fafc" stroke="#94a3b8" stroke-width="1" stroke-dasharray="6 4"/>
@@ -732,13 +723,15 @@ const DATA = {
       { label: "Role", text: "Authoritative renderer for WP-authored articles for their entire lifetime. Stride never takes over these articles." },
       { label: "IDs", text: "WordPress post_id integers. Never overlap with Scoop UUIDs." },
       { label: "Hooks", list: ["save_post", "transition_post_status"] },
-      { label: "Side effects at publish time", list: ["WP S3 rendered article write", "OpenSearch index_post()", "publish_to_alice() Pub/Sub push", "post-publish event → TA Analytics Event Bus (Confluent)", "NYT CMS REST push (editor-opt-in print workflow)"] },
+      { label: "Side effects at publish time", list: ["OpenSearch index_post()", "publish_to_alice() Pub/Sub push", "post-publish event → TA Analytics Event Bus (Confluent)", "NYT CMS REST push (editor-opt-in print workflow)"] },
+      { label: "Where the WP article body lives", text: "wpdb (WP MySQL). Apollo reads it at request time via athleticRestDataSource → WP REST → wpdb. WordPress does NOT write rendered articles to S3 on publish." },
       { label: "Sitemap footnote", text: "A notifySitemapUpdate Lambda historically pinged Google's sitemap endpoint on publish. Google deprecated that endpoint in 2023, so it is treated as likely-dead-code and not included above. The public /sitemap/ surface is now an Apollo-backed Next.js page (see section 4)." }
     ]},
-  "wp-rendered-s3": { title: "WP rendered article S3", subtitle: "existing S3 path", summary: "Existing bucket where the monolith writes rendered WP articles. Keyed by integer post_id. Unchanged by the Stride rollout.",
+  "wp-body-wpdb": { title: "WP article body (wpdb)", subtitle: "WP MySQL, served via WP REST", summary: "WordPress articles live in WP MySQL (wpdb). WordPress does NOT pre-render articles to S3 on publish. The body is assembled at request time by the WP REST endpoint and pulled into Apollo via athleticRestDataSource.",
     sections: [
-      { label: "Scope", text: "WP-authored articles only. Keys are WordPress post_ids." },
-      { label: "Consumer", text: "Apollo body resolver reads from here when the incoming article ID is an integer." }
+      { label: "Scope", text: "WP-authored articles only. Keys are WordPress integer post_ids." },
+      { label: "Read path", text: "Apollo's athleticRestDataSource calls the WP REST endpoint; the endpoint composes the body from wpdb. No S3 in the WP read path." },
+      { label: "Why this matters", text: "The Stride-era S3 bucket (ta-rendered-articles) is exclusively for Pitch-authored articles rendered by Stride. A persistent misconception has been that WP also writes there; it does not." }
     ]},
   "wp-existing-side-effects": { title: "WP existing publish side effects", subtitle: "analytics Kafka, cache purge, OpenSearch, PubP, Alice, Loupe", summary: "The existing fan-out. For WP-authored articles it all keeps running; for Pitch-authored articles the same destinations are driven by Stride adapters instead (section 2).",
     sections: [
@@ -797,8 +790,8 @@ const DATA = {
     ]},
 
   // ===== SECTION 1 EDGES =====
-  "wp-to-rendered-s3": { title: "WP → rendered article S3", summary: "Existing WP publish path writes the rendered article to its existing S3 bucket.",
-    sections: [{ label: "Note", text: "Unchanged. WP article IDs, existing bucket." }]},
+  "wp-to-body-wpdb": { title: "WP publish → wpdb", summary: "Editor save writes the article to WP MySQL (wpdb). No S3 write at publish time.",
+    sections: [{ label: "Note", text: "Apollo reads this data at request time via WP REST → wpdb, not from S3. S3 (ta-rendered-articles) is Stride-only." }]},
   "wp-to-existing-side-effects": { title: "WP → existing side effects", summary: "WP continues firing analytics Kafka, cache purge, OpenSearch, PubP, Alice, Loupe for WP-authored articles.",
     sections: [{ label: "See", text: "Section 3 for the per-destination view of what still fires from WP." }]},
   "scoop-to-stride": { title: "Scoop → Stride", summary: "Scoop emits <a href=\"https://coda.io/d/_dVZxUojIlfv#3-6-Contracts_tug-nJ_y/r0&view=right\" target=\"_blank\">storytelling.content.published</a> and storytelling.content.retracted; Stride consumes them.",
@@ -931,6 +924,19 @@ const DATA = {
         "Providers: IterableProvider (campaigns/trigger + email/target), MemoProvider (Scheduler /v1/send_now/push)",
         "Legacy path: MisProvider (messaging-iterable-syncer /story-campaign) still supported behind a feature flag"
       ]},
+      { label: "Channels vs providers", list: [
+        "Iterable carries BOTH email and mobile push — campaign config on Iterable's side determines channel",
+        "MEMO carries mobile push ONLY (APNS/FCM) — no email",
+        "Hermes (social notifications) and non-article MEMO (game start/end/score) are separate paths, out of Push Shipper scope"
+      ]},
+      { label: "Digest email path (open design)", list: [
+        "Existing digest-newsletter-send SQS is ACTIVELY FED by TheAthletic/data-science Airflow DAGs (weekly_digest_ge_sqs, daily_digest_algo_sqs, daily_digest_algo_no_follows)",
+        "Consumer: digestNewsletterSend Lambda (hideky@ owner) → Iterable /email/target",
+        "Option A: Push Shipper enqueues to same SQS — joins Data Science pattern",
+        "Option B: Push Shipper calls Iterable /email/target directly — bypasses SQS",
+        "Option C: split by purpose — Data Science owns algo-ranked digests, Push Shipper owns editorial/event-driven only",
+        "Pending conversation with Data Science / CRM team"
+      ]},
       { label: "AudQ construction for MEMO", text: "AudQ (audience query) construction is ported from WP's athMemoProvider::build_audq() into src/providers/memo/audq.ts. Same semantics, TypeScript-native." },
       { label: "Feature-flag parity", code: "FEATURE_FLAG_USE_MESSAGING_ITERABLE_SYNCER" },
       { label: "Feature-flag behavior", text: "When the flag is on, the Iterable path goes through the MIS bridge (legacy). When off, Iterable campaigns/trigger is called directly and MEMO campaigns route through Scheduler. Parity with WordPress ensures an in-place cutover without behavior change." },
@@ -1030,7 +1036,7 @@ const DATA = {
   "wp-to-nyt-cms-rest": { title: "WP → NYT CMS REST (print, deferred)", summary: "Editor-opt-in push. Not part of Stride scope.", sections: []},
 
   // ===== SECTION 4 NODES =====
-  "wp-s3-ref": { title: "WP REST + wpdb (ref)", subtitle: "athleticRestDataSource path", summary: "For integer article IDs, Apollo's body resolver calls athleticRestDataSource which hits the PHP WP REST endpoint; the endpoint reads the assembled body from wpdb. The WP rendered article S3 bucket is the sink of the WP save_post path (section 1) but Apollo's body-fetch goes through REST, not direct S3.",
+  "wp-s3-ref": { title: "WP REST + wpdb (ref)", subtitle: "athleticRestDataSource path", summary: "For integer article IDs, Apollo's body resolver calls athleticRestDataSource which hits the PHP WP REST endpoint; the endpoint reads the assembled body from wpdb. WordPress does not write rendered articles to S3; wpdb is the authoritative store for WP-authored article bodies.",
     sections: [
       { label: "Data source", code: "athleticRestDataSource" },
       { label: "Methods", list: ["getArticle(id)", "getArticleBodyDesktop(...)", "getArticleBodyMobile(...)"] },
@@ -1097,14 +1103,6 @@ const DATA = {
       { label: "Scope", text: "Unified list — Pattern C in Apollo means WP and Stride articles appear together with no consumer-side change." },
       { label: "Legacy sitemap.xml", text: "The legacy sitemap-*.xml.php family on WordPress is frozen (and the notifySitemapUpdate ping is likely dead; Google deprecated the ping endpoint in 2023). No new XML sitemap is produced by Stride." }
     ]},
-  "iterable-php-endpoints": { title: "Iterable /v1iterable/*", subtitle: "REWORK REQUIRED", summary: "Currently queries WP MySQL directly. Must move to Apollo-backed reads under the new constraint, otherwise cannot see Pitch-authored articles.",
-    sections: [
-      { label: "Status", tag: "rework", text: "REWORK REQUIRED." },
-      { label: "Current", text: "PHP endpoints in the-athletic/web/api.php read WordPress MySQL directly — they will not see Scoop/Stride articles at all." },
-      { label: "Target", text: "Re-implement against Apollo (or a thin service in front of Apollo) so the unified list is visible to Iterable." },
-      { label: "Endpoints affected", list: ["/v1iterable/evergreen", "/v1iterable/recent_stories", "/v1iterable/unread_saved_stories"] },
-      { label: "Auth", code: "ITERABLE_FEED_API_KEY (api_domain=3)" }
-    ]},
 
   // ===== SECTION 4 EDGES =====
   "wp-s3-to-apollo": { title: "WP REST + wpdb → Apollo", summary: "For integer article IDs, Apollo calls athleticRestDataSource which hits the PHP WP REST endpoint; the endpoint returns the body assembled from wpdb. Apollo then sprinkles ads + ICMs + dark-mode theme on read.",
@@ -1124,7 +1122,6 @@ const DATA = {
   "apollo-to-google-bing": { title: "Apollo → Google / Bing", summary: "Crawlers poll Next.js RSS endpoints backed by Apollo.", sections: []},
   "apollo-to-ta-clients": { title: "Apollo → TA clients", summary: "Web, iOS, Android call Apollo directly.", sections: []},
   "apollo-to-sitemap-nextjs": { title: "Apollo → Next.js /sitemap/ page", summary: "The /sitemap/ route calls Apollo via getServerSideProps (articlesByDate, games, videoStreamsByDate) and renders HTML. Same shape as FlatPlan RSS — no new service, no materialized file.", sections: []},
-  "apollo-to-iterable-rework": { title: "Apollo → Iterable endpoints (post-rework)", summary: "After rework, Iterable's /v1iterable/* endpoints read via Apollo and see the unified list.", sections: []},
 
   // ===== SECTION 5 NODES =====
   "confluent-analytics-bus": { title: "TA Analytics Event Bus (Confluent)", subtitle: "Data Platform owned · 4 brokers", summary: "Confluent Kafka cluster. Carries ~13 non-article topics. Apollo's slimmed kafkaConsumer still reads podcast/customer/notification events from here.",
@@ -1168,10 +1165,12 @@ const DATA = {
   "deferred-datalake": { title: "Datalake / archive", subtitle: "covered by S3 versioning", summary: "S3 versioning on ta-rendered-articles is the current archive answer.", sections: []},
   "deferred-supergraph": { title: "NYT supergraph (request-time)", subtitle: "federated GraphQL", summary: "Read-time integration, not an article destination.", sections: []},
   "deferred-identity": { title: "NYT Identity / Lire (request-time)", subtitle: "auth + entitlements", summary: "Request-time integration, not article-driven.", sections: []},
-  "deferred-push-notifications": { title: "Hermes + non-article MEMO paths", subtitle: "user and event-driven notifications", summary: "Non-article-driven push paths (Hermes, MEMO user/event notifications) are not Stride destinations. Article-driven push/email to Iterable and MEMO is handled by the new Push Shipper (section 2).",
+  "deferred-push-notifications": { title: "Hermes + non-article MEMO paths", subtitle: "social (Hermes) · game events (MEMO)", summary: "Push paths that exist in production but are out of Push Shipper scope because they are not Storytelling-domain (article/editorial). Different event streams, different audiences, different providers.",
     sections: [
+      { label: "Hermes — social notifications (Fan Platform domain)", list: ["Trigger: comment reply, mention, new follower", "Stream: SQS production-compass-push-queue (not Kafka)", "Audience: single recipient user (not a segment)", "Provider: direct APNS + FCM (not via Iterable or MEMO)", "Persistence: writes to DynamoDB production-user-notifications for in-app feed", "Runtime: Swift on ECS/Fargate"] },
+      { label: "Non-article MEMO — game events", list: ["Trigger: DynamoDB stream on game status change", "Lambdas: triggerGameStartPushNotifications, triggerGameFinishedPushNotifications (theathletic-serverless)", "Routes through messaging-iterable-syncer → MEMO Scheduler", "Used for game start / game end / score pushes", "Stays on existing serverless wiring, NOT Push Shipper"] },
       { label: "In scope for Stride (via Push Shipper)", text: "Article-driven Iterable campaigns/trigger and MEMO Scheduler /v1/send_now/push. See the Push Shipper node in section 2." },
-      { label: "Out of scope (this node)", list: ["Hermes (Swift push worker, ECS/Fargate) — user-event-driven", "MEMO paths not tied to article publish (customer events, entitlement changes, etc.)"] }
+      { label: "Framing", text: "Push Shipper is scoped to Storytelling → Distribution (article/editorial). Hermes is Fan Platform → Fan (user action → another user). From the device, both are APNS/FCM — the split is product-line, not technical." }
     ]}
 };
 

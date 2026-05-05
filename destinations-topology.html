@@ -173,14 +173,14 @@ svg { display: block; width: 100%; height: auto; background: transparent; }
       <text class="kv" x="982" y="281" font-size="10"><tspan class="kv-key">scope:</tspan> images only</text>
     </g>
 
-    <!-- Iterable push (digestNewsletterSend Lambda) -->
+    <!-- Iterable digest email (Data Science Airflow → SQS → digestNewsletterSend Lambda) -->
     <g class="node consumer" data-id="consumer-iterable-push">
       <rect x="1205" y="180" width="220" height="120" rx="10"/>
-      <text class="title" x="1315" y="206" text-anchor="middle" font-size="13">Iterable (digest push)</text>
+      <text class="title" x="1315" y="206" text-anchor="middle" font-size="13">Iterable (digest email)</text>
       <text class="subtitle" x="1315" y="223" text-anchor="middle" font-size="10">digestNewsletterSend Lambda</text>
-      <text class="kv" x="1217" y="247" font-size="10"><tspan class="kv-key">driver:</tspan> SQS queue</text>
-      <text class="kv" x="1217" y="264" font-size="10"><tspan class="kv-key">calls:</tspan> Iterable REST API</text>
-      <text class="kv" x="1217" y="281" font-size="10"><tspan class="kv-key">scope:</tspan> newsletter digests</text>
+      <text class="kv" x="1217" y="247" font-size="10"><tspan class="kv-key">producer:</tspan> Data Science Airflow</text>
+      <text class="kv" x="1217" y="264" font-size="10"><tspan class="kv-key">queue:</tspan> digest-newsletter-send SQS</text>
+      <text class="kv" x="1217" y="281" font-size="10"><tspan class="kv-key">calls:</tspan> Iterable /email/target</text>
     </g>
 
     <!-- FlatPlan (pull via RSS) — now on row 1 -->
@@ -635,12 +635,14 @@ const DATA = {
       { label: "Downstream", text: "After regeneration, publishes to the notifySitemapUpdate Lambda, which pings Google. Pull consumers (SEO bots, Section 3) fetch the XML on their own schedule." }
     ]},
 
-  // Iterable push (digestNewsletterSend Lambda)
-  "consumer-iterable-push": { title: "Iterable (digest push)", subtitle: "digestNewsletterSend Lambda", summary: "SQS-driven Lambda that posts newsletter digest payloads (containing article content) to the Iterable REST API.",
+  // Iterable digest email (Data Science Airflow → SQS → digestNewsletterSend Lambda)
+  "consumer-iterable-push": { title: "Iterable (digest email)", subtitle: "digestNewsletterSend Lambda", summary: "Personalized/ML-ranked digest emails. Data Science Airflow DAGs build per-user article lists, publish to SQS, and the Lambda forwards to Iterable /email/target.",
     sections: [
-      { label: "Flow", text: "SQS queue → digestNewsletterSend Lambda → Iterable REST API." },
-      { label: "Scope", text: "Newsletter digest sends only. Iterable's pull-based campaign content fetching is shown in Section 3." },
-      { label: "Why push", text: "TA controls send timing for digests, so TA initiates the call to Iterable." }
+      { label: "Flow", text: "TheAthletic/data-science Airflow DAGs (weekly_digest_ge_sqs, daily_digest_algo_sqs, daily_digest_algo_no_follows) → digest-newsletter-send SQS → digestNewsletterSend Lambda → Iterable /email/target." },
+      { label: "Channel", text: "Email only. Not mobile push. Iterable carries both channels overall; this path is email-specific." },
+      { label: "Producer", text: "Data Science team Airflow DAGs in TheAthletic/data-science/docker-airflow/dags/crm_emails/. NOT backend code." },
+      { label: "Consumer owner", text: "hideky@theathletic.com (Lambda OWNERS file)." },
+      { label: "Other email-to-Iterable paths", list: ["WP athNewsletter → iterableApi::send_single_email() (direct curl, bypasses SQS)", "Pickem → PICKEM_DIGEST_QUEUE_URL → pickemDigestSend Lambda → Iterable"] }
     ]},
 
   // Pull consumers
@@ -868,10 +870,11 @@ const DATA = {
       { label: "Lookup", code: "REST api.photo.nyt.net" },
       { label: "Scope", text: "Image assets only. Not related to article body sync; that path is NYT CMS REST." }
     ]},
-  "wp-to-iterable-push": { title: "WP → Iterable (digest push)", summary: "digestNewsletterSend Lambda posts newsletter digest payloads to Iterable.",
+  "wp-to-iterable-push": { title: "Data Science Airflow → Iterable (digest email)", summary: "Data Science Airflow DAGs (not WordPress) publish personalized/ML-ranked digest payloads to SQS; digestNewsletterSend Lambda forwards to Iterable /email/target.",
     sections: [
-      { label: "Flow", text: "SQS queue drives the Lambda, which POSTs digest payloads to the Iterable API." },
-      { label: "Scope", text: "Digest newsletter sends. Iterable's pull feeds are a separate path (Section 3)." }
+      { label: "Flow", text: "TheAthletic/data-science Airflow DAGs → digest-newsletter-send SQS → digestNewsletterSend Lambda → Iterable /email/target." },
+      { label: "Why not WP", text: "The edge originates from Data Science, not WordPress. WP has its own separate email path via athNewsletter (direct curl to Iterable /email/target)." },
+      { label: "Scope", text: "Email only. Iterable pull feeds (/v1iterable/*) are a separate dead-code retirement candidate (Section 3)." }
     ]},
   "sitemap-generator-to-google-ping": { title: "Sitemap Generator → Google Sitemap Ping", summary: "After regeneration, the Lambda calls google.com/ping with the updated sitemap URL.",
     sections: [
