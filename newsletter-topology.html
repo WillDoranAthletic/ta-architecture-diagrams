@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TA Newsletter System Topology</title>
+<style>
+:root {
+  --bg: #fafaf7;
+  --panel: #ffffff;
+  --border: #d1d5db;
+  --text: #111827;
+  --muted: #4b5563;
+  --soft: #6b7280;
+  --ds: #c76a0c;
+  --php: #7c3aed;
+  --bridge: #0d9488;
+  --pickem: #16a34a;
+  --editor: #6b7280;
+  --gap: #dc2626;
+  --iterable: #1f4e79;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+header { padding: 24px 40px 0; }
+h1 { margin: 0 0 4px; font-size: 26px; font-weight: 700; }
+.subtitle { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+.legend { display: flex; flex-wrap: wrap; gap: 20px; padding: 12px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
+.legend .item { display: flex; align-items: center; gap: 8px; }
+.legend .swatch { display: inline-block; width: 36px; height: 3px; border-radius: 2px; }
+.legend .swatch.ds { background: var(--ds); }
+.legend .swatch.php { background: var(--php); }
+.legend .swatch.bridge { background-image: repeating-linear-gradient(90deg, var(--bridge) 0 6px, transparent 6px 10px); height: 3px; }
+.legend .swatch.pickem { background: var(--pickem); }
+.legend .swatch.editor { background: var(--editor); }
+.legend .swatch.gap { background-image: repeating-linear-gradient(90deg, var(--gap) 0 6px, transparent 6px 10px); height: 3px; }
+main { padding: 0 40px 40px; }
+.section { margin-bottom: 8px; }
+.section h2 { font-size: 18px; font-weight: 700; margin: 24px 0 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+.section .section-note { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+svg { display: block; width: 100%; height: auto; background: transparent; }
+
+.node rect { fill: var(--panel); stroke: #333; stroke-width: 1.5; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.08)); cursor: pointer; transition: stroke-width 0.1s, fill 0.1s; }
+.node:hover rect { stroke-width: 2.5; fill: #f0f4f8; }
+.node text { pointer-events: none; }
+.node .title { font-size: 13px; font-weight: 700; fill: var(--text); }
+.node .subtitle { font-size: 10px; fill: var(--soft); }
+.node .kv { font-size: 10px; fill: var(--text); }
+.node .kv-key { font-weight: 600; fill: var(--muted); }
+.node.data rect { stroke: #6b4e00; stroke-width: 2; fill: #fffaf0; }
+.node.ds rect { stroke: var(--ds); stroke-width: 2; fill: #fff7ed; }
+.node.php rect { stroke: var(--php); stroke-width: 2; fill: #faf5ff; }
+.node.bridge rect { stroke: var(--bridge); stroke-width: 2; fill: #f0fdfa; stroke-dasharray: 5 3; }
+.node.pickem rect { stroke: var(--pickem); stroke-width: 2; fill: #f0fdf4; }
+.node.editor rect { stroke: var(--editor); stroke-width: 2; fill: #f9fafb; }
+.node.iterable rect { stroke: var(--iterable); stroke-width: 2.5; fill: #eff6ff; }
+.node.inbox rect { stroke: #374151; stroke-width: 1.5; fill: #f3f4f6; }
+.node.gap rect { stroke: var(--gap); stroke-width: 2; fill: #fef2f2; stroke-dasharray: 5 3; }
+.node.gap .title { fill: var(--gap); }
+.node.dormant rect { opacity: 0.6; stroke-dasharray: 4 4; }
+.node.dormant .title, .node.dormant .subtitle, .node.dormant .kv { fill: var(--muted); }
+
+.section-band { fill: none; stroke: #e5e7eb; stroke-width: 1; stroke-dasharray: 3 3; }
+.band-label { font-size: 10px; font-weight: 700; fill: var(--soft); text-transform: uppercase; letter-spacing: 0.05em; }
+
+.edge { fill: none; cursor: pointer; pointer-events: visibleStroke; }
+.edge.ds { stroke: var(--ds); stroke-width: 2.2; }
+.edge.php { stroke: var(--php); stroke-width: 2.2; }
+.edge.bridge { stroke: var(--bridge); stroke-width: 2; stroke-dasharray: 6 4; }
+.edge.pickem { stroke: var(--pickem); stroke-width: 2.2; }
+.edge.editor { stroke: var(--editor); stroke-width: 2; }
+.edge.iterable-out { stroke: var(--iterable); stroke-width: 2.5; }
+.edge.gap { stroke: var(--gap); stroke-width: 2; stroke-dasharray: 5 3; }
+.edge:hover { stroke-width: 4; filter: drop-shadow(0 0 6px rgba(0,0,0,0.2)); }
+
+#tooltip { position: fixed; background: #111827; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 12px; pointer-events: none; max-width: 340px; z-index: 1000; opacity: 0; transition: opacity 0.12s; line-height: 1.45; box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
+#tooltip.visible { opacity: 1; }
+#tooltip .tip-title { font-weight: 700; margin-bottom: 3px; color: #fbbf24; }
+#tooltip .tip-hint { color: #9ca3af; font-size: 10px; margin-top: 4px; font-style: italic; }
+
+#panel { position: fixed; top: 0; right: 0; width: 560px; height: 100vh; background: var(--panel); border-left: 1px solid var(--border); box-shadow: -4px 0 16px rgba(0,0,0,0.08); transform: translateX(100%); transition: transform 0.2s; z-index: 500; overflow-y: auto; padding: 24px; }
+#panel.open { transform: translateX(0); }
+#panel h3 { margin: 0 0 4px; font-size: 20px; font-weight: 700; }
+#panel .subtitle { font-size: 13px; color: var(--muted); margin: 0 0 16px; }
+#panel .close { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 22px; cursor: pointer; color: var(--muted); padding: 4px 10px; border-radius: 4px; }
+#panel .close:hover { background: #f3f4f6; }
+#panel section { margin-bottom: 18px; }
+#panel .label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+#panel pre { background: #f9fafb; border: 1px solid var(--border); padding: 10px 12px; border-radius: 6px; font-size: 12px; overflow-x: auto; margin: 0; line-height: 1.5; white-space: pre-wrap; }
+#panel ul { margin: 4px 0; padding-left: 20px; font-size: 13px; line-height: 1.7; }
+#panel li code, #panel p code { background: #f3f4f6; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+#panel .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-right: 6px; }
+#panel .tag.ds { background: #fed7aa; color: #9a3412; }
+#panel .tag.php { background: #ede9fe; color: #5b21b6; }
+#panel .tag.bridge { background: #ccfbf1; color: #115e59; }
+#panel .tag.pickem { background: #dcfce7; color: #166534; }
+#panel .tag.gap { background: #fee2e2; color: #991b1b; }
+#panel .tag.live { background: #dcfce7; color: #166534; }
+#panel .tag.hybrid { background: #fed7aa; color: #9a3412; }
+#panel .tag.dormant { background: #e5e7eb; color: #374151; }
+#overlay { position: fixed; inset: 0; background: rgba(17,24,39,0.25); opacity: 0; transition: opacity 0.2s; z-index: 400; pointer-events: none; }
+#overlay.open { opacity: 1; pointer-events: auto; }
+
+table.matrix { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+table.matrix th, table.matrix td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; vertical-align: top; }
+table.matrix th { background: #f9fafb; font-weight: 700; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+table.matrix tbody tr:last-child td { border-bottom: none; }
+table.matrix .tag { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; font-weight: 700; }
+table.matrix .tag.ds { background: #fed7aa; color: #9a3412; }
+table.matrix .tag.php { background: #ede9fe; color: #5b21b6; }
+table.matrix .tag.hybrid { background: #ffe4c0; color: #9a3412; }
+table.matrix .tag.pickem { background: #dcfce7; color: #166534; }
+table.matrix .tag.editor { background: #e5e7eb; color: #374151; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>TA Newsletter System Topology</h1>
+  <p class="subtitle">Every recurring and editor-triggered newsletter / digest email product, with data sources, ranking origin, dispatch mechanism, Iterable campaign, and Pitch-integration gaps. Hover an edge for a summary; click a node or edge for full detail. Current state as of 2026-05-07.</p>
+  <div class="legend">
+    <div class="item"><span class="swatch ds"></span>DS / Airflow path</div>
+    <div class="item"><span class="swatch php"></span>PHP cron path</div>
+    <div class="item"><span class="swatch bridge"></span>Datamart sync (DS → PHP bridge)</div>
+    <div class="item"><span class="swatch pickem"></span>Pickem (independent)</div>
+    <div class="item"><span class="swatch editor"></span>Editor-triggered</div>
+    <div class="item"><span class="swatch gap"></span>Pitch-integration gap (future)</div>
+  </div>
+</header>
+
+<main>
+
+<div class="section">
+  <h2>1. Full topology — data sources through Iterable</h2>
+  <p class="section-note">Five bands top-to-bottom: data sources, producers, transport/glue, dispatch, Iterable campaigns + inbox. Every active newsletter product can be traced end-to-end. Pitch-integration gaps (dashed red) show where new plumbing is required for Scoop/Stride-authored articles to reach either pipeline.</p>
+  <svg viewBox="0 0 1720 1280" id="svg-main">
+    <!-- Band label backgrounds -->
+    <rect class="section-band" x="20" y="40" width="1680" height="220" rx="6"/>
+    <text class="band-label" x="30" y="58">Band 1 — Data sources</text>
+    <rect class="section-band" x="20" y="290" width="1680" height="240" rx="6"/>
+    <text class="band-label" x="30" y="308">Band 2 — Producers</text>
+    <rect class="section-band" x="20" y="560" width="1680" height="140" rx="6"/>
+    <text class="band-label" x="30" y="578">Band 3 — Transport / glue</text>
+    <rect class="section-band" x="20" y="730" width="1680" height="150" rx="6"/>
+    <text class="band-label" x="30" y="748">Band 4 — Dispatch</text>
+    <rect class="section-band" x="20" y="910" width="1680" height="260" rx="6"/>
+    <text class="band-label" x="30" y="928">Band 5 — Iterable campaigns + inbox</text>
+
+    <!-- =================== BAND 1: DATA SOURCES =================== -->
+
+    <!-- Redshift cluster grouping -->
+    <rect x="40" y="70" width="620" height="180" rx="8" fill="#fff7ed" stroke="#c76a0c" stroke-width="1" opacity="0.3"/>
+    <text x="350" y="90" text-anchor="middle" font-size="11" font-weight="700" fill="#9a3412">REDSHIFT (read by Airflow DAGs)</text>
+
+    <g class="node data" data-id="redshift-ebdb">
+      <rect x="60" y="100" width="290" height="65" rx="8"/>
+      <text class="title" x="205" y="122" text-anchor="middle" font-size="12">ebdb.* — WP MySQL replica</text>
+      <text class="kv" x="72" y="140" font-size="10">wp_users, wp_usermeta, posts,</text>
+      <text class="kv" x="72" y="154" font-size="10">post_team, post_league, post_author,</text>
+      <text class="kv" x="72" y="168" font-size="10">post_city, user_articles_read</text>
+    </g>
+    <g class="node data" data-id="redshift-datamart">
+      <rect x="60" y="175" width="290" height="65" rx="8"/>
+      <text class="title" x="205" y="197" text-anchor="middle" font-size="12">datamart.* — DS-owned aggregates</text>
+      <text class="kv" x="72" y="215" font-size="10">user_follows, content_stats,</text>
+      <text class="kv" x="72" y="229" font-size="10">post_tags, user_all_topic_views_rolling,</text>
+      <text class="kv" x="72" y="243" font-size="10">fraud_users</text>
+    </g>
+    <g class="node data" data-id="dynamo-newsletter-meta">
+      <rect x="370" y="100" width="270" height="50" rx="8"/>
+      <text class="title" x="505" y="122" text-anchor="middle" font-size="12">nse_dynamo.user_newsletter_metadata</text>
+      <text class="kv" x="382" y="140" font-size="10">opt-in status per newsletter (DynamoDB replica)</text>
+    </g>
+    <g class="node data" data-id="s3-features-model">
+      <rect x="370" y="160" width="270" height="80" rx="8"/>
+      <text class="title" x="505" y="182" text-anchor="middle" font-size="12">S3 features + CatBoost model</text>
+      <text class="kv" x="382" y="200" font-size="10">bucket: theathletic-scratch</text>
+      <text class="kv" x="382" y="214" font-size="10">parquet features (UNLOAD'd from Redshift)</text>
+      <text class="kv" x="382" y="228" font-size="10">daily / weekly CatBoost classifiers</text>
+    </g>
+
+    <!-- WP MySQL cluster grouping -->
+    <rect x="680" y="70" width="620" height="180" rx="8" fill="#faf5ff" stroke="#7c3aed" stroke-width="1" opacity="0.3"/>
+    <text x="990" y="90" text-anchor="middle" font-size="11" font-weight="700" fill="#5b21b6">WP MYSQL (read by PHP cron)</text>
+
+    <g class="node data" data-id="wpdb-ebdb">
+      <rect x="700" y="100" width="290" height="65" rx="8"/>
+      <text class="title" x="845" y="122" text-anchor="middle" font-size="12">posts + tags + users (wpdb)</text>
+      <text class="kv" x="712" y="140" font-size="10">wp_users, wp_usermeta, posts,</text>
+      <text class="kv" x="712" y="154" font-size="10">post_team, post_league, user_team,</text>
+      <text class="kv" x="712" y="168" font-size="10">user_league, user_author, user_articles_read</text>
+    </g>
+    <g class="node data" data-id="wpdb-datamart">
+      <rect x="700" y="175" width="290" height="65" rx="8"/>
+      <text class="title" x="845" y="197" text-anchor="middle" font-size="12">datamart.* in WP MySQL</text>
+      <text class="kv" x="712" y="215" font-size="10">post_stats (view counts, weighted ranking),</text>
+      <text class="kv" x="712" y="229" font-size="10">digest_daily_articles_us, digest_weekly_articles_us</text>
+      <text class="kv" x="712" y="243" font-size="10"><tspan class="kv-key">↑</tspan> destination of the datamart sync</text>
+    </g>
+    <g class="node data" data-id="djjob-queue-store">
+      <rect x="1010" y="100" width="290" height="65" rx="8"/>
+      <text class="title" x="1155" y="122" text-anchor="middle" font-size="12">wpdb jobs table (DJJob queue)</text>
+      <text class="kv" x="1022" y="140" font-size="10">SendNewslettersJob payloads stored</text>
+      <text class="kv" x="1022" y="154" font-size="10">worker polls + dequeues</text>
+    </g>
+
+    <!-- Scoop (future) -->
+    <g class="node gap" data-id="scoop-future">
+      <rect x="1320" y="100" width="360" height="140" rx="8"/>
+      <text class="title" x="1500" y="124" text-anchor="middle" font-size="13">Scoop article registry (FUTURE)</text>
+      <text class="subtitle" x="1500" y="140" text-anchor="middle" font-size="10">Pitch-authored articles — Scoop UUIDs</text>
+      <text class="kv" x="1332" y="162" font-size="10">articles (id, title, excerpt, permalink, ...)</text>
+      <text class="kv" x="1332" y="176" font-size="10">article_tags (team / league / author)</text>
+      <text class="kv" x="1332" y="190" font-size="10">read-events → analytics pipeline</text>
+      <text class="kv" x="1332" y="210" font-size="10"><tspan class="kv-key">gap:</tspan> no replica in ebdb.* or wpdb yet</text>
+      <text class="kv" x="1332" y="224" font-size="10"><tspan class="kv-key">options:</tspan> Option A (replicate into ebdb) /</text>
+      <text class="kv" x="1332" y="238" font-size="10">Option B (UNION) / Option C (parallel DAG)</text>
+    </g>
+
+    <!-- =================== BAND 2: PRODUCERS =================== -->
+
+    <!-- Airflow DAGs grouping -->
+    <g class="node ds" data-id="airflow-dags">
+      <rect x="40" y="320" width="420" height="200" rx="10"/>
+      <text class="title" x="250" y="346" text-anchor="middle" font-size="14">Data Science Airflow DAGs</text>
+      <text class="subtitle" x="250" y="364" text-anchor="middle" font-size="10">TheAthletic/data-science/docker-airflow/dags/crm_emails/</text>
+      <text class="kv" x="52" y="388"><tspan class="kv-key">daily_digest_algo_sqs</tspan> — US Daily (LIVE, fully DS)</text>
+      <text class="kv" x="52" y="404"><tspan class="kv-key">weekly_digest_ge_sqs</tspan> — Weekly HYBRID (LIVE, partial)</text>
+      <text class="kv" x="52" y="420"><tspan class="kv-key">daily_digest_algo_no_follows</tspan> — DORMANT (void queue)</text>
+      <text class="kv" x="52" y="436"><tspan class="kv-key">targeted_sends + _automation + _selection</tspan></text>
+      <text class="kv" x="52" y="452" font-size="9" fill="#6b7280">(Taylor Stein; mechanism unverified)</text>
+      <text class="kv" x="52" y="474"><tspan class="kv-key">pipeline:</tspan> Redshift UNLOAD → S3 parquet →</text>
+      <text class="kv" x="52" y="490">EKS pod (CatBoost, Polars) → COPY to Redshift →</text>
+      <text class="kv" x="52" y="506">batch_send_to_sqs (boto3, 10-thread pool)</text>
+    </g>
+
+    <!-- PHP cron grouping -->
+    <g class="node php" data-id="php-cron">
+      <rect x="490" y="320" width="420" height="200" rx="10"/>
+      <text class="title" x="700" y="346" text-anchor="middle" font-size="14">PHP cron — athNewsletter</text>
+      <text class="subtitle" x="700" y="364" text-anchor="middle" font-size="10">the-athletic/scripts/send_newsletters_*_background.php</text>
+      <text class="kv" x="502" y="388"><tspan class="kv-key">_daily_background.php</tspan> — legacy (US Daily delegated to DS)</text>
+      <text class="kv" x="502" y="404"><tspan class="kv-key">_weekly_background.php</tspan> — HYBRID with DAG (mid-migration)</text>
+      <text class="kv" x="502" y="420"><tspan class="kv-key">_uk_daily_background.php</tspan> — SOLE UK Daily path</text>
+      <text class="kv" x="502" y="436"><tspan class="kv-key">ranking:</tspan> weighted_ranking() OR DATAMART branch</text>
+      <text class="kv" x="502" y="452" font-size="9" fill="#6b7280">(WEEKLY_DIGEST_DATAMART + user_level &gt; 0 / DAILY + user_id % 10)</text>
+      <text class="kv" x="502" y="474"><tspan class="kv-key">flow:</tspan> exec("php -f send_newsletters_*.php &amp;")</text>
+      <text class="kv" x="502" y="490">→ batch 1000 users → SendNewslettersJob</text>
+      <text class="kv" x="502" y="506">→ DJJob::enqueue → worker → athNewsletter::send()</text>
+    </g>
+
+    <!-- Pickem generator -->
+    <g class="node pickem" data-id="pickem-generator">
+      <rect x="940" y="320" width="240" height="130" rx="10"/>
+      <text class="title" x="1060" y="346" text-anchor="middle" font-size="13">Pickem digest generator</text>
+      <text class="subtitle" x="1060" y="364" text-anchor="middle" font-size="10">independent recurring send</text>
+      <text class="kv" x="952" y="386" font-size="10"><tspan class="kv-key">driver:</tspan> cron-fed</text>
+      <text class="kv" x="952" y="402" font-size="10"><tspan class="kv-key">queue:</tspan> PICKEM_DIGEST_QUEUE_URL</text>
+      <text class="kv" x="952" y="418" font-size="10"><tspan class="kv-key">campaign:</tspan> 16876375 (prod)</text>
+      <text class="kv" x="952" y="434" font-size="10"><tspan class="kv-key">owner:</tspan> Pickem team</text>
+    </g>
+
+    <!-- Editor proof + Push Tool V3 -->
+    <g class="node editor" data-id="editor-proof">
+      <rect x="1210" y="320" width="240" height="130" rx="10"/>
+      <text class="title" x="1330" y="346" text-anchor="middle" font-size="13">WP newsletter proof UI</text>
+      <text class="subtitle" x="1330" y="364" text-anchor="middle" font-size="10">editor send_proof_* methods</text>
+      <text class="kv" x="1222" y="386" font-size="10"><tspan class="kv-key">variants:</tspan> daily, weekly, regional</text>
+      <text class="kv" x="1222" y="402" font-size="10"><tspan class="kv-key">target:</tspan> staff preview audience</text>
+      <text class="kv" x="1222" y="418" font-size="10"><tspan class="kv-key">trigger:</tspan> manual (editor)</text>
+    </g>
+    <g class="node editor" data-id="push-tool-v3">
+      <rect x="1460" y="320" width="240" height="130" rx="10"/>
+      <text class="title" x="1580" y="346" text-anchor="middle" font-size="13">WP Push Tool V3</text>
+      <text class="subtitle" x="1580" y="364" text-anchor="middle" font-size="10">editor story-push wizard</text>
+      <text class="kv" x="1472" y="386" font-size="10"><tspan class="kv-key">wizard:</tspan> 6-step (content, audience,</text>
+      <text class="kv" x="1472" y="400" font-size="10">platform, method, copy)</text>
+      <text class="kv" x="1472" y="418" font-size="10"><tspan class="kv-key">lookup:</tspan> WP-only (posts + post_team)</text>
+      <text class="kv" x="1472" y="434" font-size="10"><tspan class="kv-key">gap:</tspan> cannot resolve Pitch articles</text>
+    </g>
+
+    <!-- =================== BAND 3: TRANSPORT =================== -->
+
+    <g class="node ds" data-id="digest-sqs">
+      <rect x="60" y="580" width="360" height="100" rx="10"/>
+      <text class="title" x="240" y="604" text-anchor="middle" font-size="13">digest-newsletter-send SQS</text>
+      <text class="subtitle" x="240" y="622" text-anchor="middle" font-size="10">{stage}-digest-newsletter-send</text>
+      <text class="kv" x="72" y="644" font-size="10"><tspan class="kv-key">producers:</tspan> Airflow DAGs (daily + weekly + targeted)</text>
+      <text class="kv" x="72" y="660" font-size="10"><tspan class="kv-key">consumer:</tspan> digestNewsletterSend Lambda</text>
+      <text class="kv" x="72" y="676" font-size="10"><tspan class="kv-key">msg shape:</tspan> { campaignId, recipientEmail, dataFields }</text>
+    </g>
+
+    <g class="node bridge" data-id="datamart-sync">
+      <rect x="450" y="580" width="350" height="100" rx="10"/>
+      <text class="title" x="625" y="604" text-anchor="middle" font-size="13">datamart sync — DS → PHP bridge</text>
+      <text class="subtitle" x="625" y="622" text-anchor="middle" font-size="10">Redshift → WP MySQL replication (DE-owned)</text>
+      <text class="kv" x="462" y="644" font-size="10"><tspan class="kv-key">source:</tspan> Redshift analytics.daily_digest_algo_v2</text>
+      <text class="kv" x="462" y="660" font-size="10"><tspan class="kv-key">dest:</tspan> WP MySQL datamart.digest_{daily,weekly}_articles_us</text>
+      <text class="kv" x="462" y="676" font-size="10"><tspan class="kv-key">why:</tspan> lets PHP cron read DS-ranked articles</text>
+    </g>
+
+    <g class="node php" data-id="djjob">
+      <rect x="830" y="580" width="260" height="100" rx="10"/>
+      <text class="title" x="960" y="604" text-anchor="middle" font-size="13">DJJob queue (wpdb)</text>
+      <text class="subtitle" x="960" y="622" text-anchor="middle" font-size="10">DB-backed job queue in WP MySQL</text>
+      <text class="kv" x="842" y="644" font-size="10"><tspan class="kv-key">table:</tspan> wpdb jobs</text>
+      <text class="kv" x="842" y="660" font-size="10"><tspan class="kv-key">enqueued via:</tspan> DJJob::enqueue($job, 'newsletters')</text>
+      <text class="kv" x="842" y="676" font-size="10"><tspan class="kv-key">worker:</tspan> separate process, dequeues + runs</text>
+    </g>
+
+    <g class="node pickem" data-id="pickem-sqs">
+      <rect x="1120" y="580" width="280" height="100" rx="10"/>
+      <text class="title" x="1260" y="604" text-anchor="middle" font-size="13">pickem-digest SQS</text>
+      <text class="subtitle" x="1260" y="622" text-anchor="middle" font-size="10">PICKEM_DIGEST_QUEUE_URL</text>
+      <text class="kv" x="1132" y="644" font-size="10"><tspan class="kv-key">producer:</tspan> Pickem generator</text>
+      <text class="kv" x="1132" y="660" font-size="10"><tspan class="kv-key">consumer:</tspan> pickemDigestSend Lambda</text>
+    </g>
+
+    <!-- =================== BAND 4: DISPATCH =================== -->
+
+    <g class="node ds" data-id="digest-lambda">
+      <rect x="60" y="750" width="360" height="120" rx="10"/>
+      <text class="title" x="240" y="776" text-anchor="middle" font-size="13">digestNewsletterSend Lambda</text>
+      <text class="subtitle" x="240" y="794" text-anchor="middle" font-size="10">SQS consumer → Iterable /email/target</text>
+      <text class="kv" x="72" y="816" font-size="10"><tspan class="kv-key">file:</tspan> theathletic-serverless/src/functions/digestNewsletterSend/</text>
+      <text class="kv" x="72" y="832" font-size="10"><tspan class="kv-key">call:</tspan> POST https://api.iterable.com/api/email/target</text>
+      <text class="kv" x="72" y="848" font-size="10"><tspan class="kv-key">batch:</tspan> 10; concurrency 28; DLQ on exhaustion</text>
+      <text class="kv" x="72" y="864" font-size="10"><tspan class="kv-key">owner:</tspan> hideky@theathletic.com</text>
+    </g>
+
+    <g class="node php" data-id="php-curl">
+      <rect x="450" y="750" width="400" height="120" rx="10"/>
+      <text class="title" x="650" y="776" text-anchor="middle" font-size="13">iterableApi::send_single_email() — curl</text>
+      <text class="subtitle" x="650" y="794" text-anchor="middle" font-size="10">fire-and-forget PHP shell exec</text>
+      <text class="kv" x="462" y="816" font-size="10"><tspan class="kv-key">file:</tspan> web/app/themes/athletic/inc/class.iterableApi.inc.php:116</text>
+      <text class="kv" x="462" y="832" font-size="10"><tspan class="kv-key">call:</tspan> exec("curl -X POST /email/target?api_key=... &amp;")</text>
+      <text class="kv" x="462" y="848" font-size="10"><tspan class="kv-key">no retry, no DLQ, no return check</tspan></text>
+      <text class="kv" x="462" y="864" font-size="10"><tspan class="kv-key">also serves:</tspan> editorial proofs, UK Daily, Weekly PHP portion</text>
+    </g>
+
+    <g class="node pickem" data-id="pickem-lambda">
+      <rect x="880" y="750" width="260" height="120" rx="10"/>
+      <text class="title" x="1010" y="776" text-anchor="middle" font-size="13">pickemDigestSend Lambda</text>
+      <text class="subtitle" x="1010" y="794" text-anchor="middle" font-size="10">SQS consumer → Iterable /email/target</text>
+      <text class="kv" x="892" y="816" font-size="10"><tspan class="kv-key">file:</tspan> pickemDigestSend/index.ts</text>
+      <text class="kv" x="892" y="832" font-size="10"><tspan class="kv-key">reserved:</tspan> concurrency 10</text>
+      <text class="kv" x="892" y="848" font-size="10"><tspan class="kv-key">campaign:</tspan> 16876375 prod</text>
+    </g>
+
+    <g class="node editor" data-id="push-tool-dispatch">
+      <rect x="1170" y="750" width="280" height="120" rx="10"/>
+      <text class="title" x="1310" y="776" text-anchor="middle" font-size="13">Push Tool V3 → Iterable</text>
+      <text class="subtitle" x="1310" y="794" text-anchor="middle" font-size="10">POST /api/campaigns/trigger</text>
+      <text class="kv" x="1182" y="816" font-size="10"><tspan class="kv-key">function:</tspan> trigger_story_push_campaign_v3</text>
+      <text class="kv" x="1182" y="832" font-size="10"><tspan class="kv-key">dataFields:</tspan> article metadata + targeting</text>
+      <text class="kv" x="1182" y="848" font-size="10"><tspan class="kv-key">channel:</tspan> per Iterable campaign config (email+push)</text>
+    </g>
+
+    <!-- =================== BAND 5: ITERABLE + INBOX =================== -->
+
+    <g class="node iterable" data-id="iterable-service">
+      <rect x="60" y="940" width="1500" height="140" rx="12"/>
+      <text class="title" x="810" y="966" text-anchor="middle" font-size="15">Iterable (single tenant, multi-channel)</text>
+      <text class="subtitle" x="810" y="984" text-anchor="middle" font-size="11">server-side template rendering; dataFields drive email body; channel (email / push) per campaign config</text>
+
+      <rect x="80" y="998" width="200" height="66" rx="6" fill="#eff6ff" stroke="#1f4e79" stroke-width="1"/>
+      <text class="title" x="180" y="1016" text-anchor="middle" font-size="11">601983 US Daily</text>
+      <text class="kv" x="92" y="1032" font-size="9">DS-SQS-Lambda (fully DS now)</text>
+      <text class="kv" x="92" y="1046" font-size="9">ranker: CatBoost</text>
+
+      <rect x="296" y="998" width="200" height="66" rx="6" fill="#fff7ed" stroke="#c76a0c" stroke-width="2"/>
+      <text class="title" x="396" y="1016" text-anchor="middle" font-size="11">602288 Weekly (HYBRID)</text>
+      <text class="kv" x="308" y="1032" font-size="9">DS-SQS-Lambda + PHP curl</text>
+      <text class="kv" x="308" y="1046" font-size="9">mid-migration rollout</text>
+
+      <rect x="512" y="998" width="200" height="66" rx="6" fill="#faf5ff" stroke="#7c3aed" stroke-width="1"/>
+      <text class="title" x="612" y="1016" text-anchor="middle" font-size="11">711528 UK Daily</text>
+      <text class="kv" x="524" y="1032" font-size="9">PHP curl only (no DS model)</text>
+      <text class="kv" x="524" y="1046" font-size="9">ranker: weighted_ranking()</text>
+
+      <rect x="728" y="998" width="180" height="66" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1"/>
+      <text class="title" x="818" y="1016" text-anchor="middle" font-size="11">16876375 Pickem</text>
+      <text class="kv" x="740" y="1032" font-size="9">pickem-sqs-Lambda path</text>
+      <text class="kv" x="740" y="1046" font-size="9">independent</text>
+
+      <rect x="924" y="998" width="220" height="66" rx="6" fill="#fff7ed" stroke="#c76a0c" stroke-width="1"/>
+      <text class="title" x="1034" y="1016" text-anchor="middle" font-size="11">Targeted Sends campaigns</text>
+      <text class="kv" x="936" y="1032" font-size="9">Taylor Stein curation</text>
+      <text class="kv" x="936" y="1046" font-size="9">targeted_sends* DAGs</text>
+
+      <rect x="1160" y="998" width="200" height="66" rx="6" fill="#f9fafb" stroke="#6b7280" stroke-width="1"/>
+      <text class="title" x="1260" y="1016" text-anchor="middle" font-size="11">Story Push campaigns</text>
+      <text class="kv" x="1172" y="1032" font-size="9">editor-triggered per article</text>
+      <text class="kv" x="1172" y="1046" font-size="9">/campaigns/trigger</text>
+
+      <rect x="1376" y="998" width="168" height="66" rx="6" fill="#f9fafb" stroke="#6b7280" stroke-width="1"/>
+      <text class="title" x="1460" y="1016" text-anchor="middle" font-size="11">Editorial + proofs</text>
+      <text class="kv" x="1388" y="1032" font-size="9">athNewsletter misc</text>
+      <text class="kv" x="1388" y="1046" font-size="9">editor-scheduled</text>
+    </g>
+
+    <g class="node inbox" data-id="user-inbox">
+      <rect x="620" y="1110" width="380" height="46" rx="8"/>
+      <text class="title" x="810" y="1138" text-anchor="middle" font-size="14">User inbox (email) + device (push)</text>
+    </g>
+
+    <!-- =================== EDGES =================== -->
+
+    <!-- Band 1 → Band 2 (data sources into producers) -->
+    <path class="edge ds" data-edge="redshift-ebdb-to-airflow" d="M 205 165 L 205 320" marker-end="url(#arrow-ds)"/>
+    <path class="edge ds" data-edge="redshift-datamart-to-airflow" d="M 350 240 Q 305 290 250 320" marker-end="url(#arrow-ds)"/>
+    <path class="edge ds" data-edge="dynamo-to-airflow" d="M 505 150 Q 400 230 300 320" marker-end="url(#arrow-ds)"/>
+    <path class="edge ds" data-edge="s3-to-airflow" d="M 505 240 Q 380 290 350 320" marker-end="url(#arrow-ds)"/>
+
+    <path class="edge php" data-edge="wpdb-ebdb-to-php" d="M 845 165 Q 770 240 700 320" marker-end="url(#arrow-php)"/>
+    <path class="edge php" data-edge="wpdb-datamart-to-php" d="M 845 240 Q 770 280 730 320" marker-end="url(#arrow-php)"/>
+    <path class="edge php" data-edge="djjob-store-to-php" d="M 1155 165 Q 940 240 850 320" marker-end="url(#arrow-php)"/>
+
+    <!-- Pitch-gap edges (red dashed, into producers) -->
+    <path class="edge gap" data-edge="scoop-to-airflow-gap" d="M 1400 200 Q 900 270 460 320" marker-end="url(#arrow-gap)"/>
+    <path class="edge gap" data-edge="scoop-to-php-gap" d="M 1390 230 Q 1150 280 910 320" marker-end="url(#arrow-gap)"/>
+
+    <!-- Band 2 → Band 3 (producers to transport) -->
+    <path class="edge ds" data-edge="airflow-to-sqs" d="M 250 520 L 240 580" marker-end="url(#arrow-ds)"/>
+    <path class="edge bridge" data-edge="airflow-to-datamart-sync" d="M 430 520 Q 520 545 600 580" marker-end="url(#arrow-bridge)"/>
+    <path class="edge bridge" data-edge="datamart-sync-to-php" d="M 650 580 Q 720 545 800 520" marker-end="url(#arrow-bridge)"/>
+    <path class="edge php" data-edge="php-to-djjob" d="M 700 520 Q 830 550 960 580" marker-end="url(#arrow-php)"/>
+    <path class="edge pickem" data-edge="pickem-gen-to-sqs" d="M 1060 450 Q 1150 520 1250 580" marker-end="url(#arrow-pickem)"/>
+    <path class="edge editor" data-edge="push-tool-to-dispatch" d="M 1580 450 Q 1520 580 1310 750" marker-end="url(#arrow-editor)"/>
+    <path class="edge editor" data-edge="proof-to-php" d="M 1330 450 Q 950 620 650 750" marker-end="url(#arrow-editor)"/>
+
+    <!-- Band 3 → Band 4 (transport to dispatch) -->
+    <path class="edge ds" data-edge="sqs-to-lambda" d="M 240 680 L 240 750" marker-end="url(#arrow-ds)"/>
+    <path class="edge php" data-edge="djjob-to-curl" d="M 960 680 Q 810 720 650 750" marker-end="url(#arrow-php)"/>
+    <path class="edge pickem" data-edge="pickem-sqs-to-lambda" d="M 1260 680 Q 1130 715 1010 750" marker-end="url(#arrow-pickem)"/>
+
+    <!-- Band 4 → Band 5 (dispatch to Iterable) -->
+    <path class="edge iterable-out" data-edge="lambda-to-iterable-us-daily" d="M 180 870 Q 180 920 180 998" marker-end="url(#arrow-iterable)"/>
+    <path class="edge iterable-out" data-edge="lambda-to-iterable-weekly" d="M 300 870 Q 350 930 396 998" marker-end="url(#arrow-iterable)"/>
+    <path class="edge iterable-out" data-edge="php-curl-to-iterable-weekly" d="M 560 870 Q 500 930 440 998" marker-end="url(#arrow-iterable)"/>
+    <path class="edge iterable-out" data-edge="php-curl-to-iterable-uk-daily" d="M 700 870 Q 650 930 612 998" marker-end="url(#arrow-iterable)"/>
+    <path class="edge iterable-out" data-edge="pickem-lambda-to-iterable" d="M 1010 870 Q 910 930 818 998" marker-end="url(#arrow-iterable)"/>
+    <path class="edge iterable-out" data-edge="push-tool-to-iterable" d="M 1310 870 Q 1290 920 1260 998" marker-end="url(#arrow-iterable)"/>
+    <path class="edge iterable-out" data-edge="php-curl-to-editorial" d="M 820 870 Q 1100 920 1460 998" marker-end="url(#arrow-iterable)"/>
+    <path class="edge iterable-out" data-edge="airflow-to-targeted-sends" d="M 310 870 Q 700 920 1034 998" marker-end="url(#arrow-iterable)" stroke-dasharray="3 3"/>
+
+    <!-- Iterable → inbox -->
+    <path class="edge iterable-out" data-edge="iterable-to-inbox" d="M 810 1080 L 810 1110" marker-end="url(#arrow-iterable)"/>
+
+    <defs>
+      <marker id="arrow-ds" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c76a0c"/></marker>
+      <marker id="arrow-php" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7c3aed"/></marker>
+      <marker id="arrow-bridge" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0d9488"/></marker>
+      <marker id="arrow-pickem" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/></marker>
+      <marker id="arrow-editor" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6b7280"/></marker>
+      <marker id="arrow-iterable" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f4e79"/></marker>
+      <marker id="arrow-gap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#dc2626"/></marker>
+    </defs>
+  </svg>
+</div>
+
+<div class="section">
+  <h2>2. Per-product matrix</h2>
+  <p class="section-note">One row per newsletter product; columns trace it from ranking source through Iterable campaign.</p>
+  <table class="matrix">
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Cadence</th>
+        <th>Ranking source</th>
+        <th>Producer</th>
+        <th>Dispatch</th>
+        <th>Iterable campaign</th>
+        <th>Owner</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>US Daily Digest</strong></td>
+        <td>Daily</td>
+        <td>CatBoost ML on Redshift + S3 parquet features</td>
+        <td><span class="tag ds">DS</span> daily_digest_algo_sqs</td>
+        <td>SQS → digestNewsletterSend Lambda → /email/target</td>
+        <td>601983</td>
+        <td>Data Science + hideky@</td>
+      </tr>
+      <tr>
+        <td><strong>Weekly Digest</strong></td>
+        <td>Weekly</td>
+        <td><span class="tag hybrid">HYBRID</span> CatBoost (DS DAG) + weighted_ranking() (PHP cron)</td>
+        <td><span class="tag ds">DS</span> weekly_digest_ge_sqs <br/> + <span class="tag php">PHP</span> send_newsletters_weekly_background.php</td>
+        <td>SQS → Lambda → /email/target <br/> AND PHP → curl → /email/target</td>
+        <td>602288</td>
+        <td>Data Science + backend (mid-migration)</td>
+      </tr>
+      <tr>
+        <td><strong>UK Daily Digest</strong></td>
+        <td>Daily</td>
+        <td>weighted_ranking() — no DS model exists for UK</td>
+        <td><span class="tag php">PHP</span> send_newsletters_uk_daily_background.php</td>
+        <td>PHP → DJJob → curl → /email/target</td>
+        <td>711528</td>
+        <td>Backend (plan: merge into US Daily when DS model)</td>
+      </tr>
+      <tr>
+        <td><strong>Daily no-follows</strong></td>
+        <td>(dormant)</td>
+        <td>DS variant for users without team follows</td>
+        <td><span class="tag ds">DS</span> daily_digest_algo_no_follows (void queue)</td>
+        <td>SQS → Lambda → /email/target</td>
+        <td>(unused)</td>
+        <td>Data Science (verify status)</td>
+      </tr>
+      <tr>
+        <td><strong>Targeted Sends</strong></td>
+        <td>Ad-hoc / curated</td>
+        <td>Bespoke audience + article curation</td>
+        <td><span class="tag ds">DS</span> targeted_sends + _automation + _selection</td>
+        <td>Presumed SQS → Lambda (mechanism unverified)</td>
+        <td>Multiple campaigns</td>
+        <td>Taylor Stein / CRM</td>
+      </tr>
+      <tr>
+        <td><strong>Pickem Digest</strong></td>
+        <td>Recurring</td>
+        <td>Pickem-specific</td>
+        <td><span class="tag pickem">PICKEM</span> pickemDigestGenerator</td>
+        <td>pickem-digest SQS → pickemDigestSend Lambda → /email/target</td>
+        <td>16876375</td>
+        <td>Pickem team</td>
+      </tr>
+      <tr>
+        <td><strong>Story Push campaign (email variant)</strong></td>
+        <td>Editor-triggered</td>
+        <td>Editor-selected article</td>
+        <td><span class="tag editor">EDITOR</span> WP Push Tool V3</td>
+        <td>trigger_story_push_campaign_v3 → /campaigns/trigger</td>
+        <td>Varies per campaign</td>
+        <td>Newsletters + TA Platform</td>
+      </tr>
+      <tr>
+        <td><strong>Editorial newsletters / proofs</strong></td>
+        <td>Manual / scheduled</td>
+        <td>Editorial</td>
+        <td><span class="tag editor">EDITOR</span> athNewsletter proof UI</td>
+        <td>iterableApi::send_single_email() → curl → /email/target</td>
+        <td>Varies per campaign</td>
+        <td>Editorial ops</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <h2>3. Pitch-integration gaps — where new plumbing is required</h2>
+  <p class="section-note">Every data source each pipeline reads assumes WordPress owns the article. For Pitch-authored articles (Scoop UUIDs, no WP row) to be eligible for daily or weekly digest ranking, these specific plumbing pieces need to be added. See the <a href="https://coda.io/d/_diEP9aHfn_L/_suR_EYVz" target="_blank">Newsletter data access and Pitch integration</a> Coda page for the full analysis.</p>
+  <table class="matrix">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Gap</th>
+        <th>What's missing</th>
+        <th>Required change</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td><strong>Article existence</strong></td><td>Pitch articles have no row in <code>ebdb.posts</code> (Redshift) or <code>posts</code> (WP MySQL)</td><td>Scoop article registry replicated into Redshift and/or WP MySQL as a compat table</td></tr>
+      <tr><td>2</td><td><strong>Tag relationships</strong></td><td><code>post_team</code>, <code>post_league</code>, <code>post_author</code>, <code>post_city</code> have no rows for Pitch</td><td>Pitch tags flow into the same (or UNIONed parallel) tables — drives follow-based audience matching</td></tr>
+      <tr><td>3</td><td><strong>Read-state tracking</strong></td><td><code>user_articles_read.article_id</code> is INT, keyed on WP post_id</td><td>Read-tracking pipeline accepts UUIDs; schema widens OR parallel <code>user_pitch_articles_read</code> table added</td></tr>
+      <tr><td>4</td><td><strong>ID namespace</strong></td><td>Every query assumes INT <code>post_id</code>; Scoop UUIDs are strings</td><td>One of: (a) synthetic INT bridge per UUID, (b) widen <code>post_id</code> to VARCHAR, (c) UNIONed mixed-type queries</td></tr>
+      <tr><td>5</td><td><strong>Feature engineering</strong></td><td><code>datamart.content_stats</code>, <code>post_stats</code>, <code>user_all_topic_views_rolling</code> are WP-post-id-keyed; CatBoost was trained on WP-article features</td><td>Retrain with Pitch articles OR provide imputed default features for cold-start</td></tr>
+      <tr><td>6</td><td><strong>Datamart handoff table</strong></td><td><code>datamart.digest_daily_articles_us</code> sync from Redshift → WP MySQL assumes WP post_ids</td><td>Confirm the DE-owned sync tolerates Pitch IDs (depends on Gap 4 choice)</td></tr>
+      <tr><td>7</td><td><strong>Push Tool V3 article lookup</strong></td><td>WP Push Tool V3's <code>get_view_post_data</code> queries <code>posts</code>/<code>wp_posts</code> — cannot resolve Scoop UUIDs</td><td>New push-composition wizard in Pitch that reads from Scoop (NOT a port of V3)</td></tr>
+    </tbody>
+  </table>
+  <p class="section-note" style="margin-top:16px;">Opt-in metadata (<code>nse_dynamo.user_newsletter_metadata</code>) is user-keyed and needs no change for Pitch integration.</p>
+</div>
+
+<div class="section">
+  <h2>4. Open items</h2>
+  <ul style="font-size:13px;line-height:1.7;">
+    <li><strong>Weekly PHP ↔ DS proportion split</strong> — what percentage of users are served by Airflow DAG vs PHP cron today? Pending Hideky Silva.</li>
+    <li><strong>Redshift → WP MySQL datamart sync ownership</strong> — who operates the replication job? dbt, DMS, or custom script? Pending DE (taylor.stein@, sudeep@).</li>
+    <li><strong>Targeted Sends SQS mechanism</strong> — does it publish to <code>digest-newsletter-send</code> SQS, a different SQS, or call Iterable directly? Pending Taylor Stein.</li>
+    <li><strong>UK Daily DS model roadmap</strong> — is a UK CatBoost model planned, or is it waiting on WP retirement / Scoop article integration?</li>
+    <li><strong>Pickem integration under Stride</strong> — stays independent or converges on the same SQS pattern?</li>
+    <li><strong>daily_digest_algo_no_follows</strong> — confirmed dormant? Ticket to formally retire?</li>
+    <li><strong>CatBoost cold-start for Pitch articles</strong> — what does the model output with zero historical views?</li>
+    <li><strong>Story Push vs Digest dedup</strong> — does Iterable dedup a user who receives both a breaking-news push AND appears in the subsequent daily digest?</li>
+  </ul>
+</div>
+
+</main>
+
+<div id="tooltip"></div>
+<div id="overlay"></div>
+<aside id="panel">
+  <button class="close" onclick="closePanel()">&times;</button>
+  <div id="panel-content"></div>
+</aside>
+
+<script>
+const DATA = {
+  // Band 1 — Data sources
+  "redshift-ebdb": { title: "Redshift ebdb.* (WP MySQL replica)", tag: "ds",
+    summary: "Redshift-side replica of WordPress MySQL. All WP-sourced tables appear here under the ebdb schema, allowing the DS Airflow DAGs to query them without touching production WP.",
+    sections: [
+      { label: "Tables used by digest DAGs", list: ["wp_users (user_id, email)", "wp_usermeta (_ath_invalid_email, _ath_content_edition)", "posts (article metadata + filters)", "post_team / post_league / post_author / post_city (UNIONed)", "user_articles_read (anti-join for dedup)"] },
+      { label: "How queries filter", text: "feature_pull_query runs UNLOAD with filters: original_publish_date_gmt >= -1 day, post_type_id NOT IN (29,31,32,39), not is_outdated, not disable_comments/nps/locked_comments" },
+      { label: "Replication source", text: "WP MySQL — the WP DB is named ebdb, and a standard replication job mirrors it to Redshift" }
+    ]},
+  "redshift-datamart": { title: "Redshift datamart.*", tag: "ds",
+    summary: "DS-owned datamart schema in Redshift. Computed upstream by dbt / DE jobs from ebdb base tables plus external signals.",
+    sections: [
+      { label: "Tables used by digest DAGs", list: ["user_follows — user → team/league/author follow graph", "content_stats — historical view/engagement aggregates", "post_tags — faster-updating alternative to post_team/league joins", "user_all_topic_views_rolling — per-user topic affinity features (last 7d / 30d / 365d)", "fraud_users — fraud exclusion list"] }
+    ]},
+  "dynamo-newsletter-meta": { title: "nse_dynamo.user_newsletter_metadata", tag: "ds",
+    summary: "Newsletter opt-in state per user, stored in DynamoDB and replicated to Redshift. Source of truth for 'is this user subscribed to this newsletter?'",
+    sections: [
+      { label: "Filter in DAG", code: "newsletter_id = 'daily_digest' AND status = 'opted_in'" },
+      { label: "Why DynamoDB", text: "High-write frequency (subscribe/unsubscribe per user); replicated to Redshift for analytics/DAG reads" }
+    ]},
+  "s3-features-model": { title: "S3 features + CatBoost model artifacts", tag: "ds",
+    summary: "Intermediate storage between Redshift feature extraction and CatBoost inference. UNLOAD'd parquet features + persisted model files.",
+    sections: [
+      { label: "Bucket", code: "theathletic-scratch" },
+      { label: "Parquet prefix", text: "Features UNLOAD'd from Redshift by the DAG, read back into Polars DataFrames on the EKS pod" },
+      { label: "Model", text: "CatBoost classifier trained separately; loaded from S3 at inference time" }
+    ]},
+  "wpdb-ebdb": { title: "WP MySQL — posts + tags + users", tag: "php",
+    summary: "WordPress's primary database (alias: wpdb). Read by the PHP cron newsletter path via athReadonlyDb (replica connection).",
+    sections: [
+      { label: "Tables used by athNewsletter::send()", list: ["wp_users (user list with max(id) batching)", "wp_usermeta (_ath_end_date, wp_user_level, _is_in_grace_period, _athletic_co_uk_user, _ath_content_edition)", "user_articles_read (last 250 per user, excluded)", "posts (metadata + post_content for hero excerpt)", "post_team / post_league (article tag joins)", "user_team / user_league / user_author (user follows)"] }
+    ]},
+  "wpdb-datamart": { title: "WP MySQL datamart.*", tag: "php",
+    summary: "Datamart schema in WP MySQL (not Redshift). Includes post view stats AND the replicated DS digest output.",
+    sections: [
+      { label: "Tables", list: [
+        "post_stats — article_views_recent used in weighted_ranking()",
+        "digest_daily_articles_us — DS-produced per-user ranked list (sync'd from Redshift)",
+        "digest_weekly_articles_us — weekly variant"
+      ]},
+      { label: "Why it matters", text: "This is where the datamart sync lands DS model output into WP MySQL. The PHP DATAMART branch in athNewsletter::send() SELECTs from these tables — so DS-ranked articles can be delivered via the PHP curl path, not just via SQS." }
+    ]},
+  "djjob-queue-store": { title: "wpdb jobs table (DJJob queue)", tag: "php",
+    summary: "DB-backed job queue, not AWS SQS. Used by all PHP cron newsletter sends to distribute per-user work across worker processes.",
+    sections: [
+      { label: "Enqueue", code: "DJJob::enqueue($job, 'newsletters')" },
+      { label: "Worker", text: "A separate daemon polls the jobs table, dequeues, and runs $job->perform() which invokes athNewsletter::send()" },
+      { label: "Contrast with SQS", text: "DJJob is in-process with wpdb, has no cross-region semantics, no native DLQ. Simple and appropriate for the PHP + wpdb idiom." }
+    ]},
+  "scoop-future": { title: "Scoop article registry (FUTURE)", tag: "gap",
+    summary: "Authoritative registry for Pitch-authored articles. Does NOT currently feed either the DS Airflow DAGs or the PHP cron newsletter path. See Pitch-integration gap table below for the plumbing required.",
+    sections: [
+      { label: "What it will hold", list: ["articles (UUID id, title, excerpt, permalink, publish timestamp, ...)", "article_tags (team / league / author / topic)", "user read events (eventually)"] },
+      { label: "Integration options", list: [
+        "Option A — replicate Pitch articles into ebdb.* with synthetic INT bridge (highest compatibility)",
+        "Option B — UNION Pitch source into queries (cleaner separation, adds query complexity)",
+        "Option C — parallel Pitch-specific DAG (cleanest separation, two daily-digest producers)"
+      ]},
+      { label: "Recommendation", text: "Start with Option A thin slice: scoop_posts shadow table + UUID→INT bridge + UNION into union_post_tags. Leave PHP cron alone and let WP retirement sunset it." }
+    ]},
+
+  // Band 2 — Producers
+  "airflow-dags": { title: "Data Science Airflow DAGs", tag: "ds",
+    summary: "Python/Polars/CatBoost orchestration on EKS. Owns all ML-ranked digest production; publishes per-user payloads to SQS.",
+    sections: [
+      { label: "Live DAGs (SQS producers)", list: [
+        "daily_digest_algo_sqs — US Daily, campaign 601983, fully DS per Ben 2026-05-06",
+        "weekly_digest_ge_sqs — Weekly campaign 602288, HYBRID with PHP cron (mid-migration)",
+        "targeted_sends + _automation + _selection (Taylor Stein; mechanism unverified)"
+      ]},
+      { label: "Dormant", text: "daily_digest_algo_no_follows — recent commit 'default to void queue' (2025-10-07); confirm status with CRM" },
+      { label: "Pipeline shape", code: "Redshift UNLOAD (feature_pull_query) → S3 parquet →\nEksPodOperator (memory=96G, cpu=12) →\n  CatBoost.load(s3://.../model) →\n  predictions = model.predict(features) →\nPostgresOperator: COPY preds → Redshift analytics.daily_digest_algo_v2 →\npost_info_query merges with metadata →\nbatch_send_to_sqs (boto3, batch_size=10, ThreadPoolExecutor pool_size=10)" },
+      { label: "Output target", code: "SQS: {stage}-digest-newsletter-send" },
+      { label: "Ownership", text: "Data Science + CRM (producer). Kristen Malik (daily/weekly), Taylor Stein (targeted_sends). Airflow infra: Data Engineering." }
+    ]},
+  "php-cron": { title: "PHP cron — athNewsletter", tag: "php",
+    summary: "WordPress-side cron-driven newsletter dispatcher. Three scripts (daily, weekly, uk_daily) run nightly; enqueue work into DJJob; worker runs athNewsletter::send() which ranks + sends per user.",
+    sections: [
+      { label: "Cron scripts", list: [
+        "scripts/send_newsletters_daily_background.php — legacy (US Daily delegated to DS-SQS path)",
+        "scripts/send_newsletters_weekly_background.php — HYBRID partner with DS DAG",
+        "scripts/send_newsletters_uk_daily_background.php — SOLE UK Daily path (no DS DAG)"
+      ]},
+      { label: "Entry flow", code: "exec('php -f send_newsletters_{type}.php &') →\nbatch 1000 users →\nnew SendNewslettersJob($type, start_id, end_id) →\nDJJob::enqueue(..., 'newsletters') →\nworker dequeues → $newsletter->send()" },
+      { label: "Ranking branches (athNewsletter::send())", list: [
+        "Daily + DAILY_DIGEST_DATAMART + user_id % 10 IN [2,4,5] → datamart_digest_daily_articles_us() (reads DS-produced table)",
+        "Weekly + WEEKLY_DIGEST_DATAMART + user_level > 0 → datamart_digest_weekly_articles_us() (same pattern)",
+        "Else / fallback → weighted_ranking() — pre-DS SQL scoring (user follows + view counts)"
+      ]},
+      { label: "File", code: "web/app/themes/athletic/inc/class.athNewsletter.inc.php:263-440" },
+      { label: "Dispatch", code: "iterableApi::send_single_email($email, $campaign_id, $dataFields) →\nexec(\"curl -s -H 'Content-Type: application/json' \\\n       -d '$encoded' -X POST $base/email/target?api_key=... > /dev/null &\")" }
+    ]},
+  "pickem-generator": { title: "Pickem digest generator", tag: "pickem",
+    summary: "Independent recurring generator for pickem-specific digest sends. Not part of the main daily/weekly newsletter system.",
+    sections: [
+      { label: "Queue", code: "PICKEM_DIGEST_QUEUE_URL (environment-specific)" },
+      { label: "Consumer", text: "pickemDigestSend Lambda" },
+      { label: "Campaign", text: "16876375 (prod)" },
+      { label: "Trigger", text: "Cron-scheduled batch run; details owned by Pickem team" }
+    ]},
+  "editor-proof": { title: "WP newsletter proof UI", tag: "editor",
+    summary: "Editor-facing preview send UI. Sends to staff audience for review before full publish.",
+    sections: [
+      { label: "Methods", list: ["send_proof_daily", "send_proof_weekly", "regional variants"] },
+      { label: "Target audience", text: "Internal staff preview list" },
+      { label: "Dispatch", text: "Uses same iterableApi::send_single_email() path as the recurring PHP cron newsletters" }
+    ]},
+  "push-tool-v3": { title: "WP Push Tool V3", tag: "editor",
+    summary: "Editor story-push wizard in WordPress admin. Editor-triggered, per-article. Invokes /campaigns/trigger rather than /email/target. Push/email channel determined per Iterable campaign config.",
+    sections: [
+      { label: "Wizard steps", list: ["1. Content selection (ID or URL)", "2. Content review (auto-fetched metadata)", "3. Location (Both / UK only / non-UK only)", "4. Platform (Iterable / MEMO — feature-flag gated)", "5. Send method (now / scheduled / priority)", "6. Copy customization"] },
+      { label: "Article lookup", code: "get_view_post_data($post_id) → SELECT FROM posts / wp_posts (MySQL direct)" },
+      { label: "Pitch gap", text: "Lookup path is WP-only — cannot resolve Scoop UUIDs. The Stride-era replacement will be a new Pitch-side wizard reading from Scoop, NOT a port of V3." },
+      { label: "Reference", text: "See 'How the WP V3 Push Tool actually looks up article data' section on the Push notifications under Stride Coda page" }
+    ]},
+
+  // Band 3 — Transport
+  "digest-sqs": { title: "digest-newsletter-send SQS", tag: "ds",
+    summary: "Single SQS queue fed by all DS-owned digest DAGs (daily, weekly partial, targeted sends). Consumed by digestNewsletterSend Lambda.",
+    sections: [
+      { label: "Queue name", code: "{stage}-digest-newsletter-send\nprod: production-digest-newsletter-send\nstaging: demo-digest-newsletter-void (until 2025 rollout)" },
+      { label: "Producers", list: ["daily_digest_algo_sqs DAG (US Daily 601983)", "weekly_digest_ge_sqs DAG (Weekly 602288 hybrid portion)", "targeted_sends* DAGs (presumed; unverified)"] },
+      { label: "Message shape", code: "{\n  \"campaignId\": <int>,\n  \"recipientEmail\": \"user@...\",\n  \"dataFields\": {\n    \"userId\", \"email\", \"dateline\",\n    \"subject\", \"preheader\",\n    \"articles\": [...], \"headlines\": [...]\n  }\n}" }
+    ]},
+  "datamart-sync": { title: "datamart sync — DS → PHP bridge", tag: "bridge",
+    summary: "The replication job that makes the DS path and PHP path partially interdependent. Syncs Redshift analytics.daily_digest_algo_v2 (DS output) → WP MySQL datamart.digest_{daily,weekly}_articles_us.",
+    sections: [
+      { label: "Source", code: "Redshift analytics.daily_digest_algo_v2\n(user_id INT, display_order SMALLINT, post_id INT, write_timestamp TIMESTAMP)" },
+      { label: "Destination", code: "WP MySQL:\n  datamart.digest_daily_articles_us\n  datamart.digest_weekly_articles_us" },
+      { label: "Read by PHP", code: "athNewsletter::datamart_digest_{daily,weekly}_articles_us($user_id)\nSELECT ... WHERE write_timestamp > NOW() - INTERVAL 12 HOUR" },
+      { label: "Ownership", text: "Data Engineering (not in either newsletter codebase). Likely dbt, DMS, or custom replication — unconfirmed. Ask taylor.stein@ / sudeep@." },
+      { label: "Why it matters", text: "DS-ranked articles reach Iterable via BOTH the DS-SQS-Lambda path AND the PHP curl path, depending on which users the cron batch covers. The split is by feature-flag + user modulo, not by ranking origin." }
+    ]},
+  "djjob": { title: "DJJob queue (wpdb)", tag: "php",
+    summary: "DB-backed work queue used by the PHP cron newsletter path. Distinct from AWS SQS — lives in the WP MySQL jobs table.",
+    sections: [
+      { label: "Enqueue path", code: "$job = new SendNewslettersJob($type, $start_id, $end_id);\n$job->runLater();\n// → DJJob::enqueue($job, 'newsletters')" },
+      { label: "Worker", text: "Separate PHP process polls the jobs table, dequeues, and calls $job->perform() which runs athNewsletter::send() for that batch" },
+      { label: "Capability vs SQS", text: "No retry with backoff, no cross-region, no DLQ semantics. Adequate for the PHP + wpdb idiom where failures recover on the next cron tick." }
+    ]},
+  "pickem-sqs": { title: "pickem-digest SQS", tag: "pickem",
+    summary: "Independent SQS queue exclusively for pickem-specific digest sends.",
+    sections: [
+      { label: "Queue", code: "{stage}-pickem-digest-queue (via PICKEM_DIGEST_QUEUE_URL env)" },
+      { label: "Producer", text: "Pickem digest generator (band 2)" },
+      { label: "Consumer", text: "pickemDigestSend Lambda (reserved concurrency 10)" }
+    ]},
+
+  // Band 4 — Dispatch
+  "digest-lambda": { title: "digestNewsletterSend Lambda", tag: "ds",
+    summary: "Thin SQS → Iterable proxy. Validates message shape; forwards dataFields verbatim to Iterable /email/target. articles[] payload is opaque to the Lambda.",
+    sections: [
+      { label: "Handler", code: "theathletic-serverless/src/functions/digestNewsletterSend/index.ts" },
+      { label: "Campaigns served", list: [
+        "601983 — US Daily Digest (fully DS)",
+        "602288 — Weekly Digest (DS hybrid portion; PHP cron also writes to this campaign)",
+        "Targeted Sends campaigns (via targeted_sends* DAGs)"
+      ]},
+      { label: "Call", code: "POST https://api.iterable.com/api/email/target" },
+      { label: "Retries", text: "RateLimit, 5xx, timeouts handled by Lambda retry; DLQ on exhaustion" },
+      { label: "Concurrency", text: "Batch size 10 (from SQS), reserved concurrency 28" },
+      { label: "Owner", text: "hideky@theathletic.com (consumer). Producer is Data Science." }
+    ]},
+  "php-curl": { title: "iterableApi::send_single_email() — curl dispatch", tag: "php",
+    summary: "PHP method that shells to curl and fires a POST to Iterable /email/target. Fire-and-forget: no error handling, no retry, no DLQ.",
+    sections: [
+      { label: "File", code: "web/app/themes/athletic/inc/class.iterableApi.inc.php:116" },
+      { label: "Exact shell command", code: "exec(\"curl -s -H 'Content-Type: application/json' \\\n  -d '$encoded_data' \\\n  -X POST $base/email/target?api_key=$KEY > /dev/null &\")" },
+      { label: "Products served", list: [
+        "UK Daily Digest (711528, entirely this path)",
+        "Weekly Digest (602288, PHP cron portion of the hybrid)",
+        "Editorial newsletters + proofs",
+        "Legacy US Daily (601983 — DS-SQS is primary now)"
+      ]},
+      { label: "Risks", text: "No delivery confirmation. Exit code discarded by '&'. Silent failures possible." }
+    ]},
+  "pickem-lambda": { title: "pickemDigestSend Lambda", tag: "pickem",
+    summary: "SQS-driven pickem-specific digest sender.",
+    sections: [
+      { label: "File", code: "pickemDigestSend/index.ts" },
+      { label: "Call", code: "POST /email/target" },
+      { label: "Campaign", text: "16876375 (prod)" },
+      { label: "Reserved concurrency", text: "10" }
+    ]},
+  "push-tool-dispatch": { title: "Push Tool V3 → Iterable campaigns/trigger", tag: "editor",
+    summary: "Distinct endpoint from /email/target. Used for editor-triggered story push/email campaigns where channel is determined by the Iterable campaign's own configuration.",
+    sections: [
+      { label: "Function", code: "trigger_story_push_campaign_v3()" },
+      { label: "Endpoint", code: "POST /api/campaigns/trigger" },
+      { label: "Payload", code: "{ campaignId, listIds, suppressionListIds, dataFields: { pushTitle, pushMessage, articleId, deepLink, teamIds, ... } }" },
+      { label: "Channel", text: "Iterable decides push vs email per campaign config — not per call" }
+    ]},
+
+  // Band 5 — Iterable
+  "iterable-service": { title: "Iterable (single tenant, multi-channel)", tag: "iterable",
+    summary: "Third-party marketing platform. Single TA tenant carries every newsletter product as a separate campaign. Channel (email vs push) is determined per campaign config, not per API call.",
+    sections: [
+      { label: "Endpoints used", list: ["/api/email/target — targeted email sends (per-user dataFields)", "/api/campaigns/trigger — campaign triggers with listIds + dataFields"] },
+      { label: "Auth", code: "Api-Key header (ITERABLE_API_KEY from Vault)" },
+      { label: "Template rendering", text: "Iterable's campaign templates consume dataFields server-side; TA's dispatchers are thin payload proxies" },
+      { label: "Per-campaign channel config", text: "The same tenant serves email (digests, editorial) AND mobile push (story push campaigns). Channel is a campaign-config decision." }
+    ]},
+  "user-inbox": { title: "User inbox + device", tag: "iterable",
+    summary: "Email inbox for digest deliveries; APNS/FCM device for push campaigns. Iterable handles rendering + delivery.",
+    sections: [
+      { label: "Channels", list: ["Email (Gmail / Apple Mail / Outlook / etc.)", "APNS (iOS) — for story push campaigns", "FCM (Android) — for story push campaigns"] }
+    ]},
+
+  // Edges
+  "redshift-ebdb-to-airflow": { title: "Redshift ebdb.* → Airflow DAGs", summary: "feature_pull_query reads user / post / tag / read-history tables via Redshift UNLOAD." },
+  "redshift-datamart-to-airflow": { title: "Redshift datamart.* → Airflow DAGs", summary: "user_follows, content_stats, topic affinity features join against base tables during feature extraction." },
+  "dynamo-to-airflow": { title: "user_newsletter_metadata → Airflow DAGs", summary: "Opt-in filter: newsletter_id='daily_digest' AND status='opted_in'. Replicated from DynamoDB." },
+  "s3-to-airflow": { title: "S3 features + model → Airflow DAGs", summary: "Features UNLOAD'd from Redshift; CatBoost model loaded from S3; inference runs in the EKS pod." },
+  "wpdb-ebdb-to-php": { title: "WP MySQL ebdb → PHP cron", summary: "athNewsletter::send() queries wp_users, posts, post_team, post_league, user_articles_read, user_team/league/author via athReadonlyDb." },
+  "wpdb-datamart-to-php": { title: "WP MySQL datamart → PHP cron", summary: "weighted_ranking() uses datamart.post_stats for view-count scoring. DATAMART branch reads datamart.digest_daily_articles_us / weekly_articles_us for DS-ranked results." },
+  "djjob-store-to-php": { title: "DJJob store → PHP cron worker", summary: "Worker polls the jobs table, dequeues SendNewslettersJob payloads, runs athNewsletter::send() per batch." },
+  "scoop-to-airflow-gap": { title: "(GAP) Scoop → Airflow DAGs", summary: "Pitch-authored articles would need to be readable by the DAGs. Requires Scoop article registry replicated into Redshift ebdb.* (Option A) or UNIONed into feature_pull_query (Option B)." },
+  "scoop-to-php-gap": { title: "(GAP) Scoop → PHP cron", summary: "Pitch articles would need to appear in WP MySQL ebdb.* (or a compat view) so weighted_ranking() and the DATAMART branch can see them." },
+  "airflow-to-sqs": { title: "Airflow DAGs → digest-newsletter-send SQS", summary: "batch_send_to_sqs() in the EKS pod publishes per-user messages in batches of 10." },
+  "airflow-to-datamart-sync": { title: "Airflow DAGs → datamart sync (indirect)", summary: "DAG writes to Redshift analytics.daily_digest_algo_v2; the DE-owned sync replicates to WP MySQL." },
+  "datamart-sync-to-php": { title: "datamart sync → PHP cron", summary: "PHP DATAMART branch reads DS-produced ranked articles from WP MySQL datamart.digest_*." },
+  "php-to-djjob": { title: "PHP cron → DJJob", summary: "SendNewslettersJob::runLater() enqueues per-batch job into the wpdb jobs table." },
+  "pickem-gen-to-sqs": { title: "Pickem generator → pickem-digest SQS", summary: "Independent queue, independent producer." },
+  "proof-to-php": { title: "Proof UI → PHP curl", summary: "Editor proof sends use the same iterableApi::send_single_email() path as the recurring PHP cron newsletters." },
+  "push-tool-to-dispatch": { title: "Push Tool V3 → campaigns/trigger dispatch", summary: "Editor wizard submits to the trigger_story_push_campaign_v3 PHP handler." },
+  "sqs-to-lambda": { title: "digest-newsletter-send SQS → Lambda", summary: "SQS event source triggers digestNewsletterSend Lambda in batches of 10." },
+  "djjob-to-curl": { title: "DJJob worker → curl", summary: "Worker runs athNewsletter::send() which calls iterableApi::send_single_email() → curl exec." },
+  "pickem-sqs-to-lambda": { title: "pickem-digest SQS → Lambda", summary: "SQS event source triggers pickemDigestSend Lambda." },
+  "lambda-to-iterable-us-daily": { title: "digestNewsletterSend → US Daily campaign 601983", summary: "Per-user /email/target call; Iterable template renders the email." },
+  "lambda-to-iterable-weekly": { title: "digestNewsletterSend → Weekly campaign 602288 (DS portion)", summary: "Weekly DS-DAG subset reaches 602288 via the Lambda path." },
+  "php-curl-to-iterable-weekly": { title: "PHP curl → Weekly campaign 602288 (PHP portion)", summary: "Weekly PHP-cron subset reaches the same campaign via direct curl. Hybrid." },
+  "php-curl-to-iterable-uk-daily": { title: "PHP curl → UK Daily campaign 711528", summary: "Sole UK Daily path — no DS DAG exists for UK yet." },
+  "pickem-lambda-to-iterable": { title: "pickemDigestSend → Pickem 16876375", summary: "Independent Pickem path." },
+  "push-tool-to-iterable": { title: "Push Tool V3 → Story Push campaigns", summary: "/campaigns/trigger with article-specific dataFields; Iterable campaign config determines push vs email." },
+  "php-curl-to-editorial": { title: "PHP curl → Editorial + proof campaigns", summary: "Editorial newsletter sends and editor proofs all share the same curl dispatch." },
+  "airflow-to-targeted-sends": { title: "Airflow → Targeted Sends campaigns", summary: "targeted_sends* DAGs feed targeted campaigns via the shared Lambda (presumed; mechanism unverified with Taylor Stein)." },
+  "iterable-to-inbox": { title: "Iterable → User inbox / device", summary: "Server-side email rendering and/or push delivery via APNS/FCM." }
+};
+
+const tooltip = document.getElementById('tooltip');
+const panel = document.getElementById('panel');
+const overlay = document.getElementById('overlay');
+const panelContent = document.getElementById('panel-content');
+
+function tooltipFor(id) {
+  const d = DATA[id];
+  if (!d) return { title: id, summary: '' };
+  return { title: d.title || id, summary: d.summary || '' };
+}
+
+function buildPanelHTML(d) {
+  if (!d) return 'No data';
+  const tag = d.tag ? `<span class="tag ${d.tag}">${d.tag.toUpperCase()}</span>` : '';
+  const status = d.status ? `<span class="tag ${d.status.toLowerCase()}">${d.status.toUpperCase()}</span>` : '';
+  let html = `<h3>${d.title || ''}</h3>`;
+  if (d.subtitle) html += `<p class="subtitle">${d.subtitle}</p>`;
+  if (d.summary) html += `<p>${tag}${status}${d.summary}</p>`;
+  (d.sections || []).forEach(s => {
+    html += `<section><div class="label">${s.label}</div>`;
+    if (s.text) html += `<p>${s.text}</p>`;
+    if (s.code) html += `<pre>${s.code}</pre>`;
+    if (s.list) html += `<ul>${s.list.map(item => `<li>${item}</li>`).join('')}</ul>`;
+    html += '</section>';
+  });
+  return html;
+}
+
+function openPanel(id) {
+  const d = DATA[id];
+  panelContent.innerHTML = buildPanelHTML(d);
+  panel.classList.add('open');
+  overlay.classList.add('open');
+}
+function closePanel() {
+  panel.classList.remove('open');
+  overlay.classList.remove('open');
+}
+overlay.addEventListener('click', closePanel);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+function showTooltip(e, id) {
+  const { title, summary } = tooltipFor(id);
+  if (!title && !summary) return;
+  tooltip.innerHTML = `<div class="tip-title">${title}</div>${summary}<div class="tip-hint">click to expand</div>`;
+  tooltip.classList.add('visible');
+  positionTooltip(e);
+}
+function positionTooltip(e) {
+  const pad = 14;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  const rect = tooltip.getBoundingClientRect();
+  if (x + rect.width > window.innerWidth) x = e.clientX - rect.width - pad;
+  if (y + rect.height > window.innerHeight) y = e.clientY - rect.height - pad;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+}
+function hideTooltip() { tooltip.classList.remove('visible'); }
+
+document.querySelectorAll('[data-id]').forEach(el => {
+  const id = el.getAttribute('data-id');
+  el.addEventListener('mouseenter', e => showTooltip(e, id));
+  el.addEventListener('mousemove', positionTooltip);
+  el.addEventListener('mouseleave', hideTooltip);
+  el.addEventListener('click', () => { hideTooltip(); openPanel(id); });
+});
+document.querySelectorAll('[data-edge]').forEach(el => {
+  const id = el.getAttribute('data-edge');
+  el.addEventListener('mouseenter', e => showTooltip(e, id));
+  el.addEventListener('mousemove', positionTooltip);
+  el.addEventListener('mouseleave', hideTooltip);
+  el.addEventListener('click', () => { hideTooltip(); openPanel(id); });
+});
+</script>
+
+</body>
+</html>
