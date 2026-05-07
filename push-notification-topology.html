@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TA Push Notification Topology - Current State</title>
+<style>
+:root {
+  --bg: #fafaf7;
+  --panel: #ffffff;
+  --border: #d1d5db;
+  --text: #111827;
+  --muted: #4b5563;
+  --soft: #6b7280;
+  --mobile-push: #1f4e79;
+  --email: #c76a0c;
+  --realtime: #0e7490;
+  --widget: #5b3886;
+  --webhook: #8b1538;
+  --staged: #9ca3af;
+  --redundant: #b91c1c;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+header { padding: 24px 40px 0; }
+h1 { margin: 0 0 4px; font-size: 26px; font-weight: 700; }
+.subtitle { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+.legend { display: flex; flex-wrap: wrap; gap: 20px; padding: 12px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
+.legend .item { display: flex; align-items: center; gap: 8px; }
+.legend .swatch { display: inline-block; width: 36px; height: 3px; border-radius: 2px; }
+.legend .swatch.mobile-push { background: var(--mobile-push); }
+.legend .swatch.email { background: var(--email); }
+.legend .swatch.realtime { background: var(--realtime); }
+.legend .swatch.widget { background: var(--widget); }
+.legend .swatch.webhook { background: var(--webhook); }
+.legend .swatch.staged { background: var(--staged); background-image: repeating-linear-gradient(90deg, var(--staged) 0 6px, transparent 6px 10px); }
+.legend .swatch.redundant { background: var(--redundant); }
+.legend .marker { display: inline-block; width: 14px; height: 14px; vertical-align: middle; }
+.legend .marker.manual { background: #16a34a; border-radius: 50%; }
+.legend .marker.scheduled { background: #eab308; }
+.legend .marker.automatic { background: transparent; border: 1.5px solid var(--soft); }
+main { padding: 0 40px 40px; }
+.section { margin-bottom: 8px; }
+.section h2 { font-size: 18px; font-weight: 700; margin: 24px 0 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+.section .section-note { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+svg { display: block; width: 100%; height: auto; background: transparent; }
+
+.node rect { fill: var(--panel); stroke: #333; stroke-width: 1.5; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.08)); cursor: pointer; transition: stroke-width 0.1s, fill 0.1s; }
+.node:hover rect { stroke-width: 2.5; fill: #f0f4f8; }
+.node text { pointer-events: none; }
+.node .title { font-size: 13px; font-weight: 700; fill: var(--text); }
+.node .subtitle { font-size: 10px; fill: var(--soft); }
+.node .kv { font-size: 10px; fill: var(--text); }
+.node .kv-key { font-weight: 600; fill: var(--muted); }
+
+.node.source rect { stroke: #6b4e00; stroke-width: 2; fill: #fffaf0; }
+.node.mechanism.mobile-push rect { stroke: var(--mobile-push); }
+.node.mechanism.email rect { stroke: var(--email); }
+.node.mechanism.realtime rect { stroke: var(--realtime); }
+.node.mechanism.widget rect { stroke: var(--widget); }
+.node.mechanism.webhook rect { stroke: var(--webhook); }
+.node.service rect { stroke: #333; stroke-width: 2; fill: #f9fafb; }
+.node.device rect { stroke: #374151; fill: #f3f4f6; }
+.node.staged rect { stroke-dasharray: 6 4; fill: #f3f4f6; opacity: 0.78; stroke: var(--staged); }
+.node.staged .title, .node.staged .subtitle, .node.staged .kv { fill: var(--muted); }
+.node.redundant rect { stroke: var(--redundant); stroke-width: 2.5; }
+
+.redundancy-badge rect { fill: #fee2e2; stroke: var(--redundant); stroke-width: 2; filter: drop-shadow(0 2px 3px rgba(185,28,28,0.2)); }
+.redundancy-badge text { fill: #991b1b; font-weight: 700; font-size: 12px; pointer-events: none; }
+
+.initiation-marker { pointer-events: none; }
+.initiation-marker.manual { fill: #16a34a; }
+.initiation-marker.scheduled { fill: #eab308; }
+
+.edge { fill: none; cursor: pointer; pointer-events: visibleStroke; }
+.edge.mobile-push { stroke: var(--mobile-push); stroke-width: 2.2; }
+.edge.email { stroke: var(--email); stroke-width: 2.2; }
+.edge.realtime { stroke: var(--realtime); stroke-width: 2.2; }
+.edge.widget { stroke: var(--widget); stroke-width: 2.2; }
+.edge.webhook { stroke: var(--webhook); stroke-width: 2.2; }
+.edge.staged { stroke: var(--staged); stroke-width: 1.8; stroke-dasharray: 6 4; }
+.edge.redundant { stroke: var(--redundant); stroke-width: 2.5; }
+.edge:hover { stroke-width: 4; filter: drop-shadow(0 0 6px rgba(0,0,0,0.2)); }
+
+#tooltip { position: fixed; background: #111827; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 12px; pointer-events: none; max-width: 320px; z-index: 1000; opacity: 0; transition: opacity 0.12s; line-height: 1.45; box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
+#tooltip.visible { opacity: 1; }
+#tooltip .tip-title { font-weight: 700; margin-bottom: 3px; color: #fbbf24; }
+#tooltip .tip-hint { color: #9ca3af; font-size: 10px; margin-top: 4px; font-style: italic; }
+
+#panel { position: fixed; top: 0; right: 0; width: 520px; height: 100vh; background: var(--panel); border-left: 1px solid var(--border); box-shadow: -4px 0 16px rgba(0,0,0,0.08); transform: translateX(100%); transition: transform 0.2s; z-index: 500; overflow-y: auto; padding: 24px; }
+#panel.open { transform: translateX(0); }
+#panel h3 { margin: 0 0 4px; font-size: 20px; font-weight: 700; }
+#panel .subtitle { font-size: 13px; color: var(--muted); margin: 0 0 16px; }
+#panel .close { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 22px; cursor: pointer; color: var(--muted); padding: 4px 10px; border-radius: 4px; }
+#panel .close:hover { background: #f3f4f6; }
+#panel section { margin-bottom: 18px; }
+#panel .label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+#panel pre { background: #f9fafb; border: 1px solid var(--border); padding: 10px 12px; border-radius: 6px; font-size: 12px; overflow-x: auto; margin: 0; line-height: 1.5; }
+#panel ul { margin: 4px 0; padding-left: 20px; font-size: 13px; line-height: 1.7; }
+#panel li code, #panel p code { background: #f3f4f6; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+#panel .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-right: 6px; }
+#panel .tag.mobile-push { background: #dbeafe; color: #1e40af; }
+#panel .tag.email { background: #fed7aa; color: #9a3412; }
+#panel .tag.realtime { background: #cffafe; color: #155e75; }
+#panel .tag.widget { background: #ede9fe; color: #5b21b6; }
+#panel .tag.webhook { background: #fee2e2; color: #991b1b; }
+#panel .tag.staged { background: #e5e7eb; color: #374151; }
+#panel .tag.redundant { background: #fee2e2; color: #991b1b; }
+#panel .tag.active { background: #dcfce7; color: #166534; }
+#panel .tag.dormant { background: #e5e7eb; color: #374151; }
+
+#overlay { position: fixed; inset: 0; background: rgba(17,24,39,0.25); opacity: 0; transition: opacity 0.2s; z-index: 400; pointer-events: none; }
+#overlay.open { opacity: 1; pointer-events: auto; }
+
+.not-implemented-list { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; }
+.not-implemented-list li { margin: 6px 0; font-size: 13px; }
+.not-implemented-list .verdict { font-weight: 700; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; margin-right: 6px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>TA Push Notification Topology - Current State</h1>
+  <p class="subtitle">Every mechanism TA has for pushing content of any form to users. Hover an edge for a summary; click a node or edge for full details. Current state as of 2026-05-05.</p>
+  <div class="legend">
+    <div class="item"><span class="swatch mobile-push"></span>Mobile push (APNS / FCM)</div>
+    <div class="item"><span class="swatch email"></span>Email (Iterable)</div>
+    <div class="item"><span class="swatch realtime"></span>Realtime (WebSocket / Apollo sub)</div>
+    <div class="item"><span class="swatch widget"></span>Live Activity widget</div>
+    <div class="item"><span class="swatch webhook"></span>Outbound webhook</div>
+    <div class="item"><span class="swatch staged"></span>Staged / flag off</div>
+    <div class="item"><span class="swatch redundant"></span>Redundant / audit</div>
+    <div class="item"><span class="marker manual"></span>Manual (editor)</div>
+    <div class="item"><span class="marker scheduled"></span>Scheduled</div>
+    <div class="item"><span class="marker automatic"></span>Automatic (system event)</div>
+  </div>
+</header>
+
+<main>
+
+<div class="section">
+  <h2>1. Mobile push (APNS + FCM)</h2>
+  <p class="section-note">Iterable and MEMO story push paths. Both editorial entry points (WP Push Tool V3 and Hub admin via Apollo) feed into this section. All excluded mechanisms (Hermes, MEMO game push, Slide Story, Live Rooms, Podcast, V1 legacy, MIS /story-campaign bridge) are documented in section 6.</p>
+  <svg viewBox="0 0 1600 900" id="svg-section-2">
+    <g class="node source" data-id="ev-wp-admin">
+      <rect x="100" y="30" width="340" height="90" rx="10"/>
+      <text class="title" x="270" y="58" text-anchor="middle" font-size="13">WP Admin Push Tool V3</text>
+      <text class="subtitle" x="270" y="77" text-anchor="middle" font-size="11">the-athletic monolith, editor UX</text>
+      <text class="kv" x="115" y="100" font-size="10"><tspan class="kv-key">page:</tspan> push-notifications-v3</text>
+      <text class="kv" x="115" y="115" font-size="10"><tspan class="kv-key">platform:</tspan> Iterable (default) / MEMO (flag)</text>
+      <circle class="initiation-marker manual" cx="430" cy="45" r="7"/>
+    </g>
+    <g class="node source" data-id="ev-apollo-mutation">
+      <rect x="800" y="30" width="340" height="90" rx="10"/>
+      <text class="title" x="970" y="58" text-anchor="middle" font-size="13">Apollo triggerNotifications</text>
+      <text class="subtitle" x="970" y="77" text-anchor="middle" font-size="11">Hub admin UI, React form</text>
+      <text class="kv" x="815" y="100" font-size="10"><tspan class="kv-key">file:</tspan> modules/notifications/resolvers.js:40</text>
+      <text class="kv" x="815" y="115" font-size="10"><tspan class="kv-key">call:</tspan> Iterable /campaigns/trigger (1502097)</text>
+      <circle class="initiation-marker manual" cx="1130" cy="45" r="7"/>
+    </g>
+
+    <text x="430" y="195" text-anchor="middle" font-size="13" font-weight="700" fill="#4b5563" letter-spacing="0.08em">ITERABLE</text>
+    <text x="1285" y="195" text-anchor="middle" font-size="13" font-weight="700" fill="#4b5563" letter-spacing="0.08em">MEMO</text>
+
+    <g class="node mechanism mobile-push" data-id="iterable-story-v3-manual">
+      <rect x="40" y="210" width="240" height="150" rx="10"/>
+      <text class="title" x="160" y="238" text-anchor="middle" font-size="13">Story Push V3</text>
+      <text class="subtitle" x="160" y="256" text-anchor="middle" font-size="10">Send Now</text>
+      <text class="kv" x="52" y="282"><tspan class="kv-key">trigger:</tspan> editor Send Now</text>
+      <text class="kv" x="52" y="300"><tspan class="kv-key">job:</tspan> PushV3SendNowJob</text>
+      <text class="kv" x="52" y="318"><tspan class="kv-key">call:</tspan> /campaigns/trigger</text>
+      <text class="kv" x="52" y="336"><tspan class="kv-key">last:</tspan> 2026-04-10</text>
+      <circle class="initiation-marker manual" cx="270" cy="225" r="6"/>
+    </g>
+    <g class="node mechanism mobile-push" data-id="iterable-story-v3-scheduled">
+      <rect x="300" y="210" width="240" height="150" rx="10"/>
+      <text class="title" x="420" y="238" text-anchor="middle" font-size="13">Story Push V3</text>
+      <text class="subtitle" x="420" y="256" text-anchor="middle" font-size="10">Scheduled</text>
+      <text class="kv" x="312" y="282"><tspan class="kv-key">trigger:</tspan> queued time</text>
+      <text class="kv" x="312" y="300"><tspan class="kv-key">table:</tspan> content_push_notifications</text>
+      <text class="kv" x="312" y="318"><tspan class="kv-key">call:</tspan> /campaigns/trigger</text>
+      <text class="kv" x="312" y="336"><tspan class="kv-key">last:</tspan> 2026-04-10</text>
+      <rect class="initiation-marker scheduled" x="518" y="219" width="12" height="12"/>
+    </g>
+    <g class="node mechanism mobile-push" data-id="iterable-headline">
+      <rect x="700" y="210" width="240" height="150" rx="10"/>
+      <text class="title" x="820" y="238" text-anchor="middle" font-size="13">Headline Push</text>
+      <text class="subtitle" x="820" y="256" text-anchor="middle" font-size="10">Apollo-triggered</text>
+      <text class="kv" x="712" y="282"><tspan class="kv-key">trigger:</tspan> Hub editor click</text>
+      <text class="kv" x="712" y="300"><tspan class="kv-key">campaign:</tspan> 1502097</text>
+      <text class="kv" x="712" y="318"><tspan class="kv-key">file:</tspan> resolvers.js:40</text>
+      <text class="kv" x="712" y="336"><tspan class="kv-key">last:</tspan> 2026-04-14</text>
+      <circle class="initiation-marker manual" cx="930" cy="225" r="6"/>
+    </g>
+    <g class="node mechanism mobile-push" data-id="memo-scheduler-wp">
+      <rect x="1165" y="210" width="240" height="150" rx="10"/>
+      <text class="title" x="1285" y="238" text-anchor="middle" font-size="13">MEMO Scheduler</text>
+      <text class="subtitle" x="1285" y="256" text-anchor="middle" font-size="10">WP editor via MEMO flag</text>
+      <text class="kv" x="1177" y="282"><tspan class="kv-key">flag:</tspan> ENABLE_MEMO_PLATFORM</text>
+      <text class="kv" x="1177" y="300"><tspan class="kv-key">call:</tspan> /v1/send_now/push</text>
+      <text class="kv" x="1177" y="318"><tspan class="kv-key">audience:</tspan> AudQ Boolean query</text>
+      <text class="kv" x="1177" y="336"><tspan class="kv-key">last:</tspan> 2026-01-28</text>
+      <circle class="initiation-marker manual" cx="1395" cy="225" r="6"/>
+    </g>
+
+    <g class="node service" data-id="iterable-service">
+      <rect x="100" y="430" width="820" height="120" rx="10"/>
+      <text class="title" x="510" y="460" text-anchor="middle" font-size="15">Iterable (3rd party SaaS)</text>
+      <text class="subtitle" x="510" y="480" text-anchor="middle" font-size="11">email AND mobile push; primary prod path</text>
+      <text class="kv" x="130" y="504"><tspan class="kv-key">auth:</tspan> Api-Key header (ITERABLE_API_KEY, Vault)</text>
+      <text class="kv" x="130" y="522"><tspan class="kv-key">ops:</tspan> /campaigns/trigger (push), /email/target (email)</text>
+      <text class="kv" x="130" y="540"><tspan class="kv-key">audience:</tspan> list IDs + dataField regex filters, suppression lists</text>
+    </g>
+    <g class="node service" data-id="memo-mis-service">
+      <rect x="1100" y="430" width="380" height="120" rx="10"/>
+      <text class="title" x="1290" y="460" text-anchor="middle" font-size="15">MEMO (NYT-owned)</text>
+      <text class="subtitle" x="1290" y="480" text-anchor="middle" font-size="11">Messaging Platforms team</text>
+      <text class="kv" x="1115" y="504"><tspan class="kv-key">scheduler:</tspan> scheduler.messaging-prd.awsma.nyt.net</text>
+      <text class="kv" x="1115" y="522"><tspan class="kv-key">auth:</tspan> Google JWT</text>
+      <text class="kv" x="1115" y="540"><tspan class="kv-key">audience:</tspan> AudQ on OpenSearch segments</text>
+    </g>
+
+    <g class="node device" data-id="apns">
+      <rect x="460" y="680" width="280" height="110" rx="10"/>
+      <text class="title" x="600" y="712" text-anchor="middle" font-size="15">APNS</text>
+      <text class="subtitle" x="600" y="732" text-anchor="middle" font-size="11">Apple Push Notification Service</text>
+      <text class="kv" x="475" y="756"><tspan class="kv-key">bundle:</tspan> com.theathletic.news</text>
+      <text class="kv" x="475" y="772"><tspan class="kv-key">also:</tspan> Live Activity channel (section 4)</text>
+    </g>
+    <g class="node device" data-id="fcm">
+      <rect x="900" y="680" width="280" height="110" rx="10"/>
+      <text class="title" x="1040" y="712" text-anchor="middle" font-size="15">FCM</text>
+      <text class="subtitle" x="1040" y="732" text-anchor="middle" font-size="11">Firebase Cloud Messaging</text>
+      <text class="kv" x="915" y="756"><tspan class="kv-key">project:</tspan> the-athletic (GCP)</text>
+      <text class="kv" x="915" y="772"><tspan class="kv-key">target:</tspan> Android app</text>
+    </g>
+
+    <path class="edge mobile-push" data-edge="wp-admin-to-v3-manual" d="M 220 120 Q 180 165 160 210" marker-end="url(#arrow-mobile)"/>
+    <path class="edge mobile-push" data-edge="wp-admin-to-v3-scheduled" d="M 320 120 Q 370 165 420 210" marker-end="url(#arrow-mobile)"/>
+    <path class="edge mobile-push" data-edge="wp-admin-to-memo-scheduler" d="M 410 120 Q 900 130 1285 210" marker-end="url(#arrow-mobile)"/>
+    <path class="edge mobile-push" data-edge="apollo-mut-to-headline" d="M 900 120 Q 860 165 820 210" marker-end="url(#arrow-mobile)"/>
+
+    <path class="edge mobile-push" data-edge="v3-manual-to-iterable" d="M 160 360 Q 170 395 220 430" marker-end="url(#arrow-mobile)"/>
+    <path class="edge mobile-push" data-edge="v3-scheduled-to-iterable" d="M 420 360 L 460 430" marker-end="url(#arrow-mobile)"/>
+    <path class="edge mobile-push" data-edge="headline-to-iterable" d="M 820 360 Q 770 395 720 430" marker-end="url(#arrow-mobile)"/>
+    <path class="edge mobile-push" data-edge="memo-scheduler-to-service" d="M 1285 360 L 1290 430" marker-end="url(#arrow-mobile)"/>
+
+    <path class="edge mobile-push" data-edge="iterable-to-apns" d="M 440 550 Q 480 615 560 680" marker-end="url(#arrow-mobile)"/>
+    <path class="edge mobile-push" data-edge="iterable-to-fcm" d="M 720 550 Q 850 615 990 680" marker-end="url(#arrow-mobile)"/>
+    <path class="edge mobile-push" data-edge="memo-mis-to-apns" d="M 1180 550 Q 900 615 640 680" marker-end="url(#arrow-mobile)"/>
+    <path class="edge mobile-push" data-edge="memo-mis-to-fcm" d="M 1250 550 Q 1150 615 1070 680" marker-end="url(#arrow-mobile)"/>
+
+    <defs>
+      <marker id="arrow-mobile" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f4e79"/></marker>
+    </defs>
+  </svg>
+</div>
+
+<div class="section">
+  <h2>2. Email</h2>
+  <p class="section-note">Three recurring digest types (US Daily, Weekly, UK Daily) plus Targeted Sends, Pickem, and editorial proofs — all landing in Iterable. Two dispatch mechanisms (Airflow → SQS → Lambda, and PHP cron → DJJob → direct curl) run in parallel; a datamart sync bridges DS output into the PHP path. US Daily is fully DS-Airflow; Weekly is HYBRID (Airflow DAG + PHP cron, mid-migration); UK Daily is entirely PHP (no DS model yet). See the Newsletters Coda page for full context.</p>
+  <svg viewBox="0 0 1800 720" id="svg-section-3">
+    <g class="node source" data-id="airflow-dags">
+      <rect x="30" y="20" width="360" height="130" rx="8"/>
+      <text class="title" x="210" y="40" text-anchor="middle" font-size="13">Data Science Airflow DAGs</text>
+      <text class="subtitle" x="210" y="56" text-anchor="middle" font-size="10">TheAthletic/data-science (DS + CRM owned)</text>
+      <text class="kv" x="45" y="76" font-size="10">daily_digest_algo_sqs — US Daily (LIVE)</text>
+      <text class="kv" x="45" y="90" font-size="10">weekly_digest_ge_sqs — Weekly HYBRID (LIVE)</text>
+      <text class="kv" x="45" y="104" font-size="10">daily_digest_algo_no_follows (DORMANT, void queue)</text>
+      <text class="kv" x="45" y="118" font-size="10">targeted_sends + _automation + _selection</text>
+      <text class="kv" x="45" y="132" font-size="10"><tspan class="kv-key">data src:</tspan> Redshift ebdb.* + datamart.* + S3 parquet</text>
+    </g>
+    <g class="node source" data-id="wp-athnewsletter-src">
+      <rect x="420" y="20" width="280" height="130" rx="8"/>
+      <text class="title" x="560" y="40" text-anchor="middle" font-size="13">WP athNewsletter + cron</text>
+      <text class="subtitle" x="560" y="56" text-anchor="middle" font-size="10">SendNewslettersJob → DJJob → curl</text>
+      <text class="kv" x="435" y="76" font-size="10">send_newsletters_daily_background.php</text>
+      <text class="kv" x="435" y="90" font-size="10">send_newsletters_weekly_background.php</text>
+      <text class="kv" x="435" y="104" font-size="10">send_newsletters_uk_daily_background.php</text>
+      <text class="kv" x="435" y="118" font-size="10"><tspan class="kv-key">ranker:</tspan> weighted_ranking() OR datamart branch</text>
+      <text class="kv" x="435" y="132" font-size="10"><tspan class="kv-key">data src:</tspan> WP MySQL ebdb.* + datamart.*</text>
+      <rect class="initiation-marker scheduled" x="680" y="29" width="12" height="12"/>
+    </g>
+    <g class="node source" data-id="pickem-generator">
+      <rect x="730" y="20" width="280" height="90" rx="8"/>
+      <text class="title" x="870" y="44" text-anchor="middle" font-size="13">Pickem digest generator</text>
+      <text class="subtitle" x="870" y="62" text-anchor="middle" font-size="10">cron-fed SQS producer</text>
+      <text class="kv" x="745" y="82" font-size="10"><tspan class="kv-key">queue:</tspan> PICKEM_DIGEST_QUEUE_URL</text>
+      <text class="kv" x="745" y="98" font-size="10"><tspan class="kv-key">campaign:</tspan> 16876375 (prod)</text>
+      <rect class="initiation-marker scheduled" x="990" y="29" width="12" height="12"/>
+    </g>
+    <g class="node source" data-id="wp-push-tool-proof">
+      <rect x="1040" y="20" width="280" height="90" rx="8"/>
+      <text class="title" x="1180" y="44" text-anchor="middle" font-size="13">WP newsletter proof UI</text>
+      <text class="subtitle" x="1180" y="62" text-anchor="middle" font-size="10">editor manual send_proof_*</text>
+      <text class="kv" x="1055" y="82" font-size="10"><tspan class="kv-key">variants:</tspan> daily, weekly, regional</text>
+      <text class="kv" x="1055" y="98" font-size="10"><tspan class="kv-key">target:</tspan> staff preview list</text>
+      <circle class="initiation-marker manual" cx="1310" cy="35" r="6"/>
+    </g>
+
+    <g class="node mechanism email" data-id="digest-newsletter-sqs">
+      <rect x="100" y="195" width="240" height="70" rx="8"/>
+      <text class="title" x="220" y="220" text-anchor="middle" font-size="12">digest-newsletter-send SQS</text>
+      <text class="subtitle" x="220" y="238" text-anchor="middle" font-size="10">{stage}-digest-newsletter-send</text>
+      <text class="kv" x="112" y="256" font-size="10"><tspan class="kv-key">producer:</tspan> Airflow DAGs + Targeted Sends</text>
+    </g>
+    <g class="node mechanism email" data-id="datamart-bridge">
+      <rect x="420" y="195" width="280" height="70" rx="8" fill="#fff7ed" stroke="#c76a0c" stroke-dasharray="5 3"/>
+      <text class="title" x="560" y="218" text-anchor="middle" font-size="11">datamart sync (DS → PHP bridge)</text>
+      <text class="subtitle" x="560" y="234" text-anchor="middle" font-size="9">Redshift analytics.daily_digest_algo_v2</text>
+      <text class="kv" x="432" y="250" font-size="9">→ WP MySQL datamart.digest_{daily,weekly}_articles_us</text>
+      <text class="kv" x="432" y="262" font-size="9">read by athNewsletter DATAMART branch</text>
+    </g>
+    <g class="node mechanism email" data-id="pickem-digest-sqs">
+      <rect x="760" y="195" width="240" height="70" rx="8"/>
+      <text class="title" x="880" y="220" text-anchor="middle" font-size="12">pickem-digest SQS</text>
+      <text class="subtitle" x="880" y="238" text-anchor="middle" font-size="10">PICKEM_DIGEST_QUEUE_URL</text>
+      <text class="kv" x="772" y="256" font-size="10"><tspan class="kv-key">producer:</tspan> Pickem generator</text>
+    </g>
+
+    <g class="node mechanism email" data-id="digest-newsletter-lambda">
+      <rect x="70" y="290" width="280" height="155" rx="10"/>
+      <text class="title" x="210" y="316" text-anchor="middle" font-size="13">digestNewsletterSend Lambda</text>
+      <text class="subtitle" x="210" y="334" text-anchor="middle" font-size="10">SQS-driven, personalized digests</text>
+      <text class="kv" x="85" y="355"><tspan class="kv-key">call:</tspan> Iterable /api/email/target</text>
+      <text class="kv" x="85" y="370"><tspan class="kv-key">campaigns:</tspan> 601983 US Daily, 602288 Weekly*</text>
+      <text class="kv" x="85" y="385"><tspan class="kv-key">also:</tspan> Targeted Sends DAGs</text>
+      <text class="kv" x="85" y="400"><tspan class="kv-key">batch:</tspan> 10, concurrency 28</text>
+      <text class="kv" x="85" y="415"><tspan class="kv-key">owner:</tspan> hideky@ (consumer)</text>
+      <text class="kv" x="85" y="430"><tspan class="kv-key">last:</tspan> 2026-03-06</text>
+    </g>
+    <g class="node mechanism email" data-id="newsletter-uk-daily">
+      <rect x="400" y="290" width="260" height="155" rx="10"/>
+      <text class="title" x="530" y="316" text-anchor="middle" font-size="13">Iterable UK Daily Digest</text>
+      <text class="subtitle" x="530" y="334" text-anchor="middle" font-size="10">PHP curl only (entirely legacy)</text>
+      <text class="kv" x="412" y="355"><tspan class="kv-key">campaign:</tspan> 711528</text>
+      <text class="kv" x="412" y="370"><tspan class="kv-key">cron:</tspan> send_newsletters_uk_daily_bg.php</text>
+      <text class="kv" x="412" y="385"><tspan class="kv-key">ranker:</tspan> weighted_ranking() (no DS model)</text>
+      <text class="kv" x="412" y="400"><tspan class="kv-key">via:</tspan> iterableApi::send_single_email()</text>
+      <text class="kv" x="412" y="415"><tspan class="kv-key">plan:</tspan> merge into US Daily when DS model</text>
+      <text class="kv" x="412" y="430"><tspan class="kv-key">note:</tspan> US Daily served by DS-SQS path (left)</text>
+      <rect class="initiation-marker scheduled" x="640" y="299" width="12" height="12"/>
+    </g>
+    <g class="node mechanism email" data-id="newsletter-weekly">
+      <rect x="690" y="290" width="260" height="155" rx="10" stroke="#c76a0c" stroke-width="2"/>
+      <text class="title" x="820" y="316" text-anchor="middle" font-size="13">Iterable Weekly Digest</text>
+      <text class="subtitle" x="820" y="334" text-anchor="middle" font-size="10">HYBRID — Airflow DAG + PHP cron</text>
+      <text class="kv" x="702" y="355"><tspan class="kv-key">campaign:</tspan> 602288</text>
+      <text class="kv" x="702" y="370"><tspan class="kv-key">DS path:</tspan> weekly_digest_ge_sqs → Lambda (left)</text>
+      <text class="kv" x="702" y="385"><tspan class="kv-key">PHP path:</tspan> send_newsletters_weekly_bg.php → curl</text>
+      <text class="kv" x="702" y="400"><tspan class="kv-key">gate:</tspan> WEEKLY_DIGEST_DATAMART + user_level &gt; 0</text>
+      <text class="kv" x="702" y="415"><tspan class="kv-key">data handoff:</tspan> via datamart sync (orange above)</text>
+      <text class="kv" x="702" y="430"><tspan class="kv-key">mid-migration:</tspan> PHP → DS rollout</text>
+      <rect class="initiation-marker scheduled" x="930" y="299" width="12" height="12"/>
+    </g>
+    <g class="node mechanism email" data-id="pickem-digest-lambda">
+      <rect x="980" y="290" width="260" height="155" rx="10"/>
+      <text class="title" x="1110" y="316" text-anchor="middle" font-size="13">pickemDigestSend Lambda</text>
+      <text class="subtitle" x="1110" y="334" text-anchor="middle" font-size="10">SQS-driven pickem digest</text>
+      <text class="kv" x="992" y="355"><tspan class="kv-key">call:</tspan> Iterable /email/target</text>
+      <text class="kv" x="992" y="370"><tspan class="kv-key">reserved:</tspan> concurrency 10</text>
+      <text class="kv" x="992" y="385"><tspan class="kv-key">file:</tspan> pickemDigestSend/index.ts</text>
+      <text class="kv" x="992" y="400"><tspan class="kv-key">last:</tspan> 2026-03-06</text>
+    </g>
+    <g class="node mechanism email" data-id="newsletter-proof">
+      <rect x="1270" y="290" width="260" height="155" rx="10"/>
+      <text class="title" x="1400" y="316" text-anchor="middle" font-size="13">Newsletter Proof</text>
+      <text class="subtitle" x="1400" y="334" text-anchor="middle" font-size="10">editor preview send</text>
+      <text class="kv" x="1282" y="355"><tspan class="kv-key">method:</tspan> send_proof_daily / weekly</text>
+      <text class="kv" x="1282" y="370"><tspan class="kv-key">target:</tspan> staff preview audience</text>
+      <text class="kv" x="1282" y="385"><tspan class="kv-key">call:</tspan> Iterable /email/target</text>
+      <text class="kv" x="1282" y="400"><tspan class="kv-key">last:</tspan> 2026-01-28</text>
+      <circle class="initiation-marker manual" cx="1520" cy="305" r="6"/>
+    </g>
+
+    <g class="node service" data-id="iterable-email-service">
+      <rect x="400" y="500" width="740" height="120" rx="10"/>
+      <text class="title" x="770" y="528" text-anchor="middle" font-size="14">Iterable (email channel)</text>
+      <text class="subtitle" x="770" y="548" text-anchor="middle" font-size="11">server-side template rendering; DataFields carry article metadata</text>
+      <text class="kv" x="420" y="574"><tspan class="kv-key">endpoints:</tspan> /email/target (batch), /campaigns/trigger (targeted)</text>
+      <text class="kv" x="420" y="591"><tspan class="kv-key">note:</tspan> same SaaS as mobile-push; channel determined per campaign config</text>
+      <text class="kv" x="420" y="608"><tspan class="kv-key">auth:</tspan> Api-Key (ITERABLE_API_KEY in Vault)</text>
+    </g>
+
+    <g class="node device" data-id="user-inbox">
+      <rect x="650" y="660" width="340" height="50" rx="8"/>
+      <text class="title" x="820" y="690" text-anchor="middle" font-size="14">User inbox</text>
+    </g>
+
+    <path class="edge email" data-edge="airflow-to-digest-sqs" d="M 210 150 L 220 195" marker-end="url(#arrow-email)"/>
+    <path class="edge email" data-edge="digest-sqs-to-lambda" d="M 220 265 L 210 290" marker-end="url(#arrow-email)"/>
+    <path class="edge email" data-edge="digest-lambda-to-iterable" d="M 210 445 Q 260 475 460 500" marker-end="url(#arrow-email)"/>
+
+    <path class="edge email" data-edge="airflow-to-datamart-bridge" stroke-dasharray="5 3" d="M 330 150 L 490 195" marker-end="url(#arrow-email)"/>
+    <path class="edge email" data-edge="datamart-bridge-to-athnewsletter" stroke-dasharray="5 3" d="M 560 195 L 560 150" marker-end="url(#arrow-email)"/>
+
+    <path class="edge email" data-edge="wp-newsletter-uk-daily" d="M 560 150 Q 540 220 530 290" marker-end="url(#arrow-email)"/>
+    <path class="edge email" data-edge="wp-newsletter-weekly" d="M 640 150 Q 730 220 820 290" marker-end="url(#arrow-email)"/>
+    <path class="edge email" data-edge="digest-lambda-to-weekly" stroke-dasharray="4 4" d="M 350 360 Q 530 340 690 355" marker-end="url(#arrow-email)"/>
+    <path class="edge email" data-edge="uk-daily-to-iterable" d="M 530 445 L 600 500" marker-end="url(#arrow-email)"/>
+    <path class="edge email" data-edge="weekly-to-iterable" d="M 820 445 L 770 500" marker-end="url(#arrow-email)"/>
+
+    <path class="edge email" data-edge="pickem-gen-to-sqs" d="M 870 150 L 880 195" marker-end="url(#arrow-email)"/>
+    <path class="edge email" data-edge="pickem-sqs-to-lambda" d="M 880 265 Q 990 285 1110 290" marker-end="url(#arrow-email)"/>
+    <path class="edge email" data-edge="pickem-lambda-to-iterable" d="M 1110 445 Q 1080 475 960 500" marker-end="url(#arrow-email)"/>
+
+    <path class="edge email" data-edge="proof-tool-to-proof" d="M 1180 150 Q 1260 220 1400 290" marker-end="url(#arrow-email)"/>
+    <path class="edge email" data-edge="proof-to-iterable" d="M 1400 445 Q 1300 475 1100 500" marker-end="url(#arrow-email)"/>
+
+    <path class="edge email" data-edge="iterable-email-to-inbox" d="M 770 620 L 820 660" marker-end="url(#arrow-email)"/>
+
+    <defs>
+      <marker id="arrow-email" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c76a0c"/></marker>
+    </defs>
+  </svg>
+</div>
+
+<div class="section">
+  <h2>3. In-app realtime (Apollo Subscriptions)</h2>
+  <p class="section-note">WebSocket transport over <code>wss://api.theathletic.com/gqlsubscriptions</code>. 14+ channels; Redis PubSub backplane.</p>
+  <svg viewBox="0 0 1720 520" id="svg-section-4">
+    <g class="node source" data-id="kafka-live-scores">
+      <rect x="30" y="30" width="310" height="110" rx="10"/>
+      <text class="title" x="185" y="58" text-anchor="middle" font-size="13">Live score / box score updates</text>
+      <text class="subtitle" x="185" y="76" text-anchor="middle" font-size="10">game state producers</text>
+      <text class="kv" x="45" y="100"><tspan class="kv-key">channels:</tspan> liveScoreUpdates, boxScoreUpdates</text>
+      <text class="kv" x="45" y="117"><tspan class="kv-key">driver:</tspan> DynamoDB game stream consumers</text>
+    </g>
+    <g class="node source" data-id="kafka-live-blog">
+      <rect x="360" y="30" width="310" height="110" rx="10"/>
+      <text class="title" x="515" y="58" text-anchor="middle" font-size="13">Live blog posts</text>
+      <text class="subtitle" x="515" y="76" text-anchor="middle" font-size="10">editor publishes to live blog</text>
+      <text class="kv" x="375" y="100"><tspan class="kv-key">channels:</tspan> updatedLiveBlog, publishedPostToLiveBlog</text>
+      <text class="kv" x="375" y="117"><tspan class="kv-key">triggered by:</tspan> Apollo mutation on publish</text>
+    </g>
+    <g class="node source" data-id="chat-qa-producers">
+      <rect x="690" y="30" width="310" height="110" rx="10"/>
+      <text class="title" x="845" y="58" text-anchor="middle" font-size="13">Chat + Q&amp;A events</text>
+      <text class="subtitle" x="845" y="76" text-anchor="middle" font-size="10">new messages, toasts</text>
+      <text class="kv" x="705" y="100"><tspan class="kv-key">channels:</tspan> chatEvents, createdQaComment</text>
+      <text class="kv" x="705" y="117"><tspan class="kv-key">fires:</tspan> toast overlay on web / mobile</text>
+    </g>
+    <g class="node source" data-id="redis-pubsub">
+      <rect x="1020" y="30" width="310" height="110" rx="10"/>
+      <text class="title" x="1175" y="58" text-anchor="middle" font-size="13">Other realtime channels</text>
+      <text class="subtitle" x="1175" y="76" text-anchor="middle" font-size="10">10+ additional channels</text>
+      <text class="kv" x="1035" y="100"><tspan class="kv-key">total:</tspan> 14+ channels in schema</text>
+      <text class="kv" x="1035" y="117"><tspan class="kv-key">file:</tspan> modules/subscriptions/index.js</text>
+    </g>
+
+    <g class="node mechanism realtime" data-id="apollo-subs-server">
+      <rect x="300" y="200" width="1120" height="140" rx="12"/>
+      <text class="title" x="860" y="230" text-anchor="middle" font-size="15">Apollo Subscriptions Server</text>
+      <text class="subtitle" x="860" y="250" text-anchor="middle" font-size="11">wss://api.theathletic.com/gqlsubscriptions (theathletic-apollo-express)</text>
+      <text class="kv" x="320" y="278"><tspan class="kv-key">transport:</tspan> WebSocket (graphql-ws)</text>
+      <text class="kv" x="320" y="298"><tspan class="kv-key">backplane:</tspan> Redis PubSub (graphql-redis-subscriptions)</text>
+      <text class="kv" x="320" y="318"><tspan class="kv-key">filter:</tspan> client-side via withFilter</text>
+      <text class="kv" x="820" y="278"><tspan class="kv-key">kafka topics:</tspan> production-android-events, production-ios-events, production-web-events</text>
+      <text class="kv" x="820" y="298"><tspan class="kv-key">ECS service:</tspan> ecs_apollo_subscriptions_variables (iac-envs)</text>
+      <text class="kv" x="820" y="318"><tspan class="kv-key">last:</tspan> 2025-05-06</text>
+    </g>
+
+    <g class="node device" data-id="web-client-subs">
+      <rect x="140" y="390" width="340" height="110" rx="10"/>
+      <text class="title" x="310" y="420" text-anchor="middle" font-size="14">Web client</text>
+      <text class="subtitle" x="310" y="439" text-anchor="middle" font-size="11">useSubscription on live pages</text>
+      <text class="kv" x="155" y="464"><tspan class="kv-key">consumed in:</tspan> brackets, box scores,</text>
+      <text class="kv" x="155" y="481"><tspan class="kv-key"></tspan>live blogs, Q&amp;A toasts</text>
+    </g>
+    <g class="node device" data-id="ios-client-subs">
+      <rect x="570" y="390" width="340" height="110" rx="10"/>
+      <text class="title" x="740" y="420" text-anchor="middle" font-size="14">iOS client</text>
+      <text class="subtitle" x="740" y="439" text-anchor="middle" font-size="11">subscribes to same channels</text>
+      <text class="kv" x="585" y="464"><tspan class="kv-key">repo:</tspan> ios-theathletic</text>
+      <text class="kv" x="585" y="481"><tspan class="kv-key">use:</tspan> live game UI updates</text>
+    </g>
+    <g class="node device" data-id="android-client-subs">
+      <rect x="1000" y="390" width="340" height="110" rx="10"/>
+      <text class="title" x="1170" y="420" text-anchor="middle" font-size="14">Android client</text>
+      <text class="subtitle" x="1170" y="439" text-anchor="middle" font-size="11">subscribes to same channels</text>
+      <text class="kv" x="1015" y="464"><tspan class="kv-key">repo:</tspan> android-theathletic</text>
+      <text class="kv" x="1015" y="481"><tspan class="kv-key">use:</tspan> live game UI updates</text>
+    </g>
+
+    <path class="edge realtime" data-edge="scores-to-subs" d="M 185 140 L 500 200" marker-end="url(#arrow-realtime)"/>
+    <path class="edge realtime" data-edge="liveblog-to-subs" d="M 515 140 L 700 200" marker-end="url(#arrow-realtime)"/>
+    <path class="edge realtime" data-edge="chat-to-subs" d="M 845 140 L 900 200" marker-end="url(#arrow-realtime)"/>
+    <path class="edge realtime" data-edge="pubsub-to-subs" d="M 1175 140 L 1200 200" marker-end="url(#arrow-realtime)"/>
+
+    <path class="edge realtime" data-edge="subs-to-web" d="M 500 340 L 310 390" marker-end="url(#arrow-realtime)"/>
+    <path class="edge realtime" data-edge="subs-to-ios" d="M 820 340 L 740 390" marker-end="url(#arrow-realtime)"/>
+    <path class="edge realtime" data-edge="subs-to-android" d="M 1170 340 L 1170 390" marker-end="url(#arrow-realtime)"/>
+
+    <defs>
+      <marker id="arrow-realtime" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0e7490"/></marker>
+    </defs>
+  </svg>
+</div>
+
+<div class="section">
+  <h2>4. Device widget (iOS / Android Live Activities)</h2>
+  <p class="section-note">Background widget updates via APNS Live Activity channel. Not user-facing notifications, but still content push to the device.</p>
+  <svg viewBox="0 0 1720 540" id="svg-section-5">
+    <g class="node source" data-id="ddb-game-stream-widget">
+      <rect x="600" y="20" width="520" height="80" rx="10"/>
+      <text class="title" x="860" y="48" text-anchor="middle" font-size="13">DynamoDB game stream</text>
+      <text class="subtitle" x="860" y="66" text-anchor="middle" font-size="11">score + status change events (same source as MEMO game pushes)</text>
+      <text class="kv" x="620" y="86"><tspan class="kv-key">table:</tspan> game</text>
+    </g>
+
+    <g class="node mechanism widget" data-id="trigger-game-la">
+      <rect x="60" y="150" width="340" height="140" rx="10"/>
+      <text class="title" x="230" y="178" text-anchor="middle" font-size="13">triggerGameLiveActivities</text>
+      <text class="subtitle" x="230" y="196" text-anchor="middle" font-size="11">registers LA channel</text>
+      <text class="kv" x="75" y="220"><tspan class="kv-key">when:</tspan> game upcoming / starts</text>
+      <text class="kv" x="75" y="237"><tspan class="kv-key">action:</tspan> create Live Activity channel</text>
+      <text class="kv" x="75" y="254"><tspan class="kv-key">file:</tspan> triggerGameLiveActivities/index.js</text>
+      <text class="kv" x="75" y="271"><tspan class="kv-key">leagues:</tspan> SUPPORTED_LEAGUES</text>
+    </g>
+    <g class="node mechanism widget" data-id="update-game-la">
+      <rect x="690" y="150" width="340" height="140" rx="10"/>
+      <text class="title" x="860" y="178" text-anchor="middle" font-size="13">updateGameLiveActivity</text>
+      <text class="subtitle" x="860" y="196" text-anchor="middle" font-size="11">in-game score / status updates</text>
+      <text class="kv" x="705" y="220"><tspan class="kv-key">when:</tspan> score / status change</text>
+      <text class="kv" x="705" y="237"><tspan class="kv-key">action:</tspan> background widget update</text>
+      <text class="kv" x="705" y="254"><tspan class="kv-key">distinction:</tspan> no user-facing alert</text>
+      <text class="kv" x="705" y="271"><tspan class="kv-key">file:</tspan> updateGameLiveActivity/index.js</text>
+    </g>
+    <g class="node mechanism widget" data-id="post-game-la">
+      <rect x="1320" y="150" width="340" height="140" rx="10"/>
+      <text class="title" x="1490" y="178" text-anchor="middle" font-size="13">updatePostGameLiveActivity</text>
+      <text class="subtitle" x="1490" y="196" text-anchor="middle" font-size="11">final state update</text>
+      <text class="kv" x="1335" y="220"><tspan class="kv-key">when:</tspan> status to final</text>
+      <text class="kv" x="1335" y="237"><tspan class="kv-key">action:</tspan> dismiss / finalize LA</text>
+      <text class="kv" x="1335" y="254"><tspan class="kv-key">file:</tspan> updatePostGameLiveActivity/index.js</text>
+      <text class="kv" x="1335" y="271"><tspan class="kv-key">status:</tspan> active in prod</text>
+    </g>
+
+    <g class="node service" data-id="apns-live-activity">
+      <rect x="380" y="330" width="960" height="90" rx="10"/>
+      <text class="title" x="860" y="360" text-anchor="middle" font-size="14">APNS Live Activity channel</text>
+      <text class="subtitle" x="860" y="380" text-anchor="middle" font-size="11">separate channel from regular APNS push; iOS 16.2+ / Dynamic Island</text>
+      <text class="kv" x="400" y="404"><tspan class="kv-key">auth:</tspan> same APNS credentials as Hermes; different event type</text>
+    </g>
+
+    <g class="node device" data-id="ios-live-activity">
+      <rect x="400" y="440" width="420" height="90" rx="10"/>
+      <text class="title" x="610" y="470" text-anchor="middle" font-size="14">iOS Live Activity widget</text>
+      <text class="subtitle" x="610" y="489" text-anchor="middle" font-size="11">Dynamic Island + Lock Screen score widget</text>
+      <text class="kv" x="415" y="513"><tspan class="kv-key">source:</tspan> ios-theathletic app</text>
+    </g>
+    <g class="node device" data-id="android-live-activity">
+      <rect x="900" y="440" width="420" height="90" rx="10"/>
+      <text class="title" x="1110" y="470" text-anchor="middle" font-size="14">Android equivalent widget</text>
+      <text class="subtitle" x="1110" y="489" text-anchor="middle" font-size="11">ongoing notification / home-screen widget</text>
+      <text class="kv" x="915" y="513"><tspan class="kv-key">source:</tspan> android-theathletic app</text>
+    </g>
+
+    <path class="edge widget" data-edge="ddb-to-trigger-la" d="M 700 100 Q 500 120 230 150" marker-end="url(#arrow-widget)"/>
+    <path class="edge widget" data-edge="ddb-to-update-la" d="M 860 100 L 860 150" marker-end="url(#arrow-widget)"/>
+    <path class="edge widget" data-edge="ddb-to-post-la" d="M 1020 100 Q 1250 120 1490 150" marker-end="url(#arrow-widget)"/>
+
+    <path class="edge widget" data-edge="trigger-to-apns-la" d="M 230 290 Q 300 310 480 330" marker-end="url(#arrow-widget)"/>
+    <path class="edge widget" data-edge="update-to-apns-la" d="M 860 290 L 860 330" marker-end="url(#arrow-widget)"/>
+    <path class="edge widget" data-edge="post-to-apns-la" d="M 1490 290 Q 1400 310 1240 330" marker-end="url(#arrow-widget)"/>
+
+    <path class="edge widget" data-edge="apns-la-to-ios" d="M 700 420 L 610 440" marker-end="url(#arrow-widget)"/>
+    <path class="edge widget" data-edge="apns-la-to-android" d="M 1020 420 L 1110 440" marker-end="url(#arrow-widget)"/>
+
+    <defs>
+      <marker id="arrow-widget" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b3886"/></marker>
+    </defs>
+  </svg>
+</div>
+
+<div class="section">
+  <h2>5. Outbound partner webhooks</h2>
+  <p class="section-note">Only partner push found in the repos: article publish events to NYT PubP syndication gateway.</p>
+  <svg viewBox="0 0 1720 300" id="svg-section-6">
+    <g class="node source" data-id="article-publish-kafka">
+      <rect x="30" y="90" width="300" height="120" rx="10"/>
+      <text class="title" x="180" y="118" text-anchor="middle" font-size="13">Article publish Kafka events</text>
+      <text class="subtitle" x="180" y="136" text-anchor="middle" font-size="10">post-publish / post-delete</text>
+      <text class="kv" x="45" y="160"><tspan class="kv-key">source:</tspan> WP save_post hook</text>
+      <text class="kv" x="45" y="178"><tspan class="kv-key">topic:</tspan> {stage}-analytics</text>
+      <text class="kv" x="45" y="196"><tspan class="kv-key">event types:</tspan> 16</text>
+    </g>
+    <g class="node mechanism webhook" data-id="apollo-kafka-consumer">
+      <rect x="400" y="90" width="320" height="120" rx="10"/>
+      <text class="title" x="560" y="118" text-anchor="middle" font-size="13">Apollo Kafka consumer</text>
+      <text class="subtitle" x="560" y="136" text-anchor="middle" font-size="10">theathletic-apollo-express</text>
+      <text class="kv" x="415" y="160"><tspan class="kv-key">file:</tspan> src/kafkaConsumer.js:296</text>
+      <text class="kv" x="415" y="178"><tspan class="kv-key">handler:</tspan> publishToPubP</text>
+      <text class="kv" x="415" y="196"><tspan class="kv-key">last:</tspan> 2026-04-14</text>
+    </g>
+    <g class="node mechanism webhook" data-id="publish-to-pubp">
+      <rect x="800" y="90" width="300" height="120" rx="10"/>
+      <text class="title" x="950" y="118" text-anchor="middle" font-size="13">publishToPubP handler</text>
+      <text class="subtitle" x="950" y="136" text-anchor="middle" font-size="10">delete if trash, else update</text>
+      <text class="kv" x="815" y="160"><tspan class="kv-key">fetches:</tspan> /articles/&#123;id&#125;?pubp_metadata=1</text>
+      <text class="kv" x="815" y="178"><tspan class="kv-key">payload:</tspan> AthleticArticle protobuf</text>
+      <text class="kv" x="815" y="196"><tspan class="kv-key">auth:</tspan> GCP JWT (1h TTL)</text>
+    </g>
+    <g class="node service" data-id="nyt-pubp-gateway">
+      <rect x="1180" y="90" width="520" height="120" rx="10"/>
+      <text class="title" x="1440" y="118" text-anchor="middle" font-size="14">NYT PubP Gateway</text>
+      <text class="subtitle" x="1440" y="138" text-anchor="middle" font-size="11">gRPC, GCP_PUBP_GATEWAY_URL</text>
+      <text class="kv" x="1200" y="164"><tspan class="kv-key">method:</tspan> Gateway.publish</text>
+      <text class="kv" x="1200" y="182"><tspan class="kv-key">downstream:</tspan> Kafka monolog (Apple News, Content Search, Alice, Bodega, Samizdat, BigQuery)</text>
+      <text class="kv" x="1200" y="200"><tspan class="kv-key">see:</tspan> Destinations page for full fan-out</text>
+    </g>
+
+    <path class="edge webhook" data-edge="wp-to-kafka" d="M 330 150 L 400 150" marker-end="url(#arrow-webhook)"/>
+    <path class="edge webhook" data-edge="kafka-to-publisher" d="M 720 150 L 800 150" marker-end="url(#arrow-webhook)"/>
+    <path class="edge webhook" data-edge="publisher-to-gateway" d="M 1100 150 L 1180 150" marker-end="url(#arrow-webhook)"/>
+
+    <defs>
+      <marker id="arrow-webhook" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8b1538"/></marker>
+    </defs>
+  </svg>
+</div>
+
+<div class="section">
+  <h2>6. Documented absences</h2>
+  <p class="section-note">Capabilities the codebase does not have, or has as dead code.</p>
+  <ul class="not-implemented-list">
+    <li><span class="verdict">Not implemented</span>Browser web push / VAPID / FCM web SDK. No service worker, no <code>pushManager.subscribe</code>, no VAPID keys, no Firebase messaging SDK anywhere in <code>web/</code>.</li>
+    <li><span class="verdict">Not implemented</span>SMS / Twilio / SNS SMS. No provider credentials, no senders. The only SNS topics in prod tfvars are PagerDuty-bound for internal alerting.</li>
+    <li><span class="verdict">Dead code</span>Iterable comment-reply campaign 560282 (<code>class.iterablePush.inc.php:27</code>). Class method exists, no callers for comment replies. <code>iterablePush</code> is still live for story pushes.</li>
+    <li><span class="verdict">Dormant</span>AWS SES helper (<code>theathletic-serverless/src/helpers/emailSender.ts</code>). No Lambda imports it; Iterable is the sole email provider.</li>
+    <li><span class="verdict">Dormant candidate</span><code>daily_digest_algo_no_follows</code> Airflow DAG last commit 2025-10-07 with message "default to void queue", may be disabled. Pending CRM team confirmation.</li>
+    <li><span class="verdict">Dormant</span><code>notifySitemapUpdate</code> Lambda. Google sitemap ping endpoint was deprecated by Google in 2023. Separately flagged for retirement in the Destinations page.</li>
+    <li><span class="verdict">Out of scope</span><strong>Hermes social notifications</strong> (comment replies, mentions, comment-likes). User-to-user Fan Platform push, not content push. Swift service on ECS/Fargate, enqueued via SQS <code>production-compass-push-queue</code>, NYT-owned. Captured in <code>~/claude/push-notification-delivery.md</code> and <a href="https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/Push-notifications-under-Stride_suisBs4bRa3Z">Push notifications under Stride</a>.</li>
+    <li><span class="verdict">Out of scope</span><strong>MEMO game start / finished push</strong>. DynamoDB game-stream driven, via MEMO <code>/score-campaign</code> through MIS bridge. Automatic live event pushes; excluded from this topology as a focus choice.</li>
+    <li><span class="verdict">Out of scope</span><strong>Slide Story push</strong>. Instagram/TikTok-style swipeable cards, iOS/Android only (web backlogged per Jira SP-46). Editor-authored in Hub CMS; DynamoDB <code>slide-story</code> stream fires <code>triggerSlideStoryPushNotifications</code> Lambda; Iterable push with deep link <code>theathletic://boxscore/{gameId}?slide_story_id={id}</code>.</li>
+    <li><span class="verdict">Out of scope</span><strong>Live Room host + tags push</strong>. Iterable push on live-room host addition (campaign 2747400) and delayed tag-based push, from <code>apollo-express/src/modules/liveRooms/helpers.js</code>. Live Rooms product actively maintained as of 2026-05.</li>
+    <li><span class="verdict">Out of scope</span><strong>Podcast episode push</strong>. Iterable push on episode publish (campaign 587185 / workflow 44439), from <code>class.iterablePush.inc.php:357</code>.</li>
+    <li><span class="verdict">Out of scope</span><strong>Iterable Story Push V1 (legacy)</strong>. Coexists with V3 behind <code>FEATURE_FLAG_TURN_ON_SIMPLIFIED_V3_PUSH_STRATEGY</code>. Removed from diagram; V3 is the current path.</li>
+    <li><span class="verdict">Staged / flag off</span><strong>MIS <code>/story-campaign</code> bridge</strong>. Caller at <code>class.MessagingIterableSyncerProvider.inc.php:73</code>; gated by <code>FEATURE_FLAG_USE_MESSAGING_ITERABLE_SYNCER</code> which defaults to 0 and has no prod activation commits. Soft-launched 2025-09-03; Dec 2025 UI default flipped to <code>$is_memo_send = true</code> (MEMO wins, not MIS).</li>
+  </ul>
+</div>
+
+</main>
+
+<div id="tooltip"></div>
+<div id="overlay"></div>
+<div id="panel">
+  <button class="close" onclick="closePanel()" aria-label="Close">&times;</button>
+  <div id="panel-content"></div>
+</div>
+
+<script>
+const DATA = {
+  "wp-push-tool-v3": { title: "WP Admin Push Tool V3", subtitle: "the-athletic monolith, editor UX", tag: "mobile-push", status: "active",
+    summary: "Standalone WP Admin page at slug push-notifications-v3. Six-step editor wizard: content selection, review, location, platform, send method, per-audience copy override. Permission-gated to HQ admins / programmers / users with ath_permission_v3_push_tools meta.",
+    sections: [
+      { label: "Send methods", list: ["now → async PushV3SendNowJob", "scheduled → DB record + cron", "priority → DB record + expiration + priority cron"] },
+      { label: "Platform choice", text: "'Send via Current' (Iterable) vs 'Send via MEMO'. MEMO step appears only when FEATURE_FLAG_ENABLE_MEMO_PLATFORM is on. Default since Dec 2025: $is_memo_send = true when MEMO is enabled." },
+      { label: "Files", list: ["web/app/themes/athletic/function-parts/admin-push-notification-tool.php:9-41", "web/app/themes/athletic/template-parts/content-admin-push-notification-tool.php:1-1509", "web/app/themes/athletic/inc/class.athPushStoryNotification.inc.php:240-366"] },
+      { label: "See also", text: "<a href='https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/Push-notifications-under-Stride_suisBs4bRa3Z'>Push notifications under Stride</a> for the full six-step wizard + AudQ mechanics." }
+    ]},
+  "apollo-trigger-notifications": { title: "Apollo triggerNotifications mutation", subtitle: "theathletic-apollo-express", tag: "mobile-push", status: "active",
+    summary: "GraphQL mutation that directly fires an Iterable headline push. Separate manual surface from WP; likely the admin / editorial headline flow.",
+    sections: [
+      { label: "File", code: "theathletic-apollo-express/src/modules/notifications/resolvers.js:40-56" },
+      { label: "Provider call", code: "POST /campaigns/trigger (campaignId=1502097)" },
+      { label: "Gating", text: "Resolver checks node published_at before firing." },
+      { label: "Last touched", text: "2026-04-14" }
+    ]},
+
+  "ev-wp-admin": { title: "WP Admin Push Tool V3", subtitle: "the-athletic monolith, editor UX", tag: "mobile-push", status: "active",
+    summary: "Standalone WP Admin page at slug push-notifications-v3. Six-step editor wizard: content selection, review, location, platform, send method, per-audience copy override. Permission-gated to HQ admins / programmers / users with ath_permission_v3_push_tools meta.",
+    sections: [
+      { label: "Send methods", list: ["now (async PushV3SendNowJob)", "scheduled (DB record + cron)", "priority (DB record + expiration + priority cron)"] },
+      { label: "Platform choice", text: "'Send via Current' (Iterable) vs 'Send via MEMO'. MEMO step appears only when FEATURE_FLAG_ENABLE_MEMO_PLATFORM is on. Dec 2025 UI default: $is_memo_send = true when MEMO is enabled." },
+      { label: "Files", list: ["web/app/themes/athletic/function-parts/admin-push-notification-tool.php:9-41", "web/app/themes/athletic/template-parts/content-admin-push-notification-tool.php:1-1509", "web/app/themes/athletic/inc/class.athPushStoryNotification.inc.php:240-366"] },
+      { label: "See also", text: "<a href='https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/Push-notifications-under-Stride_suisBs4bRa3Z'>Push notifications under Stride</a> for the full six-step wizard + AudQ mechanics." }
+    ]},
+  "ev-apollo-mutation": { title: "Apollo triggerNotifications (Hub admin UI)", subtitle: "React form in ~/claude/hub, mutation from theathletic-apollo-express", tag: "mobile-push", status: "active",
+    summary: "Editor opens Hub admin at route /notification/:id/:leagues/:teams/:title, fills push title + message + league/team audience, clicks Send Notifications. Hub calls GraphQL mutation triggerNotifications; Apollo resolver posts to Iterable /campaigns/trigger campaign 1502097.",
+    sections: [
+      { label: "Hub component", code: "hub/src/components/send-notifications-dialog/headline-notification-component.tsx" },
+      { label: "Hub route", code: "/notification/:id/:leagues/:teams/:title (hub/src/app.tsx:131)" },
+      { label: "Apollo resolver", code: "theathletic-apollo-express/src/modules/notifications/resolvers.js:40-56" },
+      { label: "Iterable call", code: "POST /campaigns/trigger, campaignId 1502097" },
+      { label: "Auth", text: "Hub gates by role (admin, editor, author, contributor, podcast_host, podcast_producer, programmer). Apollo resolver uses authenticated middleware only; RBAC lives in Hub." },
+      { label: "Last touched", text: "2026-04-14 (resolver)" }
+    ]},
+  "ev-wp-comment-hook": { title: "WP athCommentV2 hook", subtitle: "comment lifecycle trigger", tag: "mobile-push",
+    summary: "WP hook fired when a comment is created, replied to, or reaches a like threshold. Enqueues to Hermes SQS and, via the comments DynamoDB stream, also triggers the Lambda path (redundant dual-write).",
+    sections: [
+      { label: "Primary file", code: "the-athletic/.../class.athCommentV2.inc.php:1640-1656 → send_comment_notifications()" },
+      { label: "Fires", list: ["hermesPush::trigger_comment_notification() when parent_id > 0", "hermesPush comment-like path when likes ≥ 20 (flag-gated)"] }
+    ]},
+  "ev-ddb-game-stream": { title: "DynamoDB game stream", subtitle: "game status + score change events", tag: "mobile-push",
+    summary: "Primary event source for game-driven pushes and live activity widgets. Two Lambdas on the push side (start / finished), three on the widget side (trigger / update / post-game).",
+    sections: [
+      { label: "Supported leagues", text: "NFL, NBA, MLS, EPL, plus other SUPPORTED_LEAGUES enum values." }
+    ]},
+  "ev-ddb-slide-stream": { title: "DynamoDB slide-story stream", subtitle: "insert / modify events", tag: "mobile-push",
+    summary: "Drives the slide-story Iterable push. Team-targeted via SLIDE_STORY_ITERABLE_LIST_ID.",
+    sections: [{ label: "Handler", code: "theathletic-serverless/src/functions/triggerSlideStoryPushNotifications" }]},
+  "ev-ddb-comments-stream": { title: "DynamoDB comments stream", subtitle: "routeChange Lambda fans out", tag: "mobile-push",
+    summary: "A separate path from the WP athCommentV2 hook: WP writes the comment to DynamoDB, and the stream triggers the routeChange Lambda which enqueues to send-comment-replies-notifications SQS. This is half of the redundant dual-write.",
+    sections: [
+      { label: "Handler", text: "routeChange Lambda, config at serverless.yml:391-395" },
+      { label: "Config", code: "theathletic-serverless routeChange/config/comments.js:28-43" },
+      { label: "Gates", text: "stage === 'production' AND parent_id defined" }
+    ]},
+  "ev-liveroom-events": { title: "Live room + podcast events", subtitle: "editorial / publishing triggers", tag: "mobile-push",
+    summary: "Groups three distinct producers: live room host additions, live room tags (delayed push), and podcast episode publishes.",
+    sections: [{ label: "Note", text: "All three call into Iterable campaign triggers from Apollo resolvers or PHP on WP side." }]},
+
+  "iterable-story-v3-manual": { title: "Iterable Story Push V3 (Send Now)", tag: "mobile-push", status: "active",
+    summary: "Editor clicks Send Now in WP Push Tool V3; async PushV3SendNowJob picks it up and calls Iterable /campaigns/trigger. Feature-flagged between V1 and V3 send strategies.",
+    sections: [
+      { label: "File", code: "the-athletic/.../class.iterablePush.inc.php:313-355" },
+      { label: "Job", code: "jobs/class.PushV3SendNowJob.inc.php" },
+      { label: "Feature flag", text: "FEATURE_FLAG_TURN_ON_SIMPLIFIED_V3_PUSH_STRATEGY switches between V1 and V3 send paths." },
+      { label: "Campaigns", text: "Campaign IDs differ by environment (prod: 554514, staging: 8423518)." },
+      { label: "Last touched", text: "2026-04-10" }
+    ]},
+  "iterable-story-v3-scheduled": { title: "Iterable Story Push V3 (Scheduled)", tag: "mobile-push", status: "active",
+    summary: "Editor queues a future send in the same WP tool; DB record is created and a background job polls for eligible records at the scheduled time, then calls /campaigns/trigger.",
+    sections: [
+      { label: "Table", code: "content_push_notifications (scheduled / processing / sent)" },
+      { label: "Last touched", text: "2026-04-10" }
+    ]},
+  "iterable-story-v1": { title: "Iterable Story Push V1 (legacy)", tag: "mobile-push", status: "active",
+    summary: "Legacy scheduled path that still coexists with V3. Background process polls iterable_push_log and fires /campaigns/trigger. V1 vs V3 is switched by a feature flag.",
+    sections: [
+      { label: "File", code: "class.iterablePush.inc.php:228 (schedule_story_push_campaign)" },
+      { label: "Status", text: "Likely active: V1 and V3 coexist; exact prod traffic split is flag-dependent." },
+      { label: "Last touched", text: "2026-04-10" }
+    ]},
+  "iterable-headline": { title: "Iterable Headline Push", tag: "mobile-push", status: "active",
+    summary: "Apollo-side direct Iterable trigger for headline / breaking news pushes. Separate campaign from V1/V3 WP-driven story pushes.",
+    sections: [
+      { label: "File", code: "theathletic-apollo-express/src/modules/notifications/resolvers.js:40-56" },
+      { label: "Campaign", code: "campaignId=1502097" },
+      { label: "Last touched", text: "2026-04-14" }
+    ]},
+  "iterable-liveroom-host": { title: "Iterable Live Room Host Push", tag: "mobile-push", status: "active",
+    summary: "Automatic push when a host is added to a live room; fires from Apollo helper, error-caught.",
+    sections: [
+      { label: "File", code: "theathletic-apollo-express/src/modules/liveRooms/helpers.js:276-289" },
+      { label: "Campaign", code: "campaignId=2747400" },
+      { label: "Last touched", text: "2026-05-05" }
+    ]},
+  "iterable-liveroom-tags": { title: "Iterable Live Room Tags Push", tag: "mobile-push", status: "active",
+    summary: "Delayed push triggered after live room creation; filters by league_ids and team_ids. Prod-gated.",
+    sections: [
+      { label: "File", code: "theathletic-apollo-express/src/modules/liveRooms/helpers.js:294-349" },
+      { label: "Delay", text: "TAG_PUSH_NOTIFICATION_DELAY" },
+      { label: "Gate", code: "process.env.STAGE === 'production'" },
+      { label: "Last touched", text: "2026-05-05" }
+    ]},
+  "iterable-podcast": { title: "Iterable Podcast Push", tag: "mobile-push", status: "active",
+    summary: "Fires on podcast episode publish. Two delivery modes: campaign trigger (587185) or workflow trigger (44439).",
+    sections: [
+      { label: "File", code: "class.iterablePush.inc.php:357-401" },
+      { label: "Targeting", text: "episode_number + podcast_id passed in dataFields; list 296208" },
+      { label: "Last touched", text: "2026-04-10" }
+    ]},
+  "iterable-slide-story": { title: "Iterable Slide Story Push", tag: "mobile-push", status: "active",
+    summary: "DynamoDB slide-story stream triggers this Lambda, which calls Iterable /api/campaigns/trigger with team-based targeting. Rethrows on error for Lambda retry.",
+    sections: [
+      { label: "Handler", code: "theathletic-serverless/src/functions/triggerSlideStoryPushNotifications/index.js" },
+      { label: "Env vars", list: ["SLIDE_STORY_ITERABLE_CAMPAIGN_ID", "SLIDE_STORY_ITERABLE_LIST_ID"] },
+      { label: "Last touched", text: "2025-01-06 (stable, no recent changes)" }
+    ]},
+  "memo-scheduler-wp": { title: "MEMO Scheduler (WP)", tag: "mobile-push", status: "active",
+    summary: "WP-side MEMO integration. When the editor picks 'Send via MEMO' and the platform feature flag is on, the payload goes to NYT's Messaging Scheduler with an AudQ Boolean query for targeting.",
+    sections: [
+      { label: "File", code: "class.athMemoProvider.inc.php:35-85" },
+      { label: "Feature flag", text: "FEATURE_FLAG_ENABLE_MEMO_PLATFORM controls whether editors see the option at all." },
+      { label: "Endpoint", code: "POST scheduler.messaging-prd.awsma.nyt.net/v1/send_now/push" },
+      { label: "Auth", text: "Google JWT (direct) via MessagingSchedulerClient" },
+      { label: "Targeting", text: "AudQ (allq / joinq / notq) over OpenSearch segments: ta_team_*, ta_league_*, ta_top_sports_news[_uk|_us], ta_uk_users, ta_non_uk_users" },
+      { label: "Last touched", text: "2026-01-28" }
+    ]},
+  "memo-game-start": { title: "MEMO Game Start Push", tag: "mobile-push", status: "active",
+    summary: "DynamoDB game stream trigger. When a game transitions to in_progress, Lambda posts a score-campaign payload through the MIS bridge to MEMO.",
+    sections: [
+      { label: "Handler", code: "theathletic-serverless/src/functions/triggerGameStartPushNotifications/index.js" },
+      { label: "Endpoint", code: "MIS /score-campaign → MEMO Scheduler" },
+      { label: "Targeting", text: "Filters to teams with legacy IDs; uses includedScoreTeams array" },
+      { label: "Last touched", text: "2025-12-18" }
+    ]},
+  "memo-game-finished": { title: "MEMO Game Finished Push", tag: "mobile-push", status: "active",
+    summary: "Mirror of game-start: DynamoDB game stream fires this Lambda when the game reaches final.",
+    sections: [
+      { label: "Handler", code: "theathletic-serverless/src/functions/triggerGameFinishedPushNotifications/index.js" },
+      { label: "Integration", text: "GraphQL integration for extended game data (stats, winning team)" },
+      { label: "Last touched", text: "2025-12-18" }
+    ]},
+  "mis-story-campaign": { title: "MIS /story-campaign bridge", tag: "staged", status: "dormant",
+    summary: "STAGED path. The Messaging Iterable Syncer is a Go service that wraps MEMO Scheduler calls and presents a simpler TA-facing API. WP has a caller, but the feature flag is OFF in prod. Soft-launched Sep 2025, never activated.",
+    sections: [
+      { label: "Caller", code: "class.MessagingIterableSyncerProvider.inc.php:73-155" },
+      { label: "Factory", code: "class.athPushProviderFactory.inc.php:29 (defaults to 0)" },
+      { label: "Flag", text: "FEATURE_FLAG_USE_MESSAGING_ITERABLE_SYNCER. Redis-backed. Default 0. No commit found that activates in prod." },
+      { label: "Evidence flag is off", list: ["Factory uses ?? 0 null-coalescing; flag must equal 1 to return MIS provider", "Dec 2025 UI change defaulted $is_memo_send = true (MEMO wins, not MIS)", "No SSM parameter for the flag (not IaC-managed)"] },
+      { label: "Endpoint when activated", code: "POST messaging-iterable-syncer.messaging-platforms.nyti.nyt.net/story-campaign" },
+      { label: "Implication", text: "For push topology purposes, the MIS story-campaign path is not live. MEMO scheduler (direct) IS live." }
+    ]},
+  "hermes-comment-reply-wp": { title: "Hermes Comment Reply (WP direct)", tag: "redundant", status: "active",
+    summary: "WP athCommentV2 reply hook enqueues directly to the Compass SQS consumed by Hermes. No feature flag; fires unconditionally on every reply in production. REDUNDANT with the Lambda path.",
+    sections: [
+      { label: "File", code: "class.hermesPush.inc.php:18-100 → trigger_comment_notification()" },
+      { label: "Call chain", text: "athCommentV2::add_content_comment() → send_comment_notifications() → hermesPush::trigger_comment_notification() → SQS" },
+      { label: "Queue", code: "production-compass-push-queue" },
+      { label: "Payload", text: "type=comment-reply, expiry 7 days, includes unread count, deep link by content type" },
+      { label: "Gating", text: "is_production() check only; no feature flag" },
+      { label: "Redundancy partner", text: "See sendCommentReplies Lambda. Both paths fire on every reply." },
+      { label: "Last touched", text: "2025-09-22" }
+    ]},
+  "comment-replies-lambda": { title: "sendCommentRepliesNotifications Lambda", tag: "redundant", status: "active",
+    summary: "DynamoDB comments stream triggers this Lambda (via routeChange), which calls Apollo REST /send_comment_notifications. Redundant with the WP-direct Hermes SQS enqueue.",
+    sections: [
+      { label: "Handler", code: "theathletic-serverless/src/functions/sendCommentRepliesNotifications/index.ts" },
+      { label: "Trigger", text: "SQS send-comment-replies-notifications, fed by routeChange Lambda listening to the comments DynamoDB stream" },
+      { label: "Gates", text: "stage === 'production' AND parent_id defined (in routeChange/config/comments.js:28-43)" },
+      { label: "Call", code: "POST Apollo /send_comment_notifications (60s timeout, batch 10)" },
+      { label: "Redundancy partner", text: "See Hermes Comment Reply WP. Added 2024-03, but WP-direct path was never disabled." },
+      { label: "Last touched", text: "2026-02-11" }
+    ]},
+  "hermes-comment-like": { title: "Hermes Comment Like Push", tag: "mobile-push", status: "active",
+    summary: "Fires when a comment reaches 20+ likes. Feature-flag gated.",
+    sections: [
+      { label: "File", code: "class.hermesPush.inc.php:102-158" },
+      { label: "Feature flag", code: "HERMES_COMMENT_LIKE_NOTIFICATION" },
+      { label: "Payload", text: "type=comment-like, emojis in title, paired with DB notification record" },
+      { label: "Last touched", text: "2025-09-22" }
+    ]},
+  "comment-reply-redundancy": { title: "Redundant dual-write on comment replies", tag: "redundant",
+    summary: "Both the WP-direct Hermes SQS enqueue and the DDB-stream Lambda path fire on every comment reply in production. Neither is gated off. Net effect: every reply potentially results in two delivery attempts to Hermes (the Lambda calls Apollo REST, which presumably routes to Hermes as well).",
+    sections: [
+      { label: "Evidence", list: ["athCommentV2::send_comment_notifications() at class.athCommentV2.inc.php:1640 is unconditional for parent_id > 0", "DynamoDB comments stream is consumed by routeChange Lambda, which enqueues to send-comment-replies-notifications SQS when stage === production AND parent_id is defined", "WP-direct path has no feature flag; Lambda path added 2024-03 (commit 39467d97) extended 2024-12 (4ec01170a) but WP path was never disabled"] },
+      { label: "Recommendation", text: "Audit Apollo's /send_comment_notifications endpoint to determine which path should own this responsibility, then disable the redundant one. Net-new finding; neither the existing 'Push notifications under Stride' nor 'Destinations' pages capture this." },
+      { label: "Dead-code note", text: "The Iterable comment-reply campaign (560282) at class.iterablePush.inc.php:27 is NOT part of this dual-write. Its class method exists but has no callers for comment replies." }
+    ]},
+  "iterable-service": { title: "Iterable (3rd party SaaS)", tag: "mobile-push",
+    summary: "TA's primary production push + email provider. Same SaaS carries both channels; channel is determined per campaign config, not per provider choice.",
+    sections: [
+      { label: "Auth", code: "Api-Key header (ITERABLE_API_KEY, Vault-managed)" },
+      { label: "Key endpoints", list: ["POST /api/campaigns/trigger (targeted story / headline / podcast)", "POST /api/email/target (batch email)"] },
+      { label: "Targeting model", text: "List IDs + dataField regex filters on user attributes. Suppression via suppressionListIds." },
+      { label: "Pull endpoints (separate concern)", text: "/v1iterable/evergreen, /recent_stories, /unread_saved_stories served by TA PHP. Last touched 2023-06-06; dead-code retirement candidate per Destinations page." }
+    ]},
+  "memo-mis-service": { title: "MEMO Messaging Platform + MIS bridge", tag: "mobile-push",
+    summary: "NYT's central push platform. Mobile-only (APNS/FCM). TA uses it behind a feature flag; most prod pushes still go through Iterable. MIS bridge is an optional TA-facing adapter that's currently OFF.",
+    sections: [
+      { label: "Scheduler endpoint", code: "scheduler.messaging-prd.awsma.nyt.net (Google JWT auth)" },
+      { label: "MIS endpoint", code: "messaging-iterable-syncer.messaging-platforms.nyti.nyt.net (X-API-Key auth)" },
+      { label: "Audience model", text: "AudQ Boolean queries (allq / joinq / notq) resolved against OpenSearch segments." },
+      { label: "Owner", text: "NYT Messaging Platforms team." },
+      { label: "See also", text: "<a href='https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/Push-notifications-under-Stride_suisBs4bRa3Z'>Push notifications under Stride</a> for AudQ detail and Push Shipper target design." }
+    ]},
+  "hermes-service": { title: "Hermes Swift Service", tag: "mobile-push",
+    summary: "NYT-owned Swift service on ECS/Fargate. Handles user-to-user social push (comment replies, mentions, follows, comment likes). Out of scope for the Stride-era Push Shipper because it's Fan-Platform-domain, not Storytelling-domain.",
+    sections: [
+      { label: "Runtime", text: "Swift application on ECS/Fargate" },
+      { label: "APNS", text: "JWT auth (Key ID 6AA5ALS497, Team ID FL458598BU, bundle com.theathletic.news). 12 concurrent clients." },
+      { label: "FCM", text: "v1 HTTP API with service account auth (compass-push-notifications@the-athletic.iam.gserviceaccount.com). 30 concurrent senders." },
+      { label: "Device tokens", code: "Compass Postgres (queried per notification)" },
+      { label: "Persistence", code: "DynamoDB production-user-notifications (drives in-app notification feed)" },
+      { label: "Reconstructed from", text: "Existing push-notification-delivery.md knowledge file plus WP-side callers; hermes repo not available locally." }
+    ]},
+  "apns": { title: "APNS (Apple Push Notification Service)", tag: "mobile-push",
+    summary: "Target of all iOS push deliveries across all three provider paths (Iterable, MEMO, Hermes) and the Live Activity channel.",
+    sections: [
+      { label: "Bundle", code: "com.theathletic.news" }
+    ]},
+  "fcm": { title: "FCM (Firebase Cloud Messaging)", tag: "mobile-push",
+    summary: "Target of all Android push deliveries.",
+    sections: [
+      { label: "GCP project", code: "the-athletic" }
+    ]},
+
+  "airflow-dags": { title: "Data Science Airflow DAGs", tag: "email",
+    summary: "Upstream producer of the digest-newsletter-send SQS queue. DAGs build personalized digest articles via ML (CatBoost on Redshift + S3 parquet features) and publish per-user messages to SQS. Per Ben's 2026-05-06 comment: US Daily is fully DS; Weekly is hybrid (DAG + PHP); UK Daily has no DAG yet.",
+    sections: [
+      { label: "Live DAGs (SQS producers)", list: [
+        "daily_digest_algo_sqs — US Daily (campaign 601983, fully DS per Ben)",
+        "weekly_digest_ge_sqs — Weekly HYBRID (campaign 602288, DAG covers subset; PHP cron covers rest)",
+        "targeted_sends, targeted_sends_article_selection, targeted_sends_automation (Taylor Stein owner; SQS mechanism unverified)"
+      ]},
+      { label: "Dormant", list: [
+        "daily_digest_algo_no_follows (last commit 'default to void queue', 2025-10-07)"
+      ]},
+      { label: "Data sources", list: [
+        "Redshift ebdb.* (WP MySQL replica: wp_users, wp_usermeta, posts, post_team, post_league, user_articles_read)",
+        "Redshift datamart.* (user_follows, content_stats, post_tags, user_all_topic_views_rolling, fraud_users)",
+        "nse_dynamo.user_newsletter_metadata (DynamoDB replica, opt-in status)",
+        "S3 parquet features + CatBoost model artifacts"
+      ]},
+      { label: "Pipeline flow", text: "Redshift UNLOAD → S3 parquet → EksPodOperator (memory=96G, cpu=12) runs CatBoost inference via Polars → COPY predictions to Redshift analytics.daily_digest_algo_v2 → batch_send_to_sqs (boto3, batch 10, 10-pool-conn threadpool) to {stage}-digest-newsletter-send" },
+      { label: "Repo", code: "TheAthletic/data-science/docker-airflow/dags/crm_emails/" },
+      { label: "Owner", text: "Data Science + CRM (producer); hideky@theathletic.com (consumer Lambda)" }
+    ]},
+  "wp-athnewsletter-src": { title: "WP athNewsletter + cron", tag: "email", status: "active",
+    summary: "WP-side newsletter dispatcher, three cron scripts. Bypasses SQS entirely: ranks in PHP (via weighted_ranking() OR datamart branch), sends via curl. In parallel with DS Airflow path for Weekly (hybrid rollout). UK Daily is PHP-only.",
+    sections: [
+      { label: "Cron scripts (all scripts/send_newsletters_*)", list: [
+        "send_newsletters_daily_background.php (legacy; US Daily now primarily served by DS-SQS path)",
+        "send_newsletters_weekly_background.php (HYBRID with DS DAG — both active during migration)",
+        "send_newsletters_uk_daily_background.php (sole UK Daily path; no DS DAG exists)"
+      ]},
+      { label: "Entry", code: "exec('php -f send_newsletters_{type}.php &') → SendNewslettersJob → DJJob::enqueue → athNewsletter::send()" },
+      { label: "Ranking branches (athNewsletter::send())", list: [
+        "Daily + DAILY_DIGEST_DATAMART + user_id % 10 IN [2,4,5] → datamart_digest_daily_articles_us()",
+        "Weekly + WEEKLY_DIGEST_DATAMART + user_level > 0 → datamart_digest_weekly_articles_us()",
+        "Else → weighted_ranking() (pre-DS SQL, uses user_team/user_league follows + datamart.post_stats)"
+      ]},
+      { label: "Dispatch", code: "iterableApi::send_single_email() → exec(\"curl -X POST /email/target?api_key=... &\")" },
+      { label: "Data sources", list: [
+        "WP MySQL: wp_users, wp_usermeta, posts, post_team, post_league, user_team/league/author, user_articles_read",
+        "WP MySQL datamart.*: post_stats, digest_daily_articles_us, digest_weekly_articles_us (the latter two are sync'd from Redshift — see datamart bridge)"
+      ]},
+      { label: "Iterable campaigns", list: ["601983 US Daily (legacy path; DS-SQS is primary now)", "602288 Weekly (shared with DS-SQS)", "711528 UK Daily (PHP-only)"] },
+      { label: "Last touched", text: "2026-01-28" }
+    ]},
+  "datamart-bridge": { title: "datamart sync — DS → PHP bridge", tag: "email",
+    summary: "A replication job (owned by DE, not in either codebase) that syncs Redshift analytics.daily_digest_algo_v2 (DS output) into WP MySQL datamart.digest_{daily,weekly}_articles_us. This means DS-ranked articles reach the PHP path even when the PHP cron is the dispatcher — it reads DS output from WP MySQL via its DATAMART branch.",
+    sections: [
+      { label: "Source", code: "Redshift analytics.daily_digest_algo_v2 (user_id, display_order, post_id, write_timestamp)" },
+      { label: "Destination", code: "WP MySQL datamart.digest_daily_articles_us, datamart.digest_weekly_articles_us" },
+      { label: "Read-side SQL", code: "athNewsletter::datamart_digest_{daily,weekly}_articles_us($user_id) with WHERE write_timestamp > NOW() - INTERVAL 12 HOUR" },
+      { label: "Why it matters", text: "The DS path and PHP path are NOT fully independent. Through this sync, DS model output can reach Iterable via either the DS-SQS → Lambda path OR the PHP → curl path. The split is by feature-flag + modulo slice, not by ranking origin." },
+      { label: "Sync owner", text: "Unknown (ask DE / taylor.stein@ / sudeep@). Likely dbt, DMS, or a custom replication job — not surfaced in either repo." }
+    ]},
+  "pickem-generator": { title: "Pickem digest generator", tag: "email", status: "active",
+    summary: "Scheduled producer for the pickem-specific digest SQS queue. Separate from the main digest-newsletter-send queue.",
+    sections: [
+      { label: "Queue", code: "PICKEM_DIGEST_QUEUE_URL" },
+      { label: "Consumer", text: "pickemDigestSend Lambda" },
+      { label: "Campaign", text: "16876375 (prod), 16603996 (staging)" }
+    ]},
+  "wp-push-tool-proof": { title: "WP newsletter proof UI", tag: "email", status: "active",
+    summary: "Editor-facing preview send within the WP newsletter UI. Sends to an internal staff audience for review before full publish.",
+    sections: [
+      { label: "Methods", list: ["send_proof_daily", "send_proof_weekly", "regional variants"] },
+      { label: "Target", text: "Internal staff preview audience" }
+    ]},
+  "digest-newsletter-sqs": { title: "digest-newsletter-send SQS", tag: "email",
+    summary: "The bridge between Data Science Airflow DAGs and the digestNewsletterSend Lambda.",
+    sections: [
+      { label: "Queue name", code: "{stage}-digest-newsletter-send" },
+      { label: "Producer", text: "TheAthletic/data-science Airflow DAGs (see airflow-dags node)" },
+      { label: "Consumer", text: "digestNewsletterSend Lambda (batch 10, concurrency 28)" },
+      { label: "History", text: "A 2026-05-05 trace initially found 'no TA-repo producer', then corrected once the Airflow DAGs were located. See Iterable-under-Stride page for the full trace." }
+    ]},
+  "pickem-digest-sqs": { title: "pickem-digest SQS", tag: "email",
+    summary: "Separate SQS queue exclusively for pickem-specific digests.",
+    sections: [
+      { label: "Queue", code: "{stage}-pickem-digest-queue" }
+    ]},
+  "digest-newsletter-lambda": { title: "digestNewsletterSend Lambda", tag: "email", status: "active",
+    summary: "Thin SQS-to-Iterable proxy. Validates messages have the expected shape, then forwards verbatim to Iterable's email API. The articles[] payload is opaque to the Lambda.",
+    sections: [
+      { label: "Handler", code: "theathletic-serverless/src/functions/digestNewsletterSend/index.ts" },
+      { label: "Payload shape", code: "{ campaignId, recipientEmail, dataFields: { articles: [...] } }" },
+      { label: "Call", code: "POST https://api.iterable.com/api/email/target" },
+      { label: "Campaigns served", list: [
+        "601983 — US Daily Digest (per Ben, fully DS now)",
+        "602288 — Weekly Digest (HYBRID; partial — PHP cron also sends to this campaign)",
+        "Targeted Sends campaign IDs (via targeted_sends* DAGs; specific campaigns Taylor Stein)"
+      ]},
+      { label: "Retries", text: "RateLimit, 5xx, timeouts; DLQ on exhaustion" },
+      { label: "Concurrency", text: "Batch size 10, reserved concurrency 28" },
+      { label: "Owner", text: "hideky@theathletic.com (consumer) / Data Science (upstream producer)" },
+      { label: "Last touched", text: "2026-03-06" }
+    ]},
+  "newsletter-uk-daily": { title: "Iterable UK Daily Digest", tag: "email", status: "active",
+    summary: "UK-specific daily digest. ENTIRELY PHP cron — no DS model exists for UK yet. Plan (per Ben): merge into US Daily once a UK DS model is built.",
+    sections: [
+      { label: "Campaign", code: "711528" },
+      { label: "Cron", code: "scripts/send_newsletters_uk_daily_background.php" },
+      { label: "Ranker", text: "athNewsletter::weighted_ranking() — pre-DS SQL. No DATAMART branch for UK (only daily/weekly US have it)." },
+      { label: "Dispatch", code: "iterableApi::send_single_email() → curl to /email/target" },
+      { label: "Why PHP-only", text: "No daily_digest_uk_* Airflow DAG exists (confirmed). Per Ben, merging into US Daily is the plan once DS builds a UK model." },
+      { label: "US Daily note", text: "US Daily (campaign 601983) is served by the DS-SQS path (digestNewsletterSend Lambda, left) — not by this PHP-cron path anymore." },
+      { label: "Last touched", text: "2026-01-28" }
+    ]},
+  "newsletter-weekly": { title: "Iterable Weekly Digest (HYBRID)", tag: "email", status: "active",
+    summary: "Mid-migration. Weekly Digest campaign 602288 is served by BOTH the DS Airflow DAG (via digest-newsletter-send SQS → Lambda) AND the PHP cron (via direct curl). Feature-flag + user_level gate determines which users each user-send batch lands in.",
+    sections: [
+      { label: "Campaign", code: "602288" },
+      { label: "DS path", text: "weekly_digest_ge_sqs DAG → digest-newsletter-send SQS → digestNewsletterSend Lambda → /email/target" },
+      { label: "PHP path", text: "scripts/send_newsletters_weekly_background.php → DJJob → athNewsletter::send() → curl to /email/target" },
+      { label: "Feature gate", code: "WEEKLY_DIGEST_DATAMART && user_level > 0 → datamart branch (DS rank, PHP send); else weighted_ranking() (PHP rank, PHP send)" },
+      { label: "Datamart handoff", text: "When the PHP datamart branch runs, it reads DS-ranked articles from WP MySQL datamart.digest_weekly_articles_us (sync'd from Redshift analytics.daily_digest_algo_v2 — see datamart bridge node above)" },
+      { label: "Migration status", text: "Per Ben 2026-05-06: weekly is mid-migration from PHP toward DS. Proportion split unknown, pending Hideky Silva." },
+      { label: "File", code: "class.athNewsletter.inc.php" },
+      { label: "Last touched", text: "2026-01-28" }
+    ]},
+  "pickem-digest-lambda": { title: "pickemDigestSend Lambda", tag: "email", status: "active",
+    summary: "SQS-driven, pickem-specific digest sender.",
+    sections: [
+      { label: "Handler", code: "theathletic-serverless/src/functions/pickemDigestSend/index.ts" },
+      { label: "Call", code: "Iterable /api/email/target, campaign 16876375 (prod)" },
+      { label: "Reserved concurrency", text: "10 (Iterable rate-limit compliance)" },
+      { label: "Last touched", text: "2026-03-06" }
+    ]},
+  "newsletter-proof": { title: "Newsletter Proof", tag: "email", status: "active",
+    summary: "Editor-initiated proof send for review before publishing a newsletter.",
+    sections: [
+      { label: "Methods", code: "send_proof_daily, send_proof_weekly" },
+      { label: "Target", text: "Internal staff preview audience" }
+    ]},
+  "iterable-email-service": { title: "Iterable (email channel)", tag: "email",
+    summary: "Same Iterable SaaS as mobile push; the channel (email vs push) is determined by the campaign configuration, not by the provider choice. All TA email goes through /email/target or /campaigns/trigger.",
+    sections: [
+      { label: "Endpoints", list: ["POST /email/target (batched, used by Lambdas and WP curl)", "POST /campaigns/trigger (targeted, used by story/headline/podcast push)"] },
+      { label: "Template rendering", text: "Server-side by Iterable; TA passes article metadata as dataFields." }
+    ]},
+  "user-inbox": { title: "User inbox", tag: "email",
+    summary: "Subscriber's email client. Delivery final target; TA does not observe open/click beyond what Iterable reports back."
+  },
+
+  "kafka-live-scores": { title: "Live score / box score updates", tag: "realtime",
+    summary: "Producers of realtime game state events to the Apollo subscription server.",
+    sections: [
+      { label: "Channels fed", list: ["liveScoreUpdates", "boxScoreUpdates"] },
+      { label: "Consumed in", text: "Box score UI across baseball, football, basketball, hockey, American football (5 sport-specific subscription hooks)" }
+    ]},
+  "kafka-live-blog": { title: "Live blog posts", tag: "realtime",
+    summary: "Live blog post publishes trigger Apollo subscription events. Editors use the live blog UI; each new post is pushed to subscribed clients over WebSocket.",
+    sections: [
+      { label: "Channels", list: ["updatedLiveBlog", "publishedPostToLiveBlog"] }
+    ]},
+  "chat-qa-producers": { title: "Chat + Q&A events", tag: "realtime",
+    summary: "New chat messages and Q&A comments fire subscription events; web client renders in-app toasts when a new reply arrives.",
+    sections: [
+      { label: "Channels", list: ["chatEvents", "createdQaComment"] },
+      { label: "Web component", code: "features/discussion/components/new-comment-toast.tsx" }
+    ]},
+  "redis-pubsub": { title: "Other realtime channels", tag: "realtime",
+    summary: "The Apollo subscriptions schema defines 14+ channels total; the nodes above cover the most visible ones. Full list lives in the subscriptions module.",
+    sections: [
+      { label: "File", code: "theathletic-apollo-express/src/modules/subscriptions/index.js:1-255" },
+      { label: "Transport", text: "Redis PubSub via graphql-redis-subscriptions; filter client-side with withFilter" }
+    ]},
+  "apollo-subs-server": { title: "Apollo Subscriptions Server", tag: "realtime", status: "active",
+    summary: "WebSocket endpoint on Apollo Express. Redis PubSub backplane. Serves 14+ subscription channels; clients filter server-side via withFilter.",
+    sections: [
+      { label: "Endpoint", code: "wss://api.theathletic.com/gqlsubscriptions" },
+      { label: "File", code: "theathletic-apollo-express/src/modules/subscriptions/index.js" },
+      { label: "ECS service", text: "Deployed as ecs_apollo_subscriptions_variables; Kafka topics production-android-events, production-ios-events, production-web-events, production-web-vitals" },
+      { label: "Last touched", text: "2025-05-06" }
+    ]},
+  "web-client-subs": { title: "Web client subscriptions", tag: "realtime",
+    summary: "React useSubscription on live pages. Rendered in brackets, box scores (5 sports), live blogs, Q&A comment toasts.",
+    sections: [
+      { label: "Client", code: "web/src/modules/apollo.ts:89 (WebSocketLink)" },
+      { label: "Representative components", list: ["features/bracket/components/bracket.tsx", "features/box-scores-item/[sport]/data-access/subscribe-to-game.generated.tsx", "features/match-live-blogs/data-access/subscribeToGame.generated.tsx", "features/discussion/components/new-comment-toast.tsx"] }
+    ]},
+  "ios-client-subs": { title: "iOS client subscriptions", tag: "realtime",
+    summary: "iOS app subscribes to the same Apollo subscription channels. Inferred from shared subscription schema; direct source reads not performed.",
+    sections: [{ label: "Repo", code: "ios-theathletic" }]
+  },
+  "android-client-subs": { title: "Android client subscriptions", tag: "realtime",
+    summary: "Android app subscribes to the same Apollo subscription channels.",
+    sections: [{ label: "Repo", code: "android-theathletic" }]
+  },
+
+  "ddb-game-stream-widget": { title: "DynamoDB game stream (widget section)", tag: "widget",
+    summary: "Same DynamoDB game stream source as MEMO game push Lambdas; also feeds three Live Activity update Lambdas.",
+    sections: [
+      { label: "Table", code: "game" }
+    ]},
+  "trigger-game-la": { title: "triggerGameLiveActivities Lambda", tag: "widget", status: "active",
+    summary: "Creates the APNS Live Activity channel at game start. Separate from score-updating Lambdas.",
+    sections: [
+      { label: "Handler", code: "theathletic-serverless/src/functions/triggerGameLiveActivities/index.js" },
+      { label: "Leagues", code: "SUPPORTED_LEAGUES" }
+    ]},
+  "update-game-la": { title: "updateGameLiveActivity Lambda", tag: "widget", status: "active",
+    summary: "In-game score / status widget update. Does NOT send a notification; is a background widget refresh visible only in the Lock Screen / Dynamic Island.",
+    sections: [
+      { label: "Handler", code: "theathletic-serverless/src/functions/updateGameLiveActivity/index.js" }
+    ]},
+  "post-game-la": { title: "updatePostGameLiveActivity Lambda", tag: "widget", status: "active",
+    summary: "Final state update when the game reaches final; dismisses or finalizes the Live Activity.",
+    sections: [
+      { label: "Handler", code: "theathletic-serverless/src/functions/updatePostGameLiveActivity/index.js" }
+    ]},
+  "apns-live-activity": { title: "APNS Live Activity channel", tag: "widget",
+    summary: "Distinct APNS channel for iOS 16.2+ Live Activities (Dynamic Island / Lock Screen widgets). Same APNS credentials as regular push, different event type.",
+    sections: [{ label: "Note", text: "Not a user-facing notification; the device renders a widget update." }]
+  },
+  "ios-live-activity": { title: "iOS Live Activity widget", tag: "widget",
+    summary: "Dynamic Island + Lock Screen widget showing live game score and status.",
+    sections: [{ label: "Source", text: "ios-theathletic app" }]
+  },
+  "android-live-activity": { title: "Android equivalent widget", tag: "widget",
+    summary: "Ongoing notification / home-screen widget equivalent. Implementation details unverified in this survey.",
+    sections: [{ label: "Source", text: "android-theathletic app" }]
+  },
+
+  "article-publish-kafka": { title: "Article publish Kafka events", tag: "webhook",
+    summary: "WP save_post hook publishes analytics events to the Kafka event bus; Apollo's Kafka consumer picks up article-publish / article-delete events and fans out to PubP.",
+    sections: [
+      { label: "Topic", code: "{stage}-analytics" },
+      { label: "Event types", text: "16 (post-publish, post-delete, plus 14 analytics events)" }
+    ]},
+  "apollo-kafka-consumer": { title: "Apollo Kafka consumer", tag: "webhook", status: "active",
+    summary: "Consumes the analytics Kafka topic; routes article-publish / article-delete events to the publishToPubP handler.",
+    sections: [
+      { label: "File", code: "theathletic-apollo-express/src/kafkaConsumer.js:296-347" },
+      { label: "Last touched", text: "2026-04-14" }
+    ]},
+  "publish-to-pubp": { title: "publishToPubP handler", tag: "webhook", status: "active",
+    summary: "Fetches article detail via REST, serializes to AthleticArticle protobuf, and calls PubP gRPC Gateway.publish. Delete-if-trash fork vs update fork.",
+    sections: [
+      { label: "Fetch", code: "GET /articles/{id}?pubp_metadata=1" },
+      { label: "gRPC call", code: "Gateway.publish(AthleticArticle)" },
+      { label: "Auth", text: "JWT (GCP service account, 1h TTL)" },
+      { label: "See also", text: "<a href='https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/sendArticleToPubP-Payload-Deep-Dive_suzNQfAUxlBe'>sendArticleToPubP Payload Deep Dive</a>" }
+    ]},
+  "nyt-pubp-gateway": { title: "NYT PubP Gateway", tag: "webhook",
+    summary: "gRPC endpoint on NYT side. Writes to the Kafka monolog which downstream NYT consumers (Apple News, Content Search, Alice Assets, Bodega, Samizdat, BigQuery) subscribe to. Only outbound partner push found in TA's code.",
+    sections: [
+      { label: "Env var", code: "GCP_PUBP_GATEWAY_URL" },
+      { label: "See also", text: "<a href='https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/Destinations_suAkfiQa'>Destinations</a> page for the full NYT-side fan-out." }
+    ]},
+
+  "wp-admin-to-v3-manual": { title: "WP Admin → V3 Send Now", summary: "Editor clicks Send Now in the V3 tool; PushV3SendNowJob picks up the DB record and fires /campaigns/trigger." },
+  "wp-admin-to-v3-scheduled": { title: "WP Admin → V3 Scheduled", summary: "Editor picks scheduled send; DB record created; background job sends at the scheduled time." },
+  "wp-admin-to-memo-scheduler": { title: "WP Admin → MEMO Scheduler", summary: "Editor picks 'Send via MEMO' (flag-gated). Payload converted to AudQ and posted to MEMO Scheduler." },
+  "apollo-mut-to-headline": { title: "Apollo mutation → Iterable Headline", summary: "triggerNotifications GraphQL mutation fires Iterable campaign 1502097." },
+  "comment-hook-to-hermes-wp": { title: "WP comment hook → Hermes WP direct", summary: "athCommentV2::send_comment_notifications unconditionally enqueues to production-compass-push-queue when parent_id > 0." },
+  "comment-hook-to-hermes-like": { title: "WP comment hook → Hermes like threshold", summary: "Separate WP path triggered when likes ≥ 20, flag-gated by HERMES_COMMENT_LIKE_NOTIFICATION." },
+  "game-stream-to-memo-start": { title: "Game stream → MEMO start push", summary: "Game status transition to in_progress fires triggerGameStartPushNotifications Lambda." },
+  "game-stream-to-memo-finished": { title: "Game stream → MEMO finished push", summary: "Game status to final fires triggerGameFinishedPushNotifications Lambda." },
+  "slide-stream-to-slide-story": { title: "Slide-story stream → Iterable", summary: "DynamoDB slide-story insert/modify triggers Iterable /api/campaigns/trigger." },
+  "comments-stream-to-replies-lambda": { title: "Comments stream → sendCommentReplies Lambda", summary: "routeChange Lambda fans out the comments stream to send-comment-replies-notifications SQS, then to the Lambda that calls Apollo REST. Second half of the redundant dual-write." },
+  "liveroom-ev-to-host": { title: "Live room event → host push", summary: "Host added to live room triggers Iterable campaign 2747400 via Apollo helper." },
+  "liveroom-ev-to-tags": { title: "Live room event → tags push", summary: "Delayed push filtered by league/team IDs; prod-gated." },
+  "liveroom-ev-to-podcast": { title: "Podcast publish → Iterable", summary: "Episode publish fires Iterable campaign 587185 or workflow 44439." },
+
+  "v3-manual-to-iterable": { title: "V3 Send Now → Iterable", summary: "POST /campaigns/trigger with dataFields payload." },
+  "v3-scheduled-to-iterable": { title: "V3 Scheduled → Iterable", summary: "Same Iterable call as Send Now; fired by scheduled job." },
+  "v1-to-iterable": { title: "V1 legacy → Iterable", summary: "Legacy V1 path calls /campaigns/trigger with a slightly different campaignId and dataFields shape." },
+  "headline-to-iterable": { title: "Headline Push → Iterable", summary: "Apollo resolver posts to Iterable campaign 1502097." },
+  "host-to-iterable": { title: "Live Room Host → Iterable", summary: "Iterable campaign 2747400." },
+  "tags-to-iterable": { title: "Live Room Tags → Iterable", summary: "Scheduled delayed push with league + team filters." },
+  "podcast-to-iterable": { title: "Podcast → Iterable", summary: "Campaign 587185 or workflow 44439." },
+  "slide-story-to-iterable": { title: "Slide Story Lambda → Iterable", summary: "POST /api/campaigns/trigger, team-targeted via list + campaign env vars." },
+
+  "memo-scheduler-to-service": { title: "MEMO Scheduler (WP) → MEMO platform", summary: "POST /v1/send_now/push with AudQ targeting. Google JWT auth via MessagingSchedulerClient." },
+  "memo-start-to-service": { title: "Game start Lambda → MEMO", summary: "Lambda posts /score-campaign payload through MIS bridge (which is live for score-campaign, distinct from the /story-campaign flag-gated path)." },
+  "memo-finished-to-service": { title: "Game finished Lambda → MEMO", summary: "Same MIS bridge /score-campaign path as game-start." },
+  "mis-story-to-service": { title: "MIS /story-campaign → MEMO (STAGED)", summary: "Dashed because FEATURE_FLAG_USE_MESSAGING_ITERABLE_SYNCER is off in prod. Caller code exists (class.MessagingIterableSyncerProvider.inc.php:73) but factory short-circuits to direct MemoProvider." },
+
+  "hermes-wp-to-service": { title: "WP direct → Hermes (REDUNDANT)", summary: "WP enqueues to production-compass-push-queue on every comment reply. No flag gate. Partners with the Lambda path to create a dual-write." },
+  "replies-lambda-to-service": { title: "Lambda → Apollo → Hermes (REDUNDANT)", summary: "Lambda posts to Apollo REST /send_comment_notifications which routes to Hermes. Fires alongside the WP direct path." },
+  "hermes-like-to-service": { title: "Comment like → Hermes", summary: "Flag-gated; fires when likes ≥ 20." },
+
+  "iterable-to-apns": { title: "Iterable → APNS", summary: "Iterable manages delivery to Apple devices; audience stored in Iterable's own token registry." },
+  "iterable-to-fcm": { title: "Iterable → FCM", summary: "Same as APNS path for Android." },
+  "memo-mis-to-apns": { title: "MEMO Scheduler → APNS", summary: "Audience resolved via AudQ → OpenSearch segments → MEMO Push Send Service → APNS." },
+  "memo-mis-to-fcm": { title: "MEMO Scheduler → FCM", summary: "Same MEMO delivery path for Android tokens." },
+  "hermes-to-apns": { title: "Hermes → APNS", summary: "JWT-authenticated APNS calls; 12 concurrent clients." },
+  "hermes-to-fcm": { title: "Hermes → FCM", summary: "FCM v1 HTTP API with service account; 30 concurrent senders." },
+
+  "airflow-to-digest-sqs": { title: "Airflow DAGs → digest-newsletter-send SQS", summary: "Data Science DAGs publish per-user digest messages to SQS. This is the producer that was initially missed in earlier surveys." },
+  "digest-sqs-to-lambda": { title: "digest-newsletter-send SQS → Lambda", summary: "Lambda polls SQS (batch 10) and forwards each message verbatim to Iterable /email/target." },
+  "digest-lambda-to-iterable": { title: "digestNewsletterSend Lambda → Iterable", summary: "POST /api/email/target with articles[] dataFields." },
+  "wp-newsletter-uk-daily": { title: "WP cron → UK Daily", summary: "send_newsletters_uk_daily_background.php → SendNewslettersJob → weighted_ranking() → iterableApi::send_single_email() curl. Entire UK Daily lifecycle is this path — no DS DAG." },
+  "wp-newsletter-weekly": { title: "WP cron → Weekly (hybrid)", summary: "send_newsletters_weekly_background.php covers the users not served by the DS DAG path. With WEEKLY_DIGEST_DATAMART + user_level > 0, the PHP reads DS-ranked articles from the datamart bridge. Otherwise falls back to weighted_ranking()." },
+  "digest-lambda-to-weekly": { title: "digestNewsletterSend → Weekly campaign (DS portion)", summary: "When the weekly_digest_ge_sqs DAG has produced messages for a subset of users, they reach Weekly campaign 602288 via Lambda. The other subset reaches it via WP cron. Both are the same Iterable campaign." },
+  "airflow-to-datamart-bridge": { title: "DS output → datamart sync", summary: "Redshift analytics.daily_digest_algo_v2 is replicated by a DE-owned sync job into WP MySQL datamart.digest_{daily,weekly}_articles_us. This is how DS model output reaches the PHP cron's DATAMART branch without using SQS." },
+  "datamart-bridge-to-athnewsletter": { title: "datamart → athNewsletter DATAMART branch", summary: "athNewsletter::datamart_digest_{daily,weekly}_articles_us() SELECTs from these tables and uses them as the ranked article list. PHP reads DS output and sends via curl." },
+  "daily-to-iterable": { title: "Daily → Iterable", summary: "Direct curl to Iterable /email/target (campaigns 601983 US, 711528 UK). Bypasses SQS." },
+  "weekly-to-iterable": { title: "Weekly → Iterable", summary: "Direct curl to Iterable /email/target (campaign 602288). Bypasses SQS." },
+  "pickem-gen-to-sqs": { title: "Pickem generator → SQS", summary: "Producer enqueues to pickem-specific queue." },
+  "pickem-sqs-to-lambda": { title: "Pickem SQS → Lambda", summary: "pickemDigestSend Lambda consumes with reserved concurrency 10." },
+  "pickem-lambda-to-iterable": { title: "Pickem Lambda → Iterable", summary: "POST /email/target, campaign 16876375 (prod)." },
+  "proof-tool-to-proof": { title: "WP proof UI → Newsletter Proof", summary: "Editor clicks send proof; WP calls the same Iterable endpoint with a staff-only audience list." },
+  "proof-to-iterable": { title: "Proof → Iterable", summary: "POST /email/target scoped to internal staff preview list." },
+  "iterable-email-to-inbox": { title: "Iterable → User inbox", summary: "Iterable renders templates server-side and delivers to the recipient's email provider." },
+
+  "scores-to-subs": { title: "Score updates → Apollo Subs", summary: "Game DynamoDB stream fan-out populates liveScoreUpdates / boxScoreUpdates channels." },
+  "liveblog-to-subs": { title: "Live blog publishes → Apollo Subs", summary: "Apollo publishes updatedLiveBlog / publishedPostToLiveBlog on editorial publish." },
+  "chat-to-subs": { title: "Chat / Q&A → Apollo Subs", summary: "New chat messages / Q&A comments fire their channels; client-side filter selects the relevant thread." },
+  "pubsub-to-subs": { title: "Other channels → Apollo Subs", summary: "Remaining 10+ channels defined in the subscriptions module." },
+  "subs-to-web": { title: "Apollo Subs → Web client", summary: "React useSubscription over WebSocket; rendered in brackets, box scores, live blogs, Q&A toasts." },
+  "subs-to-ios": { title: "Apollo Subs → iOS client", summary: "iOS app subscribes over the same WebSocket endpoint." },
+  "subs-to-android": { title: "Apollo Subs → Android client", summary: "Android app subscribes over the same WebSocket endpoint." },
+
+  "ddb-to-trigger-la": { title: "Game stream → triggerGameLiveActivities", summary: "Creates the APNS Live Activity channel at game start." },
+  "ddb-to-update-la": { title: "Game stream → updateGameLiveActivity", summary: "Score / status changes fire widget updates." },
+  "ddb-to-post-la": { title: "Game stream → updatePostGameLiveActivity", summary: "Final state update when game reaches final." },
+  "trigger-to-apns-la": { title: "trigger Lambda → APNS Live Activity channel", summary: "Registers the LA channel so subsequent updates can flow." },
+  "update-to-apns-la": { title: "update Lambda → APNS Live Activity channel", summary: "Pushes live score / status update as a Live Activity event." },
+  "post-to-apns-la": { title: "post-game Lambda → APNS Live Activity channel", summary: "Dismisses or finalizes the Live Activity." },
+  "apns-la-to-ios": { title: "APNS LA → iOS Dynamic Island + Lock Screen widget", summary: "Device renders the update in Live Activity UI." },
+  "apns-la-to-android": { title: "APNS LA → Android equivalent widget", summary: "Implementation details unverified." },
+
+  "wp-to-kafka": { title: "WP publish → Kafka", summary: "save_post hook publishes to {stage}-analytics topic; 16 event types." },
+  "kafka-to-publisher": { title: "Kafka → publishToPubP", summary: "Apollo consumer filters for post-publish / post-delete and routes to the PubP publisher." },
+  "publisher-to-gateway": { title: "publishToPubP → PubP Gateway", summary: "gRPC Gateway.publish with AthleticArticle protobuf; JWT auth." }
+};
+
+const tooltip = document.getElementById('tooltip');
+const panel = document.getElementById('panel');
+const overlay = document.getElementById('overlay');
+const panelContent = document.getElementById('panel-content');
+
+function tooltipFor(id) {
+  const d = DATA[id];
+  if (!d) return { title: id, summary: '' };
+  return { title: d.title || id, summary: d.summary || '' };
+}
+
+function buildPanelHTML(d) {
+  if (!d) return 'No data';
+  const tag = d.tag ? `<span class="tag ${d.tag}">${d.tag.toUpperCase()}</span>` : '';
+  const status = d.status ? `<span class="tag ${d.status.toLowerCase()}">${d.status.toUpperCase()}</span>` : '';
+  let html = `<h3>${d.title || ''}</h3>`;
+  if (d.subtitle) html += `<p class="subtitle">${d.subtitle}</p>`;
+  if (d.summary) html += `<p>${tag}${status}${d.summary}</p>`;
+  (d.sections || []).forEach(s => {
+    html += `<section><div class="label">${s.label}</div>`;
+    if (s.tag) html += `<span class="tag ${s.tag}">${s.tag.toUpperCase()}</span> `;
+    if (s.text) html += `<p>${s.text}</p>`;
+    if (s.code) html += `<pre>${s.code}</pre>`;
+    if (s.list) html += `<ul>${s.list.map(item => `<li>${item}</li>`).join('')}</ul>`;
+    html += '</section>';
+  });
+  return html;
+}
+
+function openPanel(id) {
+  const d = DATA[id];
+  panelContent.innerHTML = buildPanelHTML(d);
+  panel.classList.add('open');
+  overlay.classList.add('open');
+}
+function closePanel() {
+  panel.classList.remove('open');
+  overlay.classList.remove('open');
+}
+overlay.addEventListener('click', closePanel);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+function showTooltip(e, id) {
+  const { title, summary } = tooltipFor(id);
+  if (!title && !summary) return;
+  tooltip.innerHTML = `<div class="tip-title">${title}</div>${summary}<div class="tip-hint">click to expand</div>`;
+  tooltip.classList.add('visible');
+  positionTooltip(e);
+}
+function positionTooltip(e) {
+  const pad = 14;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  const rect = tooltip.getBoundingClientRect();
+  if (x + rect.width > window.innerWidth) x = e.clientX - rect.width - pad;
+  if (y + rect.height > window.innerHeight) y = e.clientY - rect.height - pad;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+}
+function hideTooltip() { tooltip.classList.remove('visible'); }
+
+function wireInteractivity() {
+  document.querySelectorAll('[data-id]').forEach(el => {
+    const id = el.dataset.id;
+    el.addEventListener('mouseenter', e => showTooltip(e, id));
+    el.addEventListener('mousemove', positionTooltip);
+    el.addEventListener('mouseleave', hideTooltip);
+    el.addEventListener('click', e => { e.stopPropagation(); openPanel(id); });
+  });
+  document.querySelectorAll('[data-edge]').forEach(el => {
+    const id = el.dataset.edge;
+    el.addEventListener('mouseenter', e => showTooltip(e, id));
+    el.addEventListener('mousemove', positionTooltip);
+    el.addEventListener('mouseleave', hideTooltip);
+    el.addEventListener('click', e => { e.stopPropagation(); openPanel(id); });
+  });
+}
+
+wireInteractivity();
+</script>
+</body>
+</html>
