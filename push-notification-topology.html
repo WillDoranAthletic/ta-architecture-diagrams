@@ -257,7 +257,7 @@ svg { display: block; width: 100%; height: auto; background: transparent; }
 
 <div class="section">
   <h2>2. Email</h2>
-  <p class="section-note">Three recurring digest types (US Daily, Weekly, UK Daily) plus Targeted Sends, Pickem, and editorial proofs — all landing in Iterable. Two dispatch mechanisms (Airflow → SQS → Lambda, and PHP cron → DJJob → direct curl) run in parallel; a datamart sync bridges DS output into the PHP path. US Daily is fully DS-Airflow; Weekly is HYBRID (Airflow DAG + PHP cron, mid-migration); UK Daily is entirely PHP (no DS model yet). See the Newsletters Coda page for full context.</p>
+  <p class="section-note">Three recurring digest types (US Daily, Weekly, UK Daily) plus Targeted Sends, Pickem, and editorial proofs — all landing in Iterable. Two dispatch mechanisms (Airflow → SQS → Lambda, and PHP cron → DJJob → direct curl) run in parallel; a datamart sync bridges DS output into the PHP path. US Daily is fully DS-Airflow; Weekly is HYBRID (Airflow DAG + PHP cron, mid-migration); UK Daily is entirely PHP (no DS model yet). See the <a href="https://coda.io/d/Stream-of-Knowledge_diEP9aHfn_L/Newsletters_suSp0wAiAmg0" target="_blank">Newsletters</a> Coda page for per-product detail.</p>
   <svg viewBox="0 0 1800 720" id="svg-section-3">
     <g class="node source" data-id="airflow-dags">
       <rect x="30" y="20" width="360" height="130" rx="8"/>
@@ -1172,7 +1172,7 @@ const DATA = {
   "digest-lambda-to-weekly": { title: "digestNewsletterSend → Weekly campaign (DS portion)", summary: "When the weekly_digest_ge_sqs DAG has produced messages for a subset of users, they reach Weekly campaign 602288 via Lambda. The other subset reaches it via WP cron. Both are the same Iterable campaign." },
   "airflow-to-datamart-bridge": { title: "DS output → datamart sync", summary: "Redshift analytics.daily_digest_algo_v2 is replicated by a DE-owned sync job into WP MySQL datamart.digest_{daily,weekly}_articles_us. This is how DS model output reaches the PHP cron's DATAMART branch without using SQS." },
   "datamart-bridge-to-athnewsletter": { title: "datamart → athNewsletter DATAMART branch", summary: "athNewsletter::datamart_digest_{daily,weekly}_articles_us() SELECTs from these tables and uses them as the ranked article list. PHP reads DS output and sends via curl." },
-  "daily-to-iterable": { title: "Daily → Iterable", summary: "Direct curl to Iterable /email/target (campaigns 601983 US, 711528 UK). Bypasses SQS." },
+  "uk-daily-to-iterable": { title: "UK Daily → Iterable", summary: "Direct curl to Iterable /email/target (campaign 711528). Bypasses SQS. Entire UK Daily lifecycle is PHP; no DS model yet." },
   "weekly-to-iterable": { title: "Weekly → Iterable", summary: "Direct curl to Iterable /email/target (campaign 602288). Bypasses SQS." },
   "pickem-gen-to-sqs": { title: "Pickem generator → SQS", summary: "Producer enqueues to pickem-specific queue." },
   "pickem-sqs-to-lambda": { title: "Pickem SQS → Lambda", summary: "pickemDigestSend Lambda consumes with reserved concurrency 10." },
