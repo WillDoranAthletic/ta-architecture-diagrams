@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Publication Pipeline — System Overview</title>
+<title>Publication Pipeline - System Overview</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -22,12 +22,12 @@
   /* ======== GRID LAYOUT ======== */
   .grid {
     display: grid;
-    grid-template-columns: auto auto 240px 300px auto auto;
+    grid-template-columns: auto auto 240px 290px 230px auto auto;
     grid-template-rows: auto auto auto auto auto;
     gap: 0 10px;
     align-items: end;
     justify-content: center;
-    max-width: 1100px;
+    max-width: 1340px;
     width: 100%;
   }
 
@@ -82,6 +82,24 @@
   .card-stride:hover { border-color: #34d399; box-shadow: 0 0 28px rgba(16,185,129,0.15); }
   .card-stride .card-icon { background: rgba(16,185,129,0.15); color: #34d399; }
   .card-stride .card-title { color: #a7f3d0; }
+
+  .card-ogham {
+    background: linear-gradient(135deg, #1f1605, #2a1d08); border: 1px solid #f59e0b;
+    box-shadow: 0 0 20px rgba(245,158,11,0.1); cursor: pointer; text-decoration: none; display: block; color: inherit;
+  }
+  .card-ogham:hover { border-color: #fbbf24; box-shadow: 0 0 28px rgba(251,191,36,0.18); }
+  .card-ogham .card-icon { background: rgba(245,158,11,0.15); color: #fbbf24; }
+  .card-ogham .card-title { color: #fde68a; }
+  .card-ogham .click-hint { color: #fbbf24; }
+  .card-ogham .mini-stage.s-ogham {
+    background: rgba(245,158,11,0.12); color: #fcd34d; border: 1px solid rgba(245,158,11,0.3);
+  }
+  .card-ogham .mini-stage.s-ogham-t1 {
+    background: rgba(239,68,68,0.12); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3);
+  }
+  .card-ogham .mini-stage.s-ogham-stub {
+    background: rgba(148,163,184,0.08); color: #cbd5e1; border: 1px dashed rgba(148,163,184,0.4);
+  }
 
   .card-bidir { background: linear-gradient(135deg, #1a1520, #1e1728); border: 1px solid #a855f7; box-shadow: 0 0 20px rgba(168,85,247,0.08); }
   .card-bidir .card-icon { background: rgba(168,85,247,0.15); color: #c084fc; }
@@ -216,6 +234,30 @@
     <div class="click-hint">&#8599; Click for detailed view</div>
   </a>
 
+  <a href="ogham-architecture.html" class="system-card card-ogham" style="grid-column:5; grid-row:1;">
+    <div class="card-header">
+      <div class="card-icon">&#127759;</div>
+      <div><div class="card-title">Ogham</div><div class="card-subtitle">Distribution Layer (DVSP + TA Lambda)</div></div>
+    </div>
+    <div class="card-body" style="margin-bottom: 6px;">Six service units fan rendered articles out to NYT publishing, search, ads, push, print, and cache.</div>
+    <div class="events-label">Consumes</div>
+    <div class="events-row" style="margin-bottom: 4px;">
+      <div class="event-pill consumes"><span class="pill-arrow">&#8592;</span> storytelling.article.rendered</div>
+      <div class="event-pill consumes"><span class="pill-arrow">&#8592;</span> storytelling.article.retracted</div>
+      <div class="event-pill consumes"><span class="pill-arrow">&#8592;</span> storytelling.push.requested</div>
+    </div>
+    <div class="events-label">Services</div>
+    <div class="mini-pipeline">
+      <div class="mini-stage s-ogham">OpenSearch</div>
+      <div class="mini-stage s-ogham">Alice</div>
+      <div class="mini-stage s-ogham">Push</div>
+      <div class="mini-stage s-ogham-t1">PubP T1</div>
+      <div class="mini-stage s-ogham-stub">NYT Print</div>
+      <div class="mini-stage s-ogham">Cache Purge</div>
+    </div>
+    <div class="click-hint">&#8599; Click for detailed view</div>
+  </a>
+
   <!-- ====== ROW 2: Arrows between stream and consumers (bidirectional) ====== -->
   <div style="grid-column:3; grid-row:2; display:flex; justify-content:center; gap:8px;">
     <div class="v-arrow">
@@ -232,6 +274,14 @@
     <div class="v-arrow">
       <div class="arrow-line" style="height:40px;"></div>
       <div class="arrow-head">&#9660;</div>
+    </div>
+  </div>
+
+  <!-- Arrow: Event Stream up to Ogham (consumes .rendered, .retracted, .push.requested) -->
+  <div style="grid-column:5; grid-row:2; display:flex; justify-content:center;">
+    <div class="v-arrow">
+      <div class="arrow-head">&#9650;</div>
+      <div class="arrow-line" style="height:40px;"></div>
     </div>
   </div>
 
@@ -263,7 +313,7 @@
     </div>
   </div>
 
-  <div class="event-stream-banner r3" style="grid-column:3/5; grid-row:3;">
+  <div class="event-stream-banner r3" style="grid-column:3/6; grid-row:3;">
     <div class="banner-title">The Event Stream</div>
     <div class="banner-subtitle">Apache Kafka (AWS MSK)</div>
     <div class="topics">
@@ -271,12 +321,14 @@
       <div class="topic-chip">storytelling.external-content.transformed</div>
       <div class="topic-chip">storytelling.article.published</div>
       <div class="topic-chip">storytelling.article.rendered</div>
+      <div class="topic-chip">storytelling.article.retracted</div>
+      <div class="topic-chip">storytelling.push.requested</div>
       <div class="topic-chip">storytelling.legacy-article.create</div>
     </div>
   </div>
 
   <!-- Right side: SVG connectors + cards -->
-  <div style="grid-column:5/7; grid-row:2/5; align-self:center; position:relative; min-height:320px; min-width:300px;">
+  <div style="grid-column:6/8; grid-row:2/5; align-self:center; position:relative; min-height:320px; min-width:300px;">
 
     <!-- SVG dog-leg connectors -->
     <svg style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:visible;" xmlns="http://www.w3.org/2000/svg">
@@ -333,7 +385,7 @@
   </div>
 
   <!-- ====== ROW 4: Arrows from stream to Pitch ====== -->
-  <div style="grid-column:3/5; grid-row:4; display:flex; justify-content:center; gap:40px; width:100%; padding-left:40px;">
+  <div style="grid-column:3/6; grid-row:4; display:flex; justify-content:center; gap:40px; width:100%; padding-left:40px;">
     <div class="v-arrow">
       <div class="arrow-line" style="height:40px;"></div>
       <div class="arrow-head">&#9660;</div>
@@ -345,7 +397,7 @@
   </div>
 
   <!-- ====== ROW 5: Pitch ====== -->
-  <div class="system-card card-pitch r5" style="grid-column:3/5; grid-row:5; justify-self:stretch;">
+  <div class="system-card card-pitch r5" style="grid-column:3/6; grid-row:5; justify-self:stretch;">
     <div class="card-header">
       <div class="card-icon">&#9997;</div>
       <div><div class="card-title">Pitch</div><div class="card-subtitle">NYT CMS (Scoop)</div></div>
@@ -363,7 +415,7 @@
 
 </div>
 
-<div class="footer">April 2026 — The Athletic Engineering</div>
+<div class="footer">June 2026 - The Athletic Engineering</div>
 
 </body>
 </html>

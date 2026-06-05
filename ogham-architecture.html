@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ogham - Distribution Architecture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #0a0e1a; color: #e2e8f0;
+    min-height: 100vh; padding: 32px 24px 48px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+
+  /* ============ HEADER ============ */
+  .header { text-align: center; margin-bottom: 22px; }
+  .header h1 {
+    font-size: 38px; font-weight: 700; letter-spacing: -1.2px;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b 60%, #d97706);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 6px;
+  }
+  .header p { font-size: 14px; color: #64748b; max-width: 880px; margin: 0 auto; line-height: 1.5; }
+  .header .stride-link {
+    display: inline-block; margin-top: 8px; font-size: 11px; color: #6ee7b7;
+    text-decoration: none; opacity: 0.75; letter-spacing: 0.4px;
+  }
+  .header .stride-link:hover { opacity: 1; }
+
+  /* ============ MINI MAP (back to overview) ============ */
+  .mini-map {
+    position: fixed; top: 28px; left: 28px; z-index: 100;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 10px 12px; border-radius: 10px;
+    background: linear-gradient(135deg, #111827, #0f172a);
+    border: 1px solid #334155; text-decoration: none; color: #94a3b8;
+    font-size: 9px; letter-spacing: 0.5px;
+    opacity: 0.85; transition: opacity 0.2s, border-color 0.2s;
+  }
+  .mini-map:hover { opacity: 1; border-color: #f59e0b; }
+  .mini-map .label { font-weight: 600; color: #64748b; text-transform: uppercase; margin-top: 4px; }
+
+  /* ============ LEGEND ============ */
+  .legend {
+    display: flex; justify-content: center; gap: 22px; margin-bottom: 28px;
+    flex-wrap: wrap; padding: 10px 16px; border-radius: 10px;
+    background: rgba(15,23,42,0.6); border: 1px solid #1e293b;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #94a3b8; }
+  .tier-pill {
+    padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: 700;
+    letter-spacing: 0.6px; text-transform: uppercase;
+  }
+  .tier-1 { background: rgba(239,68,68,0.18); border: 1px solid #ef4444; color: #fca5a5; }
+  .tier-2 { background: rgba(245,158,11,0.18); border: 1px solid #f59e0b; color: #fcd34d; }
+  .tier-3 { background: rgba(34,197,94,0.18); border: 1px solid #22c55e; color: #86efac; }
+  .pattern-pill {
+    padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: 700;
+    background: rgba(99,102,241,0.15); border: 1px solid #6366f1; color: #a5b4fc;
+    font-family: 'SF Mono','Fira Code',monospace;
+  }
+  .swatch { width: 14px; height: 14px; border-radius: 4px; }
+
+  /* ============ STAGE BAND (input events) ============ */
+  .input-band {
+    width: 100%; max-width: 1380px;
+    padding: 16px 20px; border-radius: 14px;
+    background: linear-gradient(135deg, #1a1a3e, #1e1b4b);
+    border: 1px solid #6366f1; box-shadow: 0 0 32px rgba(99,102,241,0.1);
+    margin-bottom: 0;
+    text-align: center;
+  }
+  .input-band .band-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 10px; margin-bottom: 10px;
+  }
+  .input-band .band-title {
+    font-size: 12px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+    color: #818cf8;
+  }
+  .input-band .band-source {
+    font-size: 10px; color: #94a3b8; font-family: 'SF Mono','Fira Code',monospace;
+  }
+  .input-band .band-region {
+    font-size: 10px; color: #64748b; letter-spacing: 0.6px;
+  }
+  .topic-row {
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+  }
+  .topic-chip {
+    padding: 4px 10px; border-radius: 14px; font-size: 10px; font-weight: 600;
+    font-family: 'SF Mono','Fira Code',monospace;
+    background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.4); color: #c7d2fe;
+  }
+
+  /* ============ FAN-OUT BAR ============ */
+  .fan-out-bar {
+    width: 100%; max-width: 1380px; height: 64px;
+    position: relative; margin: 0;
+    pointer-events: none;
+  }
+  .fan-out-bar svg {
+    position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;
+  }
+
+  /* ============ SERVICES PLANE ============ */
+  .plane-wrapper {
+    width: 100%; max-width: 1380px;
+    margin-bottom: 20px;
+    border-radius: 14px;
+    padding: 16px 18px 22px;
+    background: rgba(15, 17, 27, 0.55);
+    border: 1px dashed #334155;
+    position: relative;
+  }
+  .plane-label {
+    position: absolute; top: -9px; left: 18px;
+    background: #0a0e1a;
+    padding: 0 10px;
+    font-size: 10px; font-weight: 700; letter-spacing: 1.4px;
+    text-transform: uppercase; color: #94a3b8;
+  }
+  .plane-label .region { color: #64748b; font-weight: 500; margin-left: 6px; letter-spacing: 0.6px; }
+
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+
+  /* ============ OGHAM SERVICE CARD (amber theme) ============ */
+  .service-card {
+    border-radius: 12px; padding: 14px 13px;
+    background: linear-gradient(140deg, #1f1605, #2a1d08 60%, #1f1605);
+    border: 1px solid #f59e0b;
+    box-shadow: 0 0 22px rgba(245,158,11,0.08);
+    display: flex; flex-direction: column;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  }
+  .service-card:hover { transform: translateY(-2px); border-color: #fbbf24; box-shadow: 0 0 30px rgba(251,191,36,0.18); }
+
+  .service-card .card-head {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+    justify-content: space-between;
+  }
+  .service-card .head-left { display: flex; align-items: center; gap: 8px; }
+  .service-card .icon {
+    width: 28px; height: 28px; border-radius: 7px;
+    background: rgba(245,158,11,0.15); color: #fbbf24;
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    flex-shrink: 0;
+  }
+  .service-card .name { font-size: 13px; font-weight: 700; color: #fde68a; line-height: 1.15; }
+  .service-card .role { font-size: 9px; color: #92704a; letter-spacing: 0.4px; }
+  .service-card .body { font-size: 10px; color: #b9a78a; line-height: 1.45; margin-bottom: 8px; flex-grow: 1; }
+
+  .events-label { font-size: 8px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #6b5238; margin-bottom: 3px; }
+  .events-row { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 6px; }
+  .event-pill {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 1px 7px; border-radius: 10px; font-size: 8.5px; font-weight: 600;
+    font-family: 'SF Mono','Fira Code',monospace;
+  }
+  .event-pill.consumes { background: rgba(96,165,250,0.1); border: 1px solid rgba(96,165,250,0.3); color: #93c5fd; }
+  .event-pill.produces { background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3); color: #d8b4fe; }
+  .event-pill .arr { font-size: 9.5px; }
+
+  .mini-pipeline { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 6px; }
+  .mini-stage {
+    padding: 1px 6px; border-radius: 5px; font-size: 8px; font-weight: 600;
+    background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); color: #fcd34d;
+    white-space: nowrap;
+  }
+
+  .dest-row { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+  .dest-chip {
+    padding: 2px 7px; border-radius: 8px; font-size: 9px; font-weight: 500;
+    background: rgba(59,130,246,0.07); border: 1px solid rgba(59,130,246,0.2); color: #93c5fd;
+    white-space: nowrap;
+  }
+
+  .tier-row { display: flex; gap: 4px; align-items: center; }
+  .lifecycle-pill {
+    padding: 1px 6px; border-radius: 8px; font-size: 8px; font-weight: 600;
+    background: rgba(148,163,184,0.1); border: 1px dashed #64748b; color: #cbd5e1;
+    letter-spacing: 0.4px; text-transform: uppercase;
+  }
+
+  /* TA-resident card variant (purple-ish, distinct from amber but in family) */
+  .service-card.ta-resident {
+    background: linear-gradient(140deg, #1d1208, #251608 60%, #1d1208);
+    border: 1px solid #c97316;
+    border-style: dashed;
+  }
+  .service-card.ta-resident .icon { background: rgba(249,115,22,0.15); color: #fb923c; }
+  .service-card.ta-resident .name { color: #fed7aa; }
+  .service-card.ta-resident .role { color: #92704a; }
+
+  /* ============ SHARED BASE STRIP ============ */
+  .shared-strip {
+    margin-top: 14px; padding: 12px 16px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #1a1206, #1e1408);
+    border: 1px solid #ca8a04;
+    border-left-width: 4px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .shared-strip .label {
+    font-size: 11px; font-weight: 700; color: #fde68a; letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  .shared-strip .desc { font-size: 10.5px; color: #b9a78a; line-height: 1.45; }
+  .shared-strip .desc code {
+    background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2);
+    padding: 1px 5px; border-radius: 4px; color: #fcd34d;
+    font-family: 'SF Mono','Fira Code',monospace; font-size: 9.5px;
+  }
+
+  /* ============ TA PLANE WRAPPER (different border accent) ============ */
+  .plane-wrapper.ta-plane {
+    border-color: #c97316;
+    border-style: dashed;
+    background: rgba(20, 12, 5, 0.55);
+  }
+  .plane-wrapper.ta-plane .plane-label { color: #fdba74; }
+  .plane-wrapper.ta-plane .services-grid { grid-template-columns: 1fr; max-width: 380px; margin: 0 auto; }
+
+  /* ============ DESTINATIONS BAND ============ */
+  .dest-band-wrapper { width: 100%; max-width: 1380px; margin-top: 20px; }
+  .section-title {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    color: #475569; text-align: center; margin: 4px 0 10px;
+  }
+  .destinations-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+  }
+  .dest-card {
+    border-radius: 10px; padding: 12px 11px;
+    background: linear-gradient(135deg, #0f1a2e, #132240);
+    border: 1px solid #3b82f6;
+    box-shadow: 0 0 14px rgba(59,130,246,0.06);
+  }
+  .dest-card.gcp { border-color: #ea580c; background: linear-gradient(135deg, #1f1206, #271509); }
+  .dest-card.nyt { border-color: #8b5cf6; background: linear-gradient(135deg, #14102b, #1a1538); }
+  .dest-card.email { border-color: #ec4899; background: linear-gradient(135deg, #1f0e1a, #2a1424); }
+  .dest-card.print {
+    border-color: #64748b; border-style: dashed;
+    background: linear-gradient(135deg, #0f141d, #131826);
+    opacity: 0.85;
+  }
+  .dest-card.cache { border-color: #ef4444; background: linear-gradient(135deg, #1d0a0a, #261010); }
+  .dest-card.search { border-color: #14b8a6; background: linear-gradient(135deg, #06181a, #0a232a); }
+
+  .dest-card .dest-head { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+  .dest-card .dest-icon {
+    width: 24px; height: 24px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+  }
+  .dest-card.gcp .dest-icon { background: rgba(234,88,12,0.18); color: #fb923c; }
+  .dest-card.nyt .dest-icon { background: rgba(139,92,246,0.18); color: #c4b5fd; }
+  .dest-card.email .dest-icon { background: rgba(236,72,153,0.18); color: #f9a8d4; }
+  .dest-card.print .dest-icon { background: rgba(100,116,139,0.18); color: #cbd5e1; }
+  .dest-card.cache .dest-icon { background: rgba(239,68,68,0.18); color: #fca5a5; }
+  .dest-card.search .dest-icon { background: rgba(20,184,166,0.18); color: #5eead4; }
+
+  .dest-card .dest-name { font-size: 11px; font-weight: 700; line-height: 1.2; color: #cbd5e1; }
+  .dest-card.gcp .dest-name { color: #fed7aa; }
+  .dest-card.nyt .dest-name { color: #ddd6fe; }
+  .dest-card.email .dest-name { color: #fbcfe8; }
+  .dest-card.cache .dest-name { color: #fecaca; }
+  .dest-card.search .dest-name { color: #99f6e4; }
+
+  .dest-card .dest-sub { font-size: 8px; color: #64748b; letter-spacing: 0.3px; }
+  .dest-card .dest-detail { font-size: 9.5px; color: #94a3b8; line-height: 1.4; margin-top: 4px; }
+  .dest-card .dest-pattern {
+    display: inline-block; margin-top: 5px;
+    padding: 1px 6px; border-radius: 8px; font-size: 8px; font-weight: 700;
+    font-family: 'SF Mono','Fira Code',monospace;
+    background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.3); color: #a5b4fc;
+  }
+
+  /* ============ READ-SIDE BAND ============ */
+  .read-band {
+    width: 100%; max-width: 1380px; margin-top: 22px;
+    border-radius: 12px; padding: 16px 18px;
+    background: linear-gradient(135deg, #061a1a, #0a2424);
+    border: 1px solid #14b8a6;
+    box-shadow: 0 0 22px rgba(20,184,166,0.08);
+  }
+  .read-band .read-head {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px; margin-bottom: 8px;
+  }
+  .read-band .read-title {
+    font-size: 12px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase;
+    color: #5eead4;
+  }
+  .read-band .read-sub { font-size: 10px; color: #475569; letter-spacing: 0.5px; }
+  .read-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+  }
+  .read-cell {
+    padding: 10px 12px; border-radius: 8px;
+    background: rgba(20,184,166,0.05);
+    border: 1px solid rgba(20,184,166,0.25);
+  }
+  .read-cell .cell-title {
+    font-size: 11px; font-weight: 700; color: #a7f3d0; margin-bottom: 4px;
+    font-family: 'SF Mono','Fira Code',monospace;
+  }
+  .read-cell .cell-detail { font-size: 9.5px; color: #94a3b8; line-height: 1.5; }
+  .read-cell.new {
+    background: rgba(34,197,94,0.06);
+    border: 1px solid rgba(34,197,94,0.4);
+  }
+  .read-cell.new .cell-title { color: #86efac; }
+  .read-cell .new-tag {
+    display: inline-block; padding: 1px 6px; border-radius: 6px;
+    background: rgba(34,197,94,0.18); border: 1px solid #22c55e; color: #86efac;
+    font-size: 8px; font-weight: 700; letter-spacing: 0.6px; margin-left: 6px;
+  }
+  .read-cell .surfaces {
+    margin-top: 6px; display: flex; flex-wrap: wrap; gap: 3px;
+  }
+  .read-cell .surface-chip {
+    padding: 1px 6px; border-radius: 6px; font-size: 8.5px; font-weight: 500;
+    background: rgba(20,184,166,0.07); border: 1px solid rgba(20,184,166,0.25); color: #5eead4;
+  }
+
+  /* ============ CALLOUTS ============ */
+  .callout {
+    width: 100%; max-width: 1380px; margin-top: 18px;
+    padding: 12px 16px; border-radius: 10px;
+    background: linear-gradient(135deg, #1a1410, #221814);
+    border-left: 4px solid #ca8a04;
+    border-top: 1px solid #1e293b;
+    border-right: 1px solid #1e293b;
+    border-bottom: 1px solid #1e293b;
+    font-size: 11px; line-height: 1.55; color: #cbd5e1;
+  }
+  .callout .callout-title {
+    font-size: 10px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase;
+    color: #fbbf24; margin-bottom: 4px;
+  }
+  .callout code {
+    background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2);
+    padding: 1px 5px; border-radius: 4px; color: #fcd34d;
+    font-family: 'SF Mono','Fira Code',monospace; font-size: 10px;
+  }
+
+  /* ============ FOOTER ============ */
+  .footer {
+    margin-top: 28px; text-align: center; font-size: 11px; color: #334155;
+    line-height: 1.6;
+  }
+  .footer a { color: #6ee7b7; text-decoration: none; }
+  .footer a:hover { color: #34d399; }
+</style>
+</head>
+<body>
+
+<a href="system-overview.html" class="mini-map">
+  <div style="display:flex; gap:4px; align-items:flex-end;">
+    <div style="width:14px;height:11px;border-radius:3px;border:1px solid #10b981;background:rgba(16,185,129,0.1);"></div>
+    <div style="width:14px;height:11px;border-radius:3px;border:1px solid #f59e0b;background:rgba(245,158,11,0.1);"></div>
+  </div>
+  <div style="width:46px;height:2px;background:#475569;margin:1px 0;"></div>
+  <div style="width:46px;height:9px;border-radius:3px;border:1px solid #6366f1;background:rgba(99,102,241,0.1);display:flex;align-items:center;justify-content:center;">
+    <span style="font-size:5px;color:#818cf8;font-weight:700;letter-spacing:1px;">EVENT STREAM</span>
+  </div>
+  <div class="label">System Overview</div>
+</a>
+
+<div class="header">
+  <h1>Ogham</h1>
+  <p>Distribution layer downstream of Stride. Six service units fan article events out to NYT publishing, search, ads, push, print, and cache.</p>
+</div>
+
+<!-- ===== LEGEND ===== -->
+<div class="legend">
+  <div class="legend-item"><span class="tier-pill tier-1">T1</span> Tier-1 (legal-takedown stakes)</div>
+  <div class="legend-item"><span class="tier-pill tier-2">T2</span> Tier-2 (best-effort, observed)</div>
+  <div class="legend-item"><span class="tier-pill tier-3">T3</span> Tier-3 (eventual)</div>
+  <div class="legend-item"><span class="pattern-pill">X-A</span> SASL/IAM via peering (TA -&gt; AWSMA MSK)</div>
+  <div class="legend-item"><span class="pattern-pill">Y-A</span> Reverse peering (AWSMA -&gt; TA OS)</div>
+  <div class="legend-item"><span class="pattern-pill">Z-A</span> IAM + S3 Interface VPC Endpoint</div>
+</div>
+
+<!-- ===== INPUT BAND: Stride emits via AWSMA MSK ===== -->
+<div class="input-band">
+  <div class="band-meta">
+    <div class="band-title">Stride emits</div>
+    <div class="band-source">ta-events-{env} (AWSMA MSK, us-east-1)</div>
+    <div class="band-region">SASL/IAM (kafkajs)</div>
+  </div>
+  <div class="topic-row">
+    <div class="topic-chip">storytelling.content.rendered</div>
+    <div class="topic-chip">storytelling.content.retracted</div>
+    <div class="topic-chip">storytelling.push.requested</div>
+  </div>
+</div>
+
+<!-- ===== FAN-OUT CONNECTORS ===== -->
+<div class="fan-out-bar">
+  <svg viewBox="0 0 1380 64" preserveAspectRatio="none">
+    <!-- single trunk down then 5+1 splits to AWSMA + TA planes -->
+    <path d="M 690,0 L 690,16" fill="none" stroke="#475569" stroke-width="2"/>
+    <path d="M 690,16 L 138,46 L 138,64" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <path d="M 690,16 L 414,46 L 414,64" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <path d="M 690,16 L 690,46 L 690,64" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <path d="M 690,16 L 966,46 L 966,64" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <path d="M 690,16 L 1242,46 L 1242,64" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <!-- arrow heads at each downstream tail -->
+    <polygon points="138,64 134,57 142,57" fill="#64748b"/>
+    <polygon points="414,64 410,57 418,57" fill="#64748b"/>
+    <polygon points="690,64 686,57 694,57" fill="#64748b"/>
+    <polygon points="966,64 962,57 970,57" fill="#64748b"/>
+    <polygon points="1242,64 1238,57 1246,57" fill="#64748b"/>
+  </svg>
+</div>
+
+<!-- ===== AWSMA PLANE: 5 services ===== -->
+<div class="plane-wrapper">
+  <div class="plane-label">AWSMA / DVSP plane <span class="region">us-east-1 (Lettercase EKS)</span></div>
+
+  <div class="services-grid">
+
+    <!-- 1. OpenSearch Indexer -->
+    <div class="service-card">
+      <div class="card-head">
+        <div class="head-left">
+          <div class="icon">&#128270;</div>
+          <div>
+            <div class="name">OpenSearch Indexer</div>
+            <div class="role">unified read index</div>
+          </div>
+        </div>
+        <div class="tier-row">
+          <span class="tier-pill tier-3">T3</span>
+          <span class="tier-pill tier-1">T1</span>
+        </div>
+      </div>
+      <div class="body">
+        Indexes Stride articles into <code style="background:rgba(245,158,11,0.1);padding:1px 4px;border-radius:3px;color:#fcd34d;font-family:'SF Mono',monospace;font-size:9px;">search-articles-read</code>. WP-parity transform mirrors <code style="background:rgba(245,158,11,0.1);padding:1px 4px;border-radius:3px;color:#fcd34d;font-family:'SF Mono',monospace;font-size:9px;">_map_article_for_indexing</code> field-for-field. Two subscriptions, two SLOs.
+      </div>
+      <div class="events-label">Consumes</div>
+      <div class="events-row">
+        <div class="event-pill consumes"><span class="arr">&#8592;</span> .rendered</div>
+        <div class="event-pill consumes"><span class="arr">&#8592;</span> .retracted</div>
+      </div>
+      <div class="events-label">Pipeline</div>
+      <div class="mini-pipeline">
+        <div class="mini-stage">S3 fetch</div>
+        <div class="mini-stage">validate</div>
+        <div class="mini-stage">transform</div>
+        <div class="mini-stage">bulk index</div>
+      </div>
+      <div class="events-label">Writes to</div>
+      <div class="dest-row">
+        <div class="dest-chip">TA OpenSearch (us-west-2)</div>
+        <div class="dest-chip"><span class="pattern-pill" style="font-size:8px;">Y-A</span></div>
+      </div>
+    </div>
+
+    <!-- 2. Alice Shipper -->
+    <div class="service-card">
+      <div class="card-head">
+        <div class="head-left">
+          <div class="icon">&#127919;</div>
+          <div>
+            <div class="name">Alice Shipper</div>
+            <div class="role">ad targeting (cross-cloud)</div>
+          </div>
+        </div>
+        <div class="tier-row"><span class="tier-pill tier-3">T3</span></div>
+      </div>
+      <div class="body">
+        Publishes WP-parity payloads to GCP Pub/Sub for Grapeshot keyword extraction. Auth via SA-JSON (Secrets Manager) or WIF. <strong style="color:#fde68a;">Option-C retract gate</strong>: only LEGAL_TAKEDOWN + is_hard_delete emits a retract; rest is TTL fallback.
+      </div>
+      <div class="events-label">Consumes</div>
+      <div class="events-row">
+        <div class="event-pill consumes"><span class="arr">&#8592;</span> .rendered</div>
+        <div class="event-pill consumes"><span class="arr">&#8592;</span> .retracted</div>
+      </div>
+      <div class="events-label">Pipeline</div>
+      <div class="mini-pipeline">
+        <div class="mini-stage">retract gate</div>
+        <div class="mini-stage">transform</div>
+        <div class="mini-stage">GCP auth</div>
+        <div class="mini-stage">publish</div>
+      </div>
+      <div class="events-label">Writes to</div>
+      <div class="dest-row">
+        <div class="dest-chip">GCP Pub/Sub ta-asset-grapeshot</div>
+      </div>
+    </div>
+
+    <!-- 3. Push Shipper -->
+    <div class="service-card">
+      <div class="card-head">
+        <div class="head-left">
+          <div class="icon">&#128276;</div>
+          <div>
+            <div class="name">Push Shipper</div>
+            <div class="role">explicit-trigger pushes</div>
+          </div>
+        </div>
+        <div class="tier-row"><span class="tier-pill tier-3">T3</span></div>
+      </div>
+      <div class="body">
+        Triggered by <strong style="color:#fde68a;">.push.requested</strong> only (NOT auto-on-rendered). Provider factory routes per-request: editor override -&gt; feature-flag default -&gt; Iterable / MEMO. Preserves WP V3 HTML-decode order (<code style="background:rgba(245,158,11,0.1);padding:1px 4px;border-radius:3px;color:#fcd34d;font-family:'SF Mono',monospace;font-size:9px;">stripslashes</code> then <code style="background:rgba(245,158,11,0.1);padding:1px 4px;border-radius:3px;color:#fcd34d;font-family:'SF Mono',monospace;font-size:9px;">html_entity_decode</code>).
+      </div>
+      <div class="events-label">Consumes</div>
+      <div class="events-row">
+        <div class="event-pill consumes"><span class="arr">&#8592;</span> .push.requested</div>
+        <div class="event-pill consumes"><span class="arr">&#8592;</span> .retracted (cancel)</div>
+      </div>
+      <div class="events-label">Pipeline</div>
+      <div class="mini-pipeline">
+        <div class="mini-stage">cascade resolve</div>
+        <div class="mini-stage">html decode</div>
+        <div class="mini-stage">provider route</div>
+        <div class="mini-stage">send</div>
+      </div>
+      <div class="events-label">Writes to</div>
+      <div class="dest-row">
+        <div class="dest-chip">Iterable</div>
+        <div class="dest-chip">MEMO</div>
+      </div>
+    </div>
+
+    <!-- 4. PubP Shipper -->
+    <div class="service-card">
+      <div class="card-head">
+        <div class="head-left">
+          <div class="icon">&#127759;</div>
+          <div>
+            <div class="name">PubP Shipper</div>
+            <div class="role">NYT publishing graph</div>
+          </div>
+        </div>
+        <div class="tier-row"><span class="tier-pill tier-1">T1</span></div>
+      </div>
+      <div class="body">
+        gRPC fanout to the NYT publishing graph. <strong style="color:#fca5a5;">Highest-stakes service in Ogham</strong>: silent retract loss leaks legal takedowns. Per-tier retry inside the gateway; adversarial silent-loss test gates Tier-1 correctness.
+      </div>
+      <div class="events-label">Consumes</div>
+      <div class="events-row">
+        <div class="event-pill consumes"><span class="arr">&#8592;</span> .rendered</div>
+        <div class="event-pill consumes"><span class="arr">&#8592;</span> .retracted</div>
+      </div>
+      <div class="events-label">Pipeline</div>
+      <div class="mini-pipeline">
+        <div class="mini-stage">S3 fetch</div>
+        <div class="mini-stage">convert</div>
+        <div class="mini-stage">JWT (RS256)</div>
+        <div class="mini-stage">gRPC</div>
+      </div>
+      <div class="events-label">Writes to</div>
+      <div class="dest-row">
+        <div class="dest-chip">Bodega</div>
+        <div class="dest-chip">Samizdat</div>
+        <div class="dest-chip">Content Search</div>
+        <div class="dest-chip">BigQuery</div>
+        <div class="dest-chip">cms-applenews</div>
+      </div>
+    </div>
+
+    <!-- 5. NYT Print Shipper -->
+    <div class="service-card">
+      <div class="card-head">
+        <div class="head-left">
+          <div class="icon">&#128218;</div>
+          <div>
+            <div class="name">NYT Print Shipper</div>
+            <div class="role">print syndication</div>
+          </div>
+        </div>
+        <div class="tier-row">
+          <span class="tier-pill tier-2">T2</span>
+          <span class="lifecycle-pill">experimental</span>
+        </div>
+      </div>
+      <div class="body">
+        5th adapter, lifecycle: experimental. Placeholder until <strong style="color:#fde68a;">CC-3148 Pitch reply</strong> resolves <code style="background:rgba(245,158,11,0.1);padding:1px 4px;border-radius:3px;color:#fcd34d;font-family:'SF Mono',monospace;font-size:9px;">is_print_opted</code> schema bump and <code style="background:rgba(245,158,11,0.1);padding:1px 4px;border-radius:3px;color:#fcd34d;font-family:'SF Mono',monospace;font-size:9px;">nyt_article_id</code> mapping home in Scoop registry.
+      </div>
+      <div class="events-label">Consumes</div>
+      <div class="events-row">
+        <div class="event-pill consumes"><span class="arr">&#8592;</span> .rendered (when is_print_opted)</div>
+      </div>
+      <div class="events-label">Pipeline</div>
+      <div class="mini-pipeline">
+        <div class="mini-stage">opt-in gate</div>
+        <div class="mini-stage">transform</div>
+        <div class="mini-stage">CMS REST</div>
+        <div class="mini-stage">SFTP / Loupe</div>
+      </div>
+      <div class="events-label">Writes to</div>
+      <div class="dest-row">
+        <div class="dest-chip">NYT CMS REST</div>
+        <div class="dest-chip">Loupe</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Shared base substrate strip -->
+  <div class="shared-strip">
+    <div class="label">services/_shared</div>
+    <div class="desc">
+      <strong style="color:#fde68a;">BaseConsumerService</strong> &mdash; wire-frame decode, schema resolve, payload decode, <code>parseEnvelope</code> + <code>processMessage</code> hooks, idempotency, DLQ, observability, health, graceful shutdown. All 5 AWSMA services inherit; each declares its own DLQ reason enum + outcome enum.
+    </div>
+  </div>
+</div>
+
+<!-- ===== TA PLANE: Cache Purge ===== -->
+<div class="plane-wrapper ta-plane">
+  <div class="plane-label">TA plane <span class="region">us-west-2 (theathletic-serverless Lambda)</span></div>
+
+  <div class="services-grid">
+
+    <!-- 6. Cache Purge -->
+    <div class="service-card ta-resident">
+      <div class="card-head">
+        <div class="head-left">
+          <div class="icon">&#9889;</div>
+          <div>
+            <div class="name">Cache Purge Lambda extension</div>
+            <div class="role">stacked patch on bustCacheForArticle</div>
+          </div>
+        </div>
+        <div class="tier-row"><span class="tier-pill tier-3">T3</span></div>
+      </div>
+      <div class="body">
+        Patches a Kafka trigger onto the existing <code style="background:rgba(245,158,11,0.1);padding:1px 4px;border-radius:3px;color:#fcd34d;font-family:'SF Mono',monospace;font-size:9px;">bustCacheForArticle</code> Lambda via AWS MSK Event Source Mapping. <strong style="color:#fed7aa;">Does NOT extend BaseConsumerService</strong> &mdash; Lambda lifecycle is incompatible with long-lived pod model. Calls Apollo's existing <code style="background:rgba(245,158,11,0.1);padding:1px 4px;border-radius:3px;color:#fcd34d;font-family:'SF Mono',monospace;font-size:9px;">bustCacheForArticle</code> mutation which orchestrates Redis + Fastly + Cloudflare invalidation.
+      </div>
+      <div class="events-label">Consumes</div>
+      <div class="events-row">
+        <div class="event-pill consumes"><span class="arr">&#8592;</span> .rendered</div>
+        <div class="event-pill consumes"><span class="arr">&#8592;</span> .retracted</div>
+      </div>
+      <div class="events-label">Pipeline</div>
+      <div class="mini-pipeline">
+        <div class="mini-stage">MSK ESM</div>
+        <div class="mini-stage">Avro decode</div>
+        <div class="mini-stage">LRU dedup</div>
+        <div class="mini-stage">Apollo mutation</div>
+        <div class="mini-stage">batchItemFailures</div>
+      </div>
+      <div class="events-label">Cross-account path</div>
+      <div class="dest-row">
+        <div class="dest-chip"><span class="pattern-pill" style="font-size:8px;">X-A</span> SASL/IAM via CC-2018 peering</div>
+        <div class="dest-chip">CC-3178 (Fernanda) de-risks dev gate</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== DESTINATIONS BAND ===== -->
+<div class="dest-band-wrapper">
+  <div class="section-title">Destinations</div>
+  <div class="destinations-grid">
+
+    <div class="dest-card search">
+      <div class="dest-head">
+        <div class="dest-icon">&#128270;</div>
+        <div>
+          <div class="dest-name">TA OpenSearch</div>
+          <div class="dest-sub">us-west-2</div>
+        </div>
+      </div>
+      <div class="dest-detail"><code style="background:rgba(20,184,166,0.1);padding:1px 4px;border-radius:3px;color:#5eead4;font-family:'SF Mono',monospace;font-size:9px;">search-articles-read</code> &mdash; same index Apollo's latestArticles reads (WP + Stride articles unified).</div>
+      <div class="dest-pattern">Y-A reverse peering</div>
+    </div>
+
+    <div class="dest-card gcp">
+      <div class="dest-head">
+        <div class="dest-icon">&#9729;</div>
+        <div>
+          <div class="dest-name">GCP Pub/Sub</div>
+          <div class="dest-sub">ta-asset-grapeshot</div>
+        </div>
+      </div>
+      <div class="dest-detail">Grapeshot extracts ad-targeting keywords; output drives <code style="background:rgba(234,88,12,0.1);padding:1px 4px;border-radius:3px;color:#fb923c;font-family:'SF Mono',monospace;font-size:9px;">als-svc.nytimes.com/als/ta</code>.</div>
+      <div class="dest-pattern">cross-cloud (SA-JSON / WIF)</div>
+    </div>
+
+    <div class="dest-card nyt">
+      <div class="dest-head">
+        <div class="dest-icon">&#127759;</div>
+        <div>
+          <div class="dest-name">NYT publishing graph</div>
+          <div class="dest-sub">gRPC fanout</div>
+        </div>
+      </div>
+      <div class="dest-detail">Bodega &middot; Samizdat &middot; Content Search &middot; BigQuery &middot; cms-applenews</div>
+      <div class="dest-pattern">NYT-network</div>
+    </div>
+
+    <div class="dest-card email">
+      <div class="dest-head">
+        <div class="dest-icon">&#128276;</div>
+        <div>
+          <div class="dest-name">Iterable + MEMO</div>
+          <div class="dest-sub">REST</div>
+        </div>
+      </div>
+      <div class="dest-detail">Provider factory routes per-request. <code style="background:rgba(236,72,153,0.1);padding:1px 4px;border-radius:3px;color:#f9a8d4;font-family:'SF Mono',monospace;font-size:9px;">dedup_key</code> is the application contract.</div>
+      <div class="dest-pattern">cross-org HTTPS</div>
+    </div>
+
+    <div class="dest-card print">
+      <div class="dest-head">
+        <div class="dest-icon">&#128218;</div>
+        <div>
+          <div class="dest-name">NYT CMS REST + Loupe</div>
+          <div class="dest-sub">SFTP + REST</div>
+        </div>
+      </div>
+      <div class="dest-detail">Placeholder &mdash; gated on CC-3148 Pitch schema reply. Loupe SFTP from Lettercase pod under investigation.</div>
+      <div class="dest-pattern">NYT-network</div>
+    </div>
+
+    <div class="dest-card cache">
+      <div class="dest-head">
+        <div class="dest-icon">&#9889;</div>
+        <div>
+          <div class="dest-name">Redis + Fastly + Cloudflare</div>
+          <div class="dest-sub">via Apollo mutation</div>
+        </div>
+      </div>
+      <div class="dest-detail">Cache Purge calls Apollo's <code style="background:rgba(239,68,68,0.1);padding:1px 4px;border-radius:3px;color:#fca5a5;font-family:'SF Mono',monospace;font-size:9px;">bustCacheForArticle</code>; Apollo orchestrates the three invalidation layers (idempotent).</div>
+      <div class="dest-pattern">same-region (TA)</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== READ-SIDE BAND ===== -->
+<div class="read-band">
+  <div class="read-head">
+    <div class="read-title">Read surfaces driven by indexed data</div>
+    <div class="read-sub">Apollo &rarr; web / iOS / Android</div>
+  </div>
+  <div class="read-grid">
+
+    <div class="read-cell">
+      <div class="cell-title">Apollo latestArticles</div>
+      <div class="cell-detail">Reads <code style="background:rgba(20,184,166,0.1);padding:1px 4px;border-radius:3px;color:#5eead4;font-family:'SF Mono',monospace;font-size:9px;">search-articles-read</code>. WP and Stride articles surface together; Apollo never knows the producer.</div>
+      <div class="surfaces">
+        <span class="surface-chip">FlatPlan RSS</span>
+        <span class="surface-chip">Sitemap (latest)</span>
+        <span class="surface-chip">Web</span>
+        <span class="surface-chip">iOS</span>
+        <span class="surface-chip">Android</span>
+      </div>
+    </div>
+
+    <div class="read-cell new">
+      <div class="cell-title">Apollo pitchArticlesByDate <span class="new-tag">NEW</span></div>
+      <div class="cell-detail">Additive resolver per <strong style="color:#86efac;">sitemap ADR Option E</strong>. Queries OpenSearch directly for Stride articles. Leaves WP <code style="background:rgba(34,197,94,0.1);padding:1px 4px;border-radius:3px;color:#86efac;font-family:'SF Mono',monospace;font-size:9px;">articlesByDate</code> path untouched.</div>
+      <div class="surfaces">
+        <span class="surface-chip">/athletic/sitemap/&lt;date&gt;/</span>
+      </div>
+    </div>
+
+    <div class="read-cell">
+      <div class="cell-title">Apollo articlesByDate</div>
+      <div class="cell-detail">Existing WP path. ES discovery + MySQL hydration. Pitch articles silently fail Stage 2 (no <code style="background:rgba(20,184,166,0.1);padding:1px 4px;border-radius:3px;color:#5eead4;font-family:'SF Mono',monospace;font-size:9px;">wp_posts</code> row). Web layer concats both resolvers via <code style="background:rgba(20,184,166,0.1);padding:1px 4px;border-radius:3px;color:#5eead4;font-family:'SF Mono',monospace;font-size:9px;">Promise.allSettled</code>.</div>
+      <div class="surfaces">
+        <span class="surface-chip">/athletic/sitemap/&lt;date&gt;/</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== CALLOUTS ===== -->
+<div class="callout">
+  <div class="callout-title">AWSMA isn't one network</div>
+  DVSP shared-EKS VPC (Lettercase) and AWSMA-account VPCs (MSK, S3 Interface VPC Endpoint) are distinct VPCs themselves peered via <code>dv-awsma-vpc-routes</code>. Pattern Y is technically Lettercase-VPC -&gt; AWSMA-account-VPC -&gt; cross-account peering -&gt; TA-VPC, two peering hops if you count the internal NYT one. Same-account does not imply same-network.
+</div>
+
+<div class="callout">
+  <div class="callout-title">Symmetric repo placement</div>
+  AWSMA-side resource policies, IRSA roles, peering accepters, and VPC endpoints live in <code>nytimes/dv-awsma-accounts-theathletic-{dev,prd}</code>. TA-side identity policies, peering requesters, and the OpenSearch domain access policy live in <code>theathletic-iac-envs</code>. Cache Purge Lambda role hoisted from <code>theathletic-serverless</code> into <code>theathletic-iac-envs</code> so all TA-side cross-account-touching role definitions sit alongside their grants.
+</div>
+
+<div class="callout">
+  <div class="callout-title">CC-2018 + CC-3178 dependency chain</div>
+  CC-2018 (DONE 2026-04-06) established bidirectional TA &lt;-&gt; AWSMA peering, validated all 11 scenarios including S8 (TA Lambda -&gt; AWSMA MSK p50 1417ms consume). CC-3178 (Fernanda, in-flight) flips the dev peering ACTIVE for Data Skrive's TA -&gt; AWSMA producer; same primitives, opposite direction. Cache Purge piggybacks on (a) peering, (b) cluster-policy entry, (c) route-table extension. Most of the "6-8 IaC steps x 3 envs" in ADR v3 is already plumbed waiting to be activated.
+</div>
+
+<div class="footer">
+  June 2026 &middot; The Athletic Engineering &middot; <a href="system-overview.html">System Overview</a> &middot; <a href="stride-system-diagram.html">Stride detail</a> &middot; Source-of-truth: <code style="background:rgba(110,231,183,0.06);padding:1px 4px;border-radius:3px;color:#6ee7b7;font-family:'SF Mono',monospace;font-size:10px;">~/claude/ogham/docs/{canvas.html, adr/0005, adr/cross-account-access-patterns.md, adr/sitemap-articlesbydate-opensearch-migration.md}</code>
+</div>
+
+</body>
+</html>
