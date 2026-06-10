@@ -3,558 +3,561 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stride Distribution Topology — Push vs Pull</title>
+<title>Stride Distribution Topology — Push vs Pull, with Tier Criticality</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
 :root {
-  --bg: #ffffff;
-  --panel: #f9fafb;
-  --border: #e5e7eb;
-  --text: #1f2937;
-  --muted: #6b7280;
-  --soft: #9ca3af;
-  --push: #1d4ed8;
-  --push-bg: #dbeafe;
-  --pull: #047857;
-  --pull-bg: #d1fae5;
-  --canonical: #6d28d9;
-  --canonical-bg: #ede9fe;
-  --source: #b45309;
-  --source-bg: #fef3c7;
-  --tier1: #b91c1c;
-  --tier2: #c2410c;
-  --tier3: #4b5563;
-  --edge-push: #1d4ed8;
-  --edge-pull: #047857;
-  --edge-render: #6d28d9;
+  --bg: #0a0e1a;
+  --panel: #131929;
+  --panel-2: #1a2236;
+  --border: #1f2a44;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --soft: #64748b;
+
+  --canonical: #818cf8;
+  --canonical-bg: #1e1b4b;
+  --canonical-border: #4338ca;
+
+  --source: #fbbf24;
+  --source-bg: #1f1605;
+  --source-border: #f59e0b;
+
+  --push: #60a5fa;
+  --push-bg: #0c1a2e;
+  --push-border: #2563eb;
+
+  --pull: #34d399;
+  --pull-bg: #052e1f;
+  --pull-border: #059669;
+
+  --dest: #cbd5e1;
+  --dest-bg: #0f172a;
+  --dest-border: #334155;
+
+  --tier1: #ef4444;
+  --tier2: #f59e0b;
+  --tier3: #10b981;
+
+  --edge-render: #818cf8;
+  --edge-push: #60a5fa;
+  --edge-pull: #34d399;
 }
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-header { padding: 28px 40px 0; }
-h1 { margin: 0 0 6px; font-size: 26px; font-weight: 700; letter-spacing: -0.3px; }
-.subtitle { color: var(--muted); font-size: 14px; margin: 0 0 20px; }
-.legend { display: flex; flex-wrap: wrap; gap: 22px; padding: 14px 18px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; font-size: 13px; margin: 0 40px 20px; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+header {
+  padding: 28px 40px 0;
+}
+h1 {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+.subtitle {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 22px;
+  padding: 14px 18px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 12px;
+  margin: 18px 40px 20px;
+  color: var(--muted);
+}
 .legend .item { display: flex; align-items: center; gap: 8px; }
-.legend .swatch { display: inline-block; width: 24px; height: 12px; border-radius: 3px; flex-shrink: 0; }
-.legend .swatch.push { background: var(--push-bg); border: 1.5px solid var(--push); }
-.legend .swatch.pull { background: var(--pull-bg); border: 1.5px solid var(--pull); }
-.legend .swatch.canonical { background: var(--canonical-bg); border: 1.5px solid var(--canonical); }
-.legend .swatch.source { background: var(--source-bg); border: 1.5px solid var(--source); }
-.legend .swatch.line-push { background: var(--edge-push); height: 3px; }
-.legend .swatch.line-pull { background: var(--edge-pull); height: 3px; background-image: repeating-linear-gradient(90deg, var(--edge-pull) 0 5px, transparent 5px 10px); }
+.legend .swatch {
+  display: inline-block; width: 22px; height: 12px; border-radius: 3px;
+  flex-shrink: 0;
+}
+.legend .swatch.source { background: var(--source-bg); border: 1.5px solid var(--source-border); }
+.legend .swatch.canonical { background: var(--canonical-bg); border: 1.5px solid var(--canonical-border); }
+.legend .swatch.push { background: var(--push-bg); border: 1.5px solid var(--push-border); }
+.legend .swatch.pull { background: var(--pull-bg); border: 1.5px solid var(--pull-border); }
+.legend .swatch.dest { background: var(--dest-bg); border: 1.5px solid var(--dest-border); }
 .legend .swatch.line-render { background: var(--edge-render); height: 3px; }
-.legend .swatch.tier1 { background: var(--tier1); width: 14px; height: 14px; border-radius: 50%; }
-.legend .swatch.tier2 { background: var(--tier2); width: 14px; height: 14px; border-radius: 50%; }
-.legend .swatch.tier3 { background: var(--tier3); width: 14px; height: 14px; border-radius: 50%; }
+.legend .swatch.line-push { background: var(--edge-push); height: 3px; }
+.legend .swatch.line-pull {
+  background-image: repeating-linear-gradient(90deg, var(--edge-pull) 0 5px, transparent 5px 10px);
+  height: 3px;
+}
+.legend .swatch.tier-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+}
+.legend .swatch.tier-dot.t1 { background: var(--tier1); }
+.legend .swatch.tier-dot.t2 { background: var(--tier2); }
+.legend .swatch.tier-dot.t3 { background: var(--tier3); }
+
 main { padding: 0 40px 40px; }
 svg { display: block; width: 100%; height: auto; background: transparent; }
 
-.box rect { stroke-width: 1.8; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.06)); }
-.box.source rect { fill: var(--source-bg); stroke: var(--source); }
-.box.canonical rect { fill: var(--canonical-bg); stroke: var(--canonical); }
-.box.push rect { fill: var(--push-bg); stroke: var(--push); }
-.box.pull rect { fill: var(--pull-bg); stroke: var(--pull); }
-.box.destination rect { fill: #ffffff; stroke: #9ca3af; stroke-dasharray: 4 3; stroke-width: 1.5; }
-.box .title { font-size: 14px; font-weight: 700; fill: var(--text); }
-.box .subtitle { font-size: 11px; fill: var(--muted); }
-.box .tag { font-size: 10px; font-weight: 600; fill: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; }
+/* SVG card styling */
+.box rect {
+  stroke-width: 1.5;
+}
+.box.source rect { fill: var(--source-bg); stroke: var(--source-border); }
+.box.canonical rect { fill: var(--canonical-bg); stroke: var(--canonical-border); }
+.box.push rect { fill: var(--push-bg); stroke: var(--push-border); }
+.box.pull rect { fill: var(--pull-bg); stroke: var(--pull-border); }
+.box.dest rect {
+  fill: var(--dest-bg); stroke: var(--dest-border);
+  stroke-dasharray: 4 3;
+}
+.box .title {
+  font-size: 14px; font-weight: 600;
+  fill: var(--text);
+}
+.box .role {
+  font-size: 11px;
+  fill: var(--muted);
+}
+.box .tag {
+  font-size: 10px;
+  font-weight: 500;
+  fill: var(--soft);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
 
-.tier-dot { r: 5; }
-.tier1 { fill: var(--tier1); }
-.tier2 { fill: var(--tier2); }
-.tier3 { fill: var(--tier3); }
+.tier-dot.t1 { fill: var(--tier1); }
+.tier-dot.t2 { fill: var(--tier2); }
+.tier-dot.t3 { fill: var(--tier3); }
 
 .edge { fill: none; stroke-width: 2; }
+.edge.render { stroke: var(--edge-render); stroke-width: 2.4; }
 .edge.push { stroke: var(--edge-push); }
 .edge.pull { stroke: var(--edge-pull); stroke-dasharray: 5 4; }
-.edge.render { stroke: var(--edge-render); stroke-width: 2.4; }
-.edge-label { font-size: 11px; fill: var(--muted); font-family: ui-monospace, Menlo, monospace; }
+.edge.tier1 { stroke: var(--tier1); stroke-width: 2.5; }
 
-.divider-label { font-size: 13px; font-weight: 700; fill: var(--text); letter-spacing: 1px; text-transform: uppercase; }
-.divider-line { stroke: var(--border); stroke-width: 1; stroke-dasharray: 4 4; }
+.edge-label {
+  font-size: 11px;
+  fill: var(--muted);
+  font-family: ui-monospace, "SF Mono", "Fira Code", Menlo, monospace;
+}
 
-.arrow { fill: var(--edge-push); }
-.arrow-pull { fill: var(--edge-pull); }
-.arrow-render { fill: var(--edge-render); }
+.zone-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  fill: var(--muted);
+}
+.zone-line {
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
 
-footer { padding: 12px 40px 32px; color: var(--muted); font-size: 12px; text-align: center; }
-footer code { background: var(--panel); padding: 2px 6px; border-radius: 3px; font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
+.lane-banner-push {
+  fill: rgba(37, 99, 235, 0.06);
+  stroke: rgba(37, 99, 235, 0.4);
+  stroke-width: 1;
+}
+.lane-banner-pull {
+  fill: rgba(5, 150, 105, 0.06);
+  stroke: rgba(5, 150, 105, 0.4);
+  stroke-width: 1;
+}
+.lane-banner-text {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.callout-rect {
+  fill: var(--panel);
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.callout-rect.tier1 {
+  stroke: var(--tier1);
+  stroke-width: 1.5;
+}
+.callout-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.callout-body {
+  font-size: 12px;
+  fill: var(--muted);
+}
+
+footer {
+  padding: 16px 40px 40px;
+  color: var(--soft);
+  font-size: 11px;
+  text-align: center;
+  border-top: 1px solid var(--border);
+  margin: 0 40px;
+}
+footer code {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 10.5px;
+  color: var(--muted);
+}
 </style>
 </head>
 <body>
 
 <header>
   <h1>Stride Distribution Topology</h1>
-  <p class="subtitle">Push vs pull distribution, with tier criticality and canonical artifacts · 8 push adapters + 3 pull-surface generators (Sitemap, FlatPlan, Iterable Content)</p>
+  <div class="subtitle">Push vs pull, with tier criticality. 5 push consumer services on DVSP/AWSMA us-east-1, 1 push Lambda extension on TA us-west-2, and 1 pull surface (Apollo) on TA us-west-2 backed by OpenSearch and AWSMA S3.</div>
 </header>
 
 <div class="legend">
-  <div class="item"><span class="swatch source"></span> Source</div>
-  <div class="item"><span class="swatch canonical"></span> Stride / canonical artifact (Kafka, S3)</div>
-  <div class="item"><span class="swatch push"></span> Push adapter</div>
-  <div class="item"><span class="swatch pull"></span> Pull surface</div>
-  <div class="item"><span class="swatch line-render"></span> Render/event flow</div>
+  <div class="item"><span class="swatch source"></span> Source (Pitch)</div>
+  <div class="item"><span class="swatch canonical"></span> Stride / canonical artifact (MSK, S3)</div>
+  <div class="item"><span class="swatch push"></span> Push consumer</div>
+  <div class="item"><span class="swatch pull"></span> Pull surface (Apollo)</div>
+  <div class="item"><span class="swatch dest"></span> Destination (external)</div>
+  <div class="item"><span class="swatch line-render"></span> Render / event flow</div>
   <div class="item"><span class="swatch line-push"></span> Push delivery</div>
   <div class="item"><span class="swatch line-pull"></span> Pull read</div>
-  <div class="item"><span class="swatch tier1"></span> Tier 1</div>
-  <div class="item"><span class="swatch tier2"></span> Tier 2</div>
-  <div class="item"><span class="swatch tier3"></span> Tier 3</div>
+  <div class="item"><span class="swatch tier-dot t1"></span> Tier 1 (legal, pub graph)</div>
+  <div class="item"><span class="swatch tier-dot t2"></span> Tier 2 (print, ads)</div>
+  <div class="item"><span class="swatch tier-dot t3"></span> Tier 3 (recoverable)</div>
 </div>
 
 <main>
-<svg viewBox="0 0 1760 1620" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 1760 1180" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <marker id="arrow-push" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" class="arrow"/>
+    <marker id="arrow-render" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--edge-render)"/>
     </marker>
-    <marker id="arrow-pull" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" class="arrow-pull"/>
+    <marker id="arrow-push" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--edge-push)"/>
     </marker>
-    <marker id="arrow-render" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" class="arrow-render"/>
+    <marker id="arrow-pull" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--edge-pull)"/>
+    </marker>
+    <marker id="arrow-tier1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--tier1)"/>
     </marker>
   </defs>
 
-  <!-- =============== TOP ROW: SOURCE -> STRIDE -> CANONICAL ARTIFACTS =============== -->
+  <!-- ============================================================== -->
+  <!-- ROW 1: SOURCE → STRIDE → CANONICAL ARTIFACTS                   -->
+  <!-- ============================================================== -->
+  <text class="zone-label" x="40" y="28">Render plane</text>
+  <line class="zone-line" x1="40" y1="40" x2="1720" y2="40"/>
 
   <g class="box source">
-    <rect x="40" y="30" width="220" height="70" rx="10"/>
-    <text class="title" x="150" y="62" text-anchor="middle">Scoop (CMS)</text>
-    <text class="subtitle" x="150" y="82" text-anchor="middle">Source of truth</text>
+    <rect x="40" y="60" width="220" height="80" rx="10"/>
+    <text class="title" x="150" y="92" text-anchor="middle">Pitch (Scoop CMS)</text>
+    <text class="role" x="150" y="112" text-anchor="middle">Source of truth</text>
+    <text class="tag" x="150" y="130" text-anchor="middle">storytelling.article.published</text>
   </g>
 
   <g class="box canonical">
-    <rect x="360" y="30" width="260" height="70" rx="10"/>
-    <text class="title" x="490" y="62" text-anchor="middle">Stride</text>
-    <text class="subtitle" x="490" y="82" text-anchor="middle">Renderer • 6 stages</text>
+    <rect x="350" y="60" width="240" height="80" rx="10"/>
+    <text class="title" x="470" y="92" text-anchor="middle">Stride</text>
+    <text class="role" x="470" y="112" text-anchor="middle">Renderer · 5-stage pipeline</text>
+    <text class="tag" x="470" y="130" text-anchor="middle">DVSP / Lettercase · AWSMA us-east-1</text>
   </g>
 
   <g class="box canonical">
-    <rect x="720" y="30" width="420" height="70" rx="10"/>
-    <text class="title" x="930" y="58" text-anchor="middle">Kafka: storytelling.content.rendered</text>
-    <text class="subtitle" x="930" y="78" text-anchor="middle">partition key: article_id • retention: 30d</text>
+    <rect x="680" y="60" width="430" height="80" rx="10"/>
+    <text class="title" x="895" y="92" text-anchor="middle">AWSMA MSK · ta-events-{env}</text>
+    <text class="role" x="895" y="112" text-anchor="middle">storytelling.content.rendered  ·  storytelling.content.retracted</text>
+    <text class="tag" x="895" y="130" text-anchor="middle">partition key: article_id  ·  Confluent SR (Path A) · Avro</text>
   </g>
 
   <g class="box canonical">
-    <rect x="1260" y="30" width="460" height="70" rx="10"/>
-    <text class="title" x="1490" y="58" text-anchor="middle">S3: ta-rendered-articles</text>
-    <text class="subtitle" x="1490" y="78" text-anchor="middle">versioned • infinite retention • canonical archive</text>
+    <rect x="1200" y="60" width="490" height="80" rx="10"/>
+    <text class="title" x="1445" y="92" text-anchor="middle">AWSMA S3 · stride-{env}-articles</text>
+    <text class="role" x="1445" y="112" text-anchor="middle">Rendered article JSON · canonical archive</text>
+    <text class="tag" x="1445" y="130" text-anchor="middle">versioned · cross-account read by Apollo (Pattern Z-A)</text>
   </g>
 
-  <path class="edge render" marker-end="url(#arrow-render)" d="M 260 65 L 355 65"/>
-  <text class="edge-label" x="308" y="58" text-anchor="middle">article.published</text>
-  <text class="edge-label" x="308" y="78" text-anchor="middle">article.retracted</text>
+  <!-- Pitch → Stride -->
+  <path class="edge render" marker-end="url(#arrow-render)" d="M 260 100 L 348 100"/>
 
-  <path class="edge render" marker-end="url(#arrow-render)" d="M 620 65 L 715 65"/>
+  <!-- Stride → MSK -->
+  <path class="edge render" marker-end="url(#arrow-render)" d="M 590 100 L 678 100"/>
 
-  <path class="edge render" marker-end="url(#arrow-render)" d="M 490 30 Q 490 8 900 8 Q 1490 8 1490 30"/>
-  <text class="edge-label" x="995" y="4" text-anchor="middle" style="fill:var(--muted)">write rendered payload</text>
+  <!-- Stride → S3 (write) -->
+  <path class="edge render" marker-end="url(#arrow-render)" d="M 470 60 Q 470 28 1445 28 Q 1445 28 1445 60"/>
+  <text class="edge-label" x="945" y="22" text-anchor="middle">writes rendered article body</text>
 
-  <!-- =============== DIVIDERS =============== -->
-  <line class="divider-line" x1="40" y1="160" x2="1720" y2="160"/>
-  <text class="divider-label" x="40" y="148">Distribution</text>
+  <!-- ============================================================== -->
+  <!-- ZONE LABELS for push and pull lanes                            -->
+  <!-- ============================================================== -->
+  <text class="zone-label" x="40" y="180">Distribution plane</text>
+  <line class="zone-line" x1="40" y1="192" x2="1720" y2="192"/>
 
-  <rect x="40" y="180" width="1060" height="34" rx="6" fill="#eff6ff" stroke="#bfdbfe"/>
-  <text class="divider-label" x="570" y="203" text-anchor="middle" style="fill:var(--push)">PUSH  ·  Adapter fetches S3 and delivers</text>
+  <rect class="lane-banner-push" x="40" y="208" width="1080" height="32" rx="6"/>
+  <text class="lane-banner-text" x="580" y="229" text-anchor="middle" fill="var(--push)">PUSH  ·  Consumer subscribes to MSK and emits to its destination</text>
 
-  <rect x="1120" y="180" width="600" height="34" rx="6" fill="#ecfdf5" stroke="#a7f3d0"/>
-  <text class="divider-label" x="1420" y="203" text-anchor="middle" style="fill:var(--pull)">PULL  ·  Destination reads on its own cadence</text>
+  <rect class="lane-banner-pull" x="1140" y="208" width="580" height="32" rx="6"/>
+  <text class="lane-banner-text" x="1430" y="229" text-anchor="middle" fill="var(--pull)">PULL  ·  Apollo reads on demand</text>
 
-  <!-- Kafka -> adapters (main fan-out trunk) -->
-  <path class="edge render" d="M 930 100 L 930 252"/>
-  <circle cx="930" cy="260" r="4" fill="var(--edge-render)"/>
+  <!-- MSK trunk down to fan-out rail at y=255 -->
+  <path class="edge render" d="M 895 140 L 895 252"/>
+  <circle cx="895" cy="255" r="5" fill="var(--edge-push)"/>
 
-  <!-- ======================================================================= -->
-  <!-- PUSH ADAPTERS: 2 rows x 5 cols = 10 cells. 9 adapters placed; avoid    -->
-  <!-- row-1 destination arrows by placing row-2 in SAME columns.              -->
-  <!--                                                                        -->
-  <!-- Column x-centers: 145, 380, 615, 850, 1075                             -->
-  <!-- Row-1 adapters y=280; arrow goes down to row-1 destinations at y=900   -->
-  <!-- Row-2 adapters y=430 (same columns — arrow passes BEHIND them)         -->
-  <!-- ======================================================================= -->
-
-  <!-- ----- ROW 1 (y=280) — 5 adapters: event -> destination adapters ----- -->
-
-  <g class="box push">
-    <rect x="40" y="280" width="210" height="100" rx="10"/>
-    <text class="title" x="145" y="310" text-anchor="middle">OpenSearch Indexer</text>
-    <text class="subtitle" x="145" y="330" text-anchor="middle">Search team</text>
-    <text class="tag" x="145" y="355" text-anchor="middle">CC-2380 • in flight</text>
-    <circle class="tier-dot tier2" cx="230" cy="296"/>
-  </g>
+  <!-- ============================================================== -->
+  <!-- ROW 2: PUSH CONSUMERS (6 of them)                              -->
+  <!-- ============================================================== -->
+  <!-- Layout: 5 AWSMA-resident + 1 TA-resident.                       -->
+  <!-- Card width 200, gap 12, total = 200*6 + 12*5 = 1260 starting x=40 -->
+  <!-- Center x: 140, 352, 564, 776, 988, 1200                         -->
 
   <g class="box push">
-    <rect x="275" y="280" width="210" height="100" rx="10"/>
-    <text class="title" x="380" y="310" text-anchor="middle">Alice Shipper</text>
-    <text class="subtitle" x="380" y="330" text-anchor="middle">Ads team</text>
-    <text class="tag" x="380" y="355" text-anchor="middle">Metadata only</text>
-    <circle class="tier-dot tier3" cx="465" cy="296"/>
+    <rect x="40" y="290" width="200" height="115" rx="10"/>
+    <text class="title" x="140" y="318" text-anchor="middle">OpenSearch Indexer</text>
+    <text class="role" x="140" y="338" text-anchor="middle">writes search-articles-read</text>
+    <text class="tag" x="140" y="358" text-anchor="middle">.rendered + .retracted</text>
+    <text class="tag" x="140" y="376" text-anchor="middle">AWSMA / Lettercase</text>
+    <circle class="tier-dot t3" cx="60" cy="305" r="5"/>
+    <circle class="tier-dot t1" cx="76" cy="305" r="5"/>
+    <text class="tag" x="140" y="395" text-anchor="middle" font-size="9px">T3 rendered · T1 retract</text>
   </g>
 
   <g class="box push">
-    <rect x="510" y="280" width="210" height="100" rx="10"/>
-    <text class="title" x="615" y="310" text-anchor="middle">PubP Shipper</text>
-    <text class="subtitle" x="615" y="330" text-anchor="middle">TA Platform</text>
-    <text class="tag" x="615" y="355" text-anchor="middle" style="fill:var(--tier1);font-weight:700">TIER 1 • gRPC TBD</text>
-    <circle class="tier-dot tier1" cx="700" cy="296"/>
+    <rect x="252" y="290" width="200" height="115" rx="10"/>
+    <text class="title" x="352" y="318" text-anchor="middle">Alice Shipper</text>
+    <text class="role" x="352" y="338" text-anchor="middle">→ GCP Pub/Sub Grapeshot</text>
+    <text class="tag" x="352" y="358" text-anchor="middle">cross-cloud auth (WIF/SA)</text>
+    <text class="tag" x="352" y="376" text-anchor="middle">Option-C retract gate</text>
+    <circle class="tier-dot t3" cx="270" cy="305" r="5"/>
+    <text class="tag" x="352" y="395" text-anchor="middle" font-size="9px">T3</text>
   </g>
 
   <g class="box push">
-    <rect x="745" y="280" width="210" height="100" rx="10"/>
-    <text class="title" x="850" y="310" text-anchor="middle">Cache Purge</text>
-    <text class="subtitle" x="850" y="330" text-anchor="middle">TA Platform</text>
-    <text class="tag" x="850" y="355" text-anchor="middle">In flight</text>
-    <circle class="tier-dot tier3" cx="935" cy="296"/>
+    <rect x="464" y="290" width="200" height="115" rx="10"/>
+    <text class="title" x="564" y="318" text-anchor="middle">Push Shipper</text>
+    <text class="role" x="564" y="338" text-anchor="middle">→ Iterable + MEMO</text>
+    <text class="tag" x="564" y="358" text-anchor="middle">.push.requested (opt-in)</text>
+    <text class="tag" x="564" y="376" text-anchor="middle">WP HTML decode parity</text>
+    <circle class="tier-dot t3" cx="482" cy="305" r="5"/>
+    <text class="tag" x="564" y="395" text-anchor="middle" font-size="9px">T3</text>
   </g>
 
   <g class="box push">
-    <rect x="970" y="280" width="210" height="100" rx="10"/>
-    <text class="title" x="1075" y="310" text-anchor="middle">CMS REST Shipper</text>
-    <text class="subtitle" x="1075" y="330" text-anchor="middle">TA Platform (print)</text>
-    <text class="tag" x="1075" y="355" text-anchor="middle">Idempotency TBD</text>
-    <circle class="tier-dot tier3" cx="1160" cy="296"/>
-  </g>
-
-  <!-- Kafka -> row-1 adapters -->
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 930 265 Q 930 272 145 275 L 145 280"/>
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 930 265 Q 930 272 380 275 L 380 280"/>
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 930 265 L 615 280"/>
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 930 265 L 850 280"/>
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 930 265 L 1075 280"/>
-
-  <!-- ----- ROW 1 DESTINATIONS (y=420) — directly below row-1 adapters ----- -->
-
-  <g class="box destination">
-    <rect x="40" y="420" width="210" height="60" rx="8"/>
-    <text class="title" x="145" y="445" text-anchor="middle">TA OpenSearch</text>
-    <text class="subtitle" x="145" y="465" text-anchor="middle">Search index</text>
-  </g>
-
-  <g class="box destination">
-    <rect x="275" y="420" width="210" height="60" rx="8"/>
-    <text class="title" x="380" y="445" text-anchor="middle">Alice (GCP Pub/Sub)</text>
-    <text class="subtitle" x="380" y="465" text-anchor="middle">NYT ad targeting</text>
-  </g>
-
-  <g class="box destination">
-    <rect x="510" y="420" width="210" height="60" rx="8"/>
-    <text class="title" x="615" y="445" text-anchor="middle">NYT PubP (gRPC)</text>
-    <text class="subtitle" x="615" y="465" text-anchor="middle">Central publishing bus</text>
-  </g>
-
-  <g class="box destination">
-    <rect x="745" y="420" width="210" height="60" rx="8"/>
-    <text class="title" x="850" y="445" text-anchor="middle">Fastly Purge API</text>
-    <text class="subtitle" x="850" y="465" text-anchor="middle">CDN invalidation</text>
-  </g>
-
-  <g class="box destination">
-    <rect x="970" y="420" width="210" height="60" rx="8"/>
-    <text class="title" x="1075" y="445" text-anchor="middle">NYT CMS REST</text>
-    <text class="subtitle" x="1075" y="465" text-anchor="middle">Print path</text>
-  </g>
-
-  <!-- Row-1 adapter -> row-1 destination arrows (short, vertical) -->
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 145 380 L 145 420"/>
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 380 380 L 380 420"/>
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 615 380 L 615 420"/>
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 850 380 L 850 420"/>
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 1075 380 L 1075 420"/>
-
-  <!-- ----- ROW 2 (y=540) — 4 pull-surface generators + 2 push adapters ----- -->
-  <!-- Layout: Sitemap | FlatPlan RSS | Iterable Content | Loupe | Iterable Digest (Astro removed; depends on briefs, out of scope) -->
-
-  <g class="box push">
-    <rect x="40" y="540" width="210" height="110" rx="10"/>
-    <text class="title" x="145" y="568" text-anchor="middle">Sitemap Generator</text>
-    <text class="subtitle" x="145" y="587" text-anchor="middle">TA Platform</text>
-    <text class="tag" x="145" y="608" text-anchor="middle">Writes sitemap.xml</text>
-    <text class="tag" x="145" y="628" text-anchor="middle">+ pings Google</text>
-    <circle class="tier-dot tier3" cx="230" cy="556"/>
+    <rect x="676" y="290" width="200" height="115" rx="10"/>
+    <text class="title" x="776" y="318" text-anchor="middle">PubP Shipper</text>
+    <text class="role" x="776" y="338" text-anchor="middle">→ NYT publishing graph</text>
+    <text class="tag" x="776" y="358" text-anchor="middle">gRPC · JWT bearer · per-tier retry</text>
+    <text class="tag" x="776" y="376" text-anchor="middle">silent-loss test pinned</text>
+    <circle class="tier-dot t1" cx="694" cy="305" r="5"/>
+    <text class="tag" x="776" y="395" text-anchor="middle" font-size="9px" fill="var(--tier1)" font-weight="600">TIER 1</text>
   </g>
 
   <g class="box push">
-    <rect x="275" y="540" width="210" height="110" rx="10"/>
-    <text class="title" x="380" y="568" text-anchor="middle">FlatPlan RSS Gen</text>
-    <text class="subtitle" x="380" y="587" text-anchor="middle">TA Platform</text>
-    <text class="tag" x="380" y="608" text-anchor="middle">push consumer</text>
-    <text class="tag" x="380" y="628" text-anchor="middle">maintains pull surface</text>
-    <circle class="tier-dot tier2" cx="465" cy="556"/>
-  </g>
-
-
-  <g class="box push">
-    <rect x="745" y="540" width="210" height="110" rx="10"/>
-    <text class="title" x="850" y="568" text-anchor="middle">Iterable Content Gen</text>
-    <text class="subtitle" x="850" y="587" text-anchor="middle">TA Platform</text>
-    <text class="tag" x="850" y="608" text-anchor="middle">push consumer</text>
-    <text class="tag" x="850" y="628" text-anchor="middle">maintains /v1iterable/*</text>
-    <circle class="tier-dot tier3" cx="935" cy="556"/>
+    <rect x="888" y="290" width="200" height="115" rx="10"/>
+    <text class="title" x="988" y="318" text-anchor="middle">NYT Print Shipper</text>
+    <text class="role" x="988" y="338" text-anchor="middle">→ NYT CMS REST + Loupe</text>
+    <text class="tag" x="988" y="358" text-anchor="middle">filtered by is_print_opted</text>
+    <text class="tag" x="988" y="376" text-anchor="middle">experimental</text>
+    <circle class="tier-dot t2" cx="906" cy="305" r="5"/>
+    <text class="tag" x="988" y="395" text-anchor="middle" font-size="9px">T2 · gated on CC-3148</text>
   </g>
 
   <g class="box push">
-    <rect x="970" y="540" width="210" height="110" rx="10"/>
-    <text class="title" x="1075" y="568" text-anchor="middle">Loupe Adapter</text>
-    <text class="subtitle" x="1075" y="587" text-anchor="middle">SFTP + REST (images)</text>
-    <text class="tag" x="1075" y="608" text-anchor="middle" style="fill:var(--tier3)">TBD, may be rendering</text>
-    <text class="tag" x="1075" y="628" text-anchor="middle" style="fill:var(--tier3)">dependency, not destination</text>
-    <circle class="tier-dot tier3" cx="1160" cy="556"/>
+    <rect x="1100" y="290" width="200" height="115" rx="10" stroke-dasharray="4 3"/>
+    <text class="title" x="1200" y="318" text-anchor="middle">Cache Purge Lambda</text>
+    <text class="role" x="1200" y="338" text-anchor="middle">→ Redis · Fastly · Cloudflare</text>
+    <text class="tag" x="1200" y="358" text-anchor="middle">TA-resident (us-west-2)</text>
+    <text class="tag" x="1200" y="376" text-anchor="middle">Pattern X-A consumer</text>
+    <circle class="tier-dot t3" cx="1118" cy="305" r="5"/>
+    <text class="tag" x="1200" y="395" text-anchor="middle" font-size="9px">T3 · Lambda extension</text>
   </g>
 
-  <g class="box push">
-    <rect x="1205" y="540" width="210" height="110" rx="10"/>
-    <text class="title" x="1310" y="568" text-anchor="middle">Iterable Digest</text>
-    <text class="subtitle" x="1310" y="587" text-anchor="middle">SQS, Lambda, Iterable API</text>
-    <text class="tag" x="1310" y="608" text-anchor="middle">Newsletter digest adapter</text>
-    <circle class="tier-dot tier3" cx="1395" cy="556"/>
+  <!-- MSK trunk → horizontal rail at y=255 → 6 vertical drops to consumer card tops -->
+  <path class="edge push" d="M 140 255 L 1200 255"/>
+  <path class="edge push" d="M 895 270 L 895 255"/>
+  <path class="edge push" marker-end="url(#arrow-push)" d="M 140 255 L 140 290"/>
+  <path class="edge push" marker-end="url(#arrow-push)" d="M 352 255 L 352 290"/>
+  <path class="edge push" marker-end="url(#arrow-push)" d="M 564 255 L 564 290"/>
+  <path class="edge push" marker-end="url(#arrow-push)" d="M 776 255 L 776 290"/>
+  <path class="edge push" marker-end="url(#arrow-push)" d="M 988 255 L 988 290"/>
+  <path class="edge push" marker-end="url(#arrow-push)" d="M 1200 255 L 1200 290"/>
+
+  <!-- TA / AWSMA boundary marker on Cache Purge (placed above the rail, away from cards) -->
+  <text class="tag" x="1200" y="246" text-anchor="middle" font-size="9px" font-style="italic" fill="var(--soft)">crosses to TA via VPC peering (Pattern X-A)</text>
+
+  <!-- ============================================================== -->
+  <!-- ROW 3: PUSH DESTINATIONS                                       -->
+  <!-- ============================================================== -->
+
+  <g class="box dest">
+    <rect x="40" y="450" width="200" height="60" rx="8"/>
+    <text class="title" x="140" y="476" text-anchor="middle">TA OpenSearch</text>
+    <text class="role" x="140" y="496" text-anchor="middle">search-articles-read</text>
   </g>
 
-  <!-- Kafka -> row-2 adapters (fan-out from trunk) -->
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 925 268 Q 550 420 145 540"/>
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 928 268 Q 700 420 380 540"/>
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 932 268 L 850 540"/>
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 934 268 Q 1000 420 1075 540"/>
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 936 268 Q 1150 420 1310 540"/>
-
-  <!-- ----- ROW 2 DESTINATIONS: pull surfaces + push targets (y=700) ----- -->
-
-  <!-- sitemap.xml (pull surface) -->
-  <g class="box pull">
-    <rect x="40" y="700" width="210" height="70" rx="8"/>
-    <text class="title" x="145" y="728" text-anchor="middle">sitemap.xml</text>
-    <text class="subtitle" x="145" y="748" text-anchor="middle">PULL SURFACE · S3 / CDN</text>
+  <g class="box dest">
+    <rect x="252" y="450" width="200" height="60" rx="8"/>
+    <text class="title" x="352" y="476" text-anchor="middle">GCP Pub/Sub</text>
+    <text class="role" x="352" y="496" text-anchor="middle">ta-asset-grapeshot</text>
   </g>
 
-  <!-- FlatPlan RSS endpoint (pull surface) -->
-  <g class="box pull">
-    <rect x="275" y="700" width="210" height="70" rx="8"/>
-    <text class="title" x="380" y="728" text-anchor="middle">FlatPlan RSS endpoint</text>
-    <text class="subtitle" x="380" y="748" text-anchor="middle">PULL SURFACE</text>
+  <g class="box dest">
+    <rect x="464" y="450" width="200" height="60" rx="8"/>
+    <text class="title" x="564" y="476" text-anchor="middle">Iterable + MEMO</text>
+    <text class="role" x="564" y="496" text-anchor="middle">via provider factory</text>
   </g>
 
-  <!-- /v1iterable/* (pull surface) -->
-  <g class="box pull">
-    <rect x="745" y="700" width="210" height="70" rx="8"/>
-    <text class="title" x="850" y="728" text-anchor="middle">/v1iterable/* endpoints</text>
-    <text class="subtitle" x="850" y="748" text-anchor="middle">PULL SURFACE</text>
+  <g class="box dest">
+    <rect x="676" y="450" width="200" height="60" rx="8" stroke="var(--tier1)" stroke-width="1.5"/>
+    <text class="title" x="776" y="476" text-anchor="middle" fill="var(--text)">NYT Publishing Graph</text>
+    <text class="role" x="776" y="496" text-anchor="middle" fill="var(--tier1)" font-weight="500">5 systems · Tier-1 fan-out</text>
   </g>
 
-  <!-- NYT Loupe -->
-  <g class="box destination">
-    <rect x="970" y="700" width="210" height="70" rx="8"/>
-    <text class="title" x="1075" y="728" text-anchor="middle">NYT Loupe</text>
-    <text class="subtitle" x="1075" y="748" text-anchor="middle">Image asset management</text>
+  <g class="box dest">
+    <rect x="888" y="450" width="200" height="60" rx="8"/>
+    <text class="title" x="988" y="476" text-anchor="middle">NYT CMS REST + Loupe</text>
+    <text class="role" x="988" y="496" text-anchor="middle">SFTP + REST · print product</text>
   </g>
 
-  <!-- Iterable (digest push target) -->
-  <g class="box destination">
-    <rect x="1205" y="700" width="210" height="70" rx="8"/>
-    <text class="title" x="1310" y="728" text-anchor="middle">Iterable (API)</text>
-    <text class="subtitle" x="1310" y="748" text-anchor="middle">Newsletter send</text>
+  <g class="box dest">
+    <rect x="1100" y="450" width="200" height="60" rx="8"/>
+    <text class="title" x="1200" y="476" text-anchor="middle">Redis · Fastly · Cloudflare</text>
+    <text class="role" x="1200" y="496" text-anchor="middle">CDN + edge invalidation</text>
   </g>
 
-  <!-- Row-2 adapter -> destination arrows (short vertical) -->
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 145 650 L 145 700"/>
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 380 650 L 380 700"/>
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 850 650 L 850 700"/>
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 1075 650 L 1075 700"/>
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 1310 650 L 1310 700"/>
+  <path class="edge push" marker-end="url(#arrow-push)" d="M 140 405 L 140 450"/>
+  <path class="edge push" marker-end="url(#arrow-push)" d="M 352 405 L 352 450"/>
+  <path class="edge push" marker-end="url(#arrow-push)" d="M 564 405 L 564 450"/>
+  <path class="edge push" marker-end="url(#arrow-push)" d="M 776 405 L 776 450"/>
+  <path class="edge push" marker-end="url(#arrow-push)" d="M 988 405 L 988 450"/>
+  <path class="edge push" marker-end="url(#arrow-push)" d="M 1200 405 L 1200 450"/>
 
-  <!-- ----- ROW 3: pull consumers + Google Sitemap Ping (y=820) ----- -->
+  <!-- ============================================================== -->
+  <!-- PUBP FAN-OUT detail (compact, attached to PubP destination)    -->
+  <!-- ============================================================== -->
 
-  <!-- Google Sitemap Ping API -->
-  <g class="box destination">
-    <rect x="40" y="820" width="210" height="60" rx="8"/>
-    <text class="title" x="145" y="845" text-anchor="middle">Google Sitemap Ping API</text>
-    <text class="subtitle" x="145" y="865" text-anchor="middle">Notifies of updates</text>
+  <g class="box dest">
+    <rect x="464" y="540" width="424" height="120" rx="8" stroke="var(--tier1)" stroke-dasharray="4 3"/>
+    <text class="callout-title" x="484" y="566" fill="var(--tier1)">PUBP FAN-OUT (5 systems)</text>
+    <text class="callout-body" x="484" y="588">Bodega · Samizdat · Content Search · BigQuery · cms-applenews</text>
+    <text class="callout-body" x="484" y="610">If PubP Shipper is down, all 5 silently stop updating.</text>
+    <text class="callout-body" x="484" y="630" fill="var(--tier1)" font-weight="600">This is why retracts on PubP are pinned by an adversarial silent-loss test.</text>
+    <text class="callout-body" x="484" y="650" font-style="italic">See pubp-shipper retractHandler.test.ts:250-392.</text>
   </g>
 
-  <!-- FlatPlan (3rd-party) -->
-  <g class="box destination">
-    <rect x="275" y="820" width="210" height="60" rx="8"/>
-    <text class="title" x="380" y="845" text-anchor="middle">FlatPlan</text>
-    <text class="subtitle" x="380" y="865" text-anchor="middle">3rd-party RSS manager</text>
-  </g>
+  <path class="edge tier1" marker-end="url(#arrow-tier1)" d="M 776 510 L 776 540"/>
 
-  <!-- Iterable content fetcher -->
-  <g class="box destination">
-    <rect x="745" y="820" width="210" height="60" rx="8"/>
-    <text class="title" x="850" y="845" text-anchor="middle">Iterable (content fetch)</text>
-    <text class="subtitle" x="850" y="865" text-anchor="middle">Polls /v1iterable/*</text>
-  </g>
-
-  <!-- Sitemap Gen -> Google Ping (secondary action via left edge to avoid FlatPlan Gen) -->
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 40 600 L 15 600 L 15 790 L 145 790 L 145 820"/>
-  <text class="edge-label" x="20" y="700">pings</text>
-
-  <!-- Pull arrows: destination polls pull surface (arrow reversed, arrowhead points at consumer) -->
-  <path class="edge pull" marker-end="url(#arrow-pull)" d="M 380 820 L 380 770"/>
-  <text class="edge-label" x="390" y="800" style="fill:var(--pull)">polls</text>
-
-  <path class="edge pull" marker-end="url(#arrow-pull)" d="M 850 820 L 850 770"/>
-  <text class="edge-label" x="860" y="800" style="fill:var(--pull)">polls</text>
-
-  <!-- ----- ROW 4: terminal destinations (y=940) ----- -->
-
-  <!-- Apple News (downstream of FlatPlan) -->
-  <g class="box destination">
-    <rect x="275" y="940" width="210" height="60" rx="8"/>
-    <text class="title" x="380" y="965" text-anchor="middle">Apple News</text>
-    <text class="subtitle" x="380" y="985" text-anchor="middle">End destination</text>
-  </g>
-
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 380 880 L 380 940"/>
-
-  <!-- Google / Bing bots -->
-  <g class="box destination">
-    <rect x="560" y="940" width="340" height="80" rx="8"/>
-    <text class="title" x="730" y="968" text-anchor="middle">Google / Bing bots</text>
-    <text class="subtitle" x="730" y="988" text-anchor="middle">Pulls sitemap.xml, RSS feeds,</text>
-    <text class="subtitle" x="730" y="1005" text-anchor="middle">and HTML (via Apollo)</text>
-  </g>
-
-  <!-- Google/Bing bots -> sitemap.xml (pull) — up via gap x=497, then left above row-3, then up -->
-  <path class="edge pull" marker-end="url(#arrow-pull)" d="M 730 940 L 730 900 L 497 900 L 497 805 L 145 805 L 145 770"/>
-  <text class="edge-label" x="300" y="800" style="fill:var(--pull)">GET sitemap.xml / RSS</text>
-
-  <!-- Google/Bing bots -> FlatPlan RSS endpoint (pull) — up via gap x=497 to FlatPlan -->
-  <path class="edge pull" marker-end="url(#arrow-pull)" d="M 750 940 L 750 898 L 497 898 L 497 813 L 380 813 L 380 770"/>
-
-  <!-- =============== PULL LANE (right side) =============== -->
+  <!-- ============================================================== -->
+  <!-- PULL LANE: APOLLO + read surfaces                              -->
+  <!-- ============================================================== -->
 
   <g class="box pull">
-    <rect x="1120" y="280" width="260" height="100" rx="10"/>
-    <text class="title" x="1250" y="310" text-anchor="middle">Apollo GraphQL</text>
-    <text class="subtitle" x="1250" y="330" text-anchor="middle">Reads S3 per request</text>
-    <text class="tag" x="1250" y="355" text-anchor="middle">S3ArticleDataSource</text>
-    <circle class="tier-dot tier2" cx="1360" cy="296"/>
+    <rect x="1340" y="290" width="380" height="115" rx="10"/>
+    <text class="title" x="1530" y="320" text-anchor="middle">Apollo GraphQL</text>
+    <text class="role" x="1530" y="340" text-anchor="middle">TA us-west-2 · ECS task role principal</text>
+    <text class="tag" x="1530" y="360" text-anchor="middle">searchRESTDataSource → OpenSearch (latestArticles)</text>
+    <text class="tag" x="1530" y="378" text-anchor="middle">S3ArticleDataSource → AWSMA S3 (Pattern Z-A)</text>
+    <text class="tag" x="1530" y="396" text-anchor="middle">articlesByDate (WP) + pitchArticlesByDate (NEW · Option E)</text>
   </g>
 
-  <g class="box pull" style="opacity:0.5">
-    <rect x="1420" y="280" width="280" height="100" rx="10" stroke-dasharray="6 4"/>
-    <text class="title" x="1560" y="310" text-anchor="middle">Datalake / archive</text>
-    <text class="subtitle" x="1560" y="330" text-anchor="middle">Batch reads from S3</text>
-    <text class="tag" x="1560" y="355" text-anchor="middle">DEFERRED · out of scope</text>
+  <!-- Apollo reads from MSK trunk's S3 (cross-account, peered) -->
+  <path class="edge pull" marker-end="url(#arrow-pull)" d="M 1530 290 Q 1530 200 1445 145"/>
+  <text class="edge-label" x="1540" y="220" fill="var(--pull)">reads on GraphQL query</text>
+
+  <!-- Apollo reads from OpenSearch (TA-side, in-region) - L-route through y=425 corridor -->
+  <path class="edge pull" marker-end="url(#arrow-pull)" d="M 1340 405 L 1340 425 L 240 425 L 240 450"/>
+  <text class="edge-label" x="780" y="418" text-anchor="middle" fill="var(--pull)">searchRESTDataSource → TA OpenSearch (in-region)</text>
+
+  <!-- Apollo serves clients + sitemap + flatplan -->
+  <g class="box dest">
+    <rect x="1340" y="450" width="180" height="60" rx="8"/>
+    <text class="title" x="1430" y="476" text-anchor="middle">TA web · iOS · Android</text>
+    <text class="role" x="1430" y="496" text-anchor="middle">end clients</text>
   </g>
 
-  <!-- Apollo <- S3 (pull) -->
-  <path class="edge pull" marker-end="url(#arrow-pull)" d="M 1250 280 Q 1250 180 1490 150 L 1490 100"/>
-  <text class="edge-label" x="1270" y="200" style="fill:var(--pull)">reads on GraphQL query</text>
-
-  <!-- Datalake <- S3 (deferred) -->
-  <path class="edge pull" marker-end="url(#arrow-pull)" d="M 1560 280 Q 1560 200 1520 150 L 1520 100" style="opacity:0.5"/>
-
-  <!-- Apollo -> clients -->
-  <g class="box destination">
-    <rect x="1120" y="420" width="260" height="60" rx="8"/>
-    <text class="title" x="1250" y="445" text-anchor="middle">TA web / iOS / Android</text>
-    <text class="subtitle" x="1250" y="465" text-anchor="middle">End clients</text>
+  <g class="box dest">
+    <rect x="1540" y="450" width="180" height="60" rx="8"/>
+    <text class="title" x="1630" y="476" text-anchor="middle">Sitemap + FlatPlan</text>
+    <text class="role" x="1630" y="496" text-anchor="middle">Next.js SSR / RSS</text>
   </g>
 
-  <path class="edge push" marker-end="url(#arrow-push)" d="M 1250 380 L 1250 420"/>
-  <text class="edge-label" x="1265" y="405">GraphQL response</text>
+  <path class="edge push" marker-end="url(#arrow-push)" d="M 1430 405 L 1430 450"/>
+  <text class="edge-label" x="1370" y="430" fill="var(--muted)">GraphQL response</text>
+  <path class="edge push" marker-end="url(#arrow-push)" d="M 1630 405 L 1630 450"/>
 
-  <!-- Google/Bing bots -> web clients (which call Apollo). Routed through gap between pull surfaces and Loupe dest. -->
-  <path class="edge pull" marker-end="url(#arrow-pull)" d="M 900 970 L 1190 970 L 1190 490 L 1250 490 L 1250 480"/>
-  <text class="edge-label" x="1200" y="735" style="fill:var(--pull)">renders HTML</text>
-  <text class="edge-label" x="1200" y="750" style="fill:var(--pull)">via Apollo</text>
-
-  <!-- =============== PUBP FAN-OUT (Tier 1 consequence) =============== -->
-  <!-- Placed far-right, below TA clients and datalake, next to the push adapter rows -->
-
-  <g class="box destination" style="opacity:0.8">
-    <rect x="1440" y="540" width="280" height="280" rx="10" stroke="var(--tier1)" stroke-dasharray="6 4"/>
-    <text class="tag" x="1580" y="566" text-anchor="middle" style="fill:var(--tier1); font-weight: 700">PUBP FAN-OUT</text>
-    <text class="tag" x="1580" y="585" text-anchor="middle" style="fill:var(--tier1); font-weight: 600">(out of scope for this design)</text>
-    <text class="title" x="1580" y="622" text-anchor="middle">Bodega</text>
-    <text class="title" x="1580" y="645" text-anchor="middle">BigQuery</text>
-    <text class="title" x="1580" y="668" text-anchor="middle">Samizdat</text>
-    <text class="title" x="1580" y="691" text-anchor="middle">Content Search</text>
-    <text class="title" x="1580" y="714" text-anchor="middle">NYT cms-applenews</text>
-    <text class="subtitle" x="1580" y="748" text-anchor="middle">If PubP Shipper is down, 5 NYT</text>
-    <text class="subtitle" x="1580" y="766" text-anchor="middle">systems silently stop updating.</text>
-    <text class="subtitle" x="1580" y="795" text-anchor="middle" style="fill:var(--tier1); font-weight: 600">This is why PubP is Tier 1.</text>
+  <!-- Crawlers and end users pull HTML / sitemap -->
+  <g class="box dest">
+    <rect x="1340" y="540" width="380" height="60" rx="8"/>
+    <text class="title" x="1530" y="566" text-anchor="middle">Google · Bing crawlers · readers</text>
+    <text class="role" x="1530" y="586" text-anchor="middle">consume rendered HTML, sitemap, RSS</text>
   </g>
 
-  <!-- PubP fan-out arrow: from PubP destination down, through gap band y=500, then right to PubP fan-out box -->
-  <path class="edge push" stroke="var(--tier1)" stroke-width="2.5" marker-end="url(#arrow-push)" d="M 615 480 L 615 505 L 1430 505 L 1450 540"/>
-  <text class="edge-label" x="1020" y="498" style="fill:var(--tier1); font-weight: 600">fans out to</text>
+  <path class="edge pull" marker-end="url(#arrow-pull)" d="M 1430 540 L 1430 510"/>
+  <path class="edge pull" marker-end="url(#arrow-pull)" d="M 1630 540 L 1630 510"/>
 
-  <!-- =============== NOT DESTINATIONS CALLOUT =============== -->
-  <!-- Placed far-right below PubP fan-out -->
-  <g>
-    <rect x="1440" y="840" width="280" height="180" rx="10" fill="#fffbeb" stroke="#fcd34d"/>
-    <text class="divider-label" x="1460" y="868" style="fill:var(--source)">NOT DESTINATIONS</text>
-    <text class="title" x="1460" y="898" style="font-size:13px">NYT Identity (Lire)</text>
-    <text class="title" x="1460" y="918" style="font-size:13px">NYT Identity / bundle</text>
-    <text class="subtitle" x="1460" y="944" style="fill:var(--text); font-size:12px">Request-time integrations for</text>
-    <text class="subtitle" x="1460" y="962" style="fill:var(--text); font-size:12px">token validation and</text>
-    <text class="subtitle" x="1460" y="980" style="fill:var(--text); font-size:12px">entitlement lookups.</text>
-    <text class="subtitle" x="1460" y="1005" style="fill:var(--text); font-size:12px; font-style:italic">Do not receive article-publish events.</text>
-  </g>
+  <!-- ============================================================== -->
+  <!-- BOTTOM: callouts                                                -->
+  <!-- ============================================================== -->
+  <line class="zone-line" x1="40" y1="700" x2="1720" y2="700"/>
+  <text class="zone-label" x="40" y="690">Operational notes</text>
 
-  <!-- =============== RETRACT NOTE =============== -->
-  <g>
-    <rect x="40" y="1080" width="1660" height="160" rx="10" fill="#fef2f2" stroke="#fca5a5"/>
-    <text class="divider-label" x="60" y="1108" style="fill:var(--tier1)">RETRACT / UNPUBLISH (parallel event)</text>
-    <text class="subtitle" x="60" y="1132" style="fill:var(--text); font-size:13px">storytelling.content.retracted — emitted by Scoop -> Stride -> Kafka. Every push adapter implements a retract handler; Apollo's surface is tombstoned in S3.</text>
-    <text class="subtitle" x="60" y="1156" style="fill:var(--text); font-size:13px">OpenSearch: delete by _id · Alice: retract message · PubP: gRPC retract · FlatPlan/Iterable RSS: remove item · Cache Purge: purge URL</text>
-    <text class="subtitle" x="60" y="1180" style="fill:var(--text); font-size:13px">Sitemap: regenerate without · Loupe: delete asset · Iterable Digest: suppress · CMS REST: delete · S3: tombstone.</text>
-    <text class="subtitle" x="60" y="1210" style="fill:var(--muted); font-size:12px">Retract is Tier 1 regulated (legal takedowns, embargo). No retract handler = no cutover for that destination.</text>
-  </g>
+  <!-- Retract handling -->
+  <rect class="callout-rect tier1" x="40" y="730" width="540" height="220" rx="10"/>
+  <text class="callout-title" x="60" y="760" fill="var(--tier1)">RETRACT HANDLING</text>
+  <text class="callout-body" x="60" y="788">Parallel topic: storytelling.content.retracted</text>
+  <text class="callout-body" x="60" y="810">Each push consumer implements a retract handler:</text>
+  <text class="callout-body" x="60" y="832">  · OpenSearch Indexer: delete by _id (Tier 1 SLO &lt;2s)</text>
+  <text class="callout-body" x="60" y="852">  · Alice Shipper: Option-C gate (LEGAL_TAKEDOWN only)</text>
+  <text class="callout-body" x="60" y="872">  · PubP Shipper: gRPC unpublish · stricter retry policy · silent-loss test pinned</text>
+  <text class="callout-body" x="60" y="892">  · Push Shipper: cancel-via-retract (CANCEL_TARGET_NOT_FOUND benign)</text>
+  <text class="callout-body" x="60" y="912">  · NYT Print Shipper: delete CMS record (TBD post-Pitch reply)</text>
+  <text class="callout-body" x="60" y="932">  · Cache Purge: same Redis/Fastly/Cloudflare invalidation as rendered</text>
 
-  <!-- =============== OPERATIONAL CALLOUTS =============== -->
-  <g>
-    <rect x="40" y="1280" width="540" height="310" rx="10" fill="var(--panel)" stroke="var(--border)"/>
-    <text class="divider-label" x="60" y="1306">WRITE GUARANTEE</text>
-    <text class="subtitle" x="60" y="1330" style="fill:var(--text); font-size:13px">Dual-write (not outbox).</text>
-    <text class="subtitle" x="60" y="1352" style="fill:var(--muted); font-size:12px">1. Stride renders</text>
-    <text class="subtitle" x="60" y="1370" style="fill:var(--muted); font-size:12px">2. Write S3 (strong consistency)</text>
-    <text class="subtitle" x="60" y="1388" style="fill:var(--muted); font-size:12px">3. Produce Kafka (idempotent, acks=all)</text>
-    <text class="subtitle" x="60" y="1406" style="fill:var(--muted); font-size:12px">4. Write DynamoDB idempotency</text>
-    <text class="subtitle" x="60" y="1424" style="fill:var(--muted); font-size:12px">5. Commit upstream offset</text>
-    <text class="subtitle" x="60" y="1458" style="fill:var(--text); font-size:13px">Compensating controls:</text>
-    <text class="subtitle" x="60" y="1480" style="fill:var(--muted); font-size:12px">• Consumers dedupe on {article_id, version}</text>
-    <text class="subtitle" x="60" y="1498" style="fill:var(--muted); font-size:12px">• Hourly reconciliation job re-emits orphans</text>
-    <text class="subtitle" x="60" y="1516" style="fill:var(--muted); font-size:12px">• Real outbox migration path documented</text>
-    <text class="subtitle" x="60" y="1550" style="fill:var(--muted); font-size:11px; font-style:italic">Failure windows: crash between any steps = at-least-once; consumers must be idempotent.</text>
-  </g>
+  <!-- Cross-account topology -->
+  <rect class="callout-rect" x="600" y="730" width="540" height="220" rx="10"/>
+  <text class="callout-title" x="620" y="760" fill="var(--text)">CROSS-ACCOUNT TOPOLOGY</text>
+  <text class="callout-body" x="620" y="788">Per the cross-account access patterns ADR (v3):</text>
+  <text class="callout-body" x="620" y="812">  · Pattern X-A: Cache Purge → AWSMA MSK · direct SASL/IAM via VPC peering</text>
+  <text class="callout-body" x="620" y="832">  · Pattern Y-A: AWSMA OpenSearch Indexer → TA OpenSearch · reverse peering</text>
+  <text class="callout-body" x="620" y="852">  · Pattern Z-A: Apollo → AWSMA S3 · IAM + peering with S3 Interface VPC Endpoint</text>
+  <text class="callout-body" x="620" y="884">Symmetric repo placement:</text>
+  <text class="callout-body" x="620" y="906">  · AWSMA-side: nytimes/dv-awsma-accounts-theathletic-{dev,prd}</text>
+  <text class="callout-body" x="620" y="926">  · TA-side: theathletic-iac-envs (Cache Purge Lambda role hoisted from serverless)</text>
 
-  <g>
-    <rect x="600" y="1280" width="540" height="310" rx="10" fill="var(--panel)" stroke="var(--border)"/>
-    <text class="divider-label" x="620" y="1306">SHADOW MODE BY DESTINATION</text>
-    <text class="subtitle" x="620" y="1330" style="fill:var(--text); font-size:13px">Dual-live only where safe.</text>
-    <text class="subtitle" x="620" y="1356" style="fill:var(--muted); font-size:12px">OpenSearch · Alice · Cache Purge: real dual-delivery</text>
-    <text class="subtitle" x="620" y="1380" style="fill:var(--muted); font-size:12px">Sitemap: staging bucket, daily diff</text>
-    <text class="subtitle" x="620" y="1404" style="fill:var(--muted); font-size:12px">PubP: log-only + offline diff harness</text>
-    <text class="subtitle" x="620" y="1428" style="fill:var(--muted); font-size:12px">FlatPlan/Iterable RSS: byte-compare feeds</text>
-    <text class="subtitle" x="620" y="1452" style="fill:var(--muted); font-size:12px">CMS REST: log-only unless idempotent PUT</text>
-    <text class="subtitle" x="620" y="1476" style="fill:var(--muted); font-size:12px">Loupe: dry-run SFTP, compare listings</text>
-    <text class="subtitle" x="620" y="1500" style="fill:var(--muted); font-size:12px">Iterable Digest: test-list send</text>
-    <text class="subtitle" x="620" y="1534" style="fill:var(--text); font-size:13px">Structural equivalence spec per destination.</text>
-  </g>
+  <!-- Tier semantics -->
+  <rect class="callout-rect" x="1160" y="730" width="560" height="220" rx="10"/>
+  <text class="callout-title" x="1180" y="760" fill="var(--text)">TIER SEMANTICS</text>
+  <text class="callout-body" x="1180" y="788"><tspan fill="var(--tier1)">●</tspan> Tier 1: legal / regulatory / publishing graph</text>
+  <text class="callout-body" x="1180" y="808">    Sub-second retract SLO. Adversarial silent-loss tests required.</text>
+  <text class="callout-body" x="1180" y="828">    Examples: PubP retracts, OpenSearch retracts, Cache Purge retracts.</text>
+  <text class="callout-body" x="1180" y="858"><tspan fill="var(--tier2)">●</tspan> Tier 2: print product, ad targeting</text>
+  <text class="callout-body" x="1180" y="878">    Bounded latency, recoverable via daily backfill.</text>
+  <text class="callout-body" x="1180" y="898"><tspan fill="var(--tier3)">●</tspan> Tier 3: rendered articles, cache, push</text>
+  <text class="callout-body" x="1180" y="918">    Eventual consistency, retry-tolerant, recoverable via TTL.</text>
 
-  <g>
-    <rect x="1160" y="1280" width="540" height="310" rx="10" fill="var(--panel)" stroke="var(--border)"/>
-    <text class="divider-label" x="1180" y="1306">OPEN DECISIONS (LOAD-BEARING)</text>
-    <text class="subtitle" x="1180" y="1332" style="fill:var(--text); font-size:13px">1. PubP gRPC contract</text>
-    <text class="subtitle" x="1180" y="1352" style="fill:var(--muted); font-size:12px">Must resolve before schema lock.</text>
-    <text class="subtitle" x="1180" y="1378" style="fill:var(--text); font-size:13px">2. Loupe boundary</text>
-    <text class="subtitle" x="1180" y="1398" style="fill:var(--muted); font-size:12px">Rendering dependency vs push destination.</text>
-    <text class="subtitle" x="1180" y="1424" style="fill:var(--text); font-size:13px">3. RSS generator consolidation</text>
-    <text class="subtitle" x="1180" y="1444" style="fill:var(--muted); font-size:12px">FlatPlan/Iterable: one service or two?</text>
-    <text class="subtitle" x="1180" y="1470" style="fill:var(--text); font-size:13px">4. Schema Registry hosting</text>
-    <text class="subtitle" x="1180" y="1490" style="fill:var(--muted); font-size:12px">Confluent Cloud vs self-hosted.</text>
-    <text class="subtitle" x="1180" y="1516" style="fill:var(--text); font-size:13px">5. State-change stream</text>
-    <text class="subtitle" x="1180" y="1536" style="fill:var(--muted); font-size:12px">Separate article.state.changed or staleness?</text>
-  </g>
-
-  <line class="divider-line" x1="40" y1="1050" x2="1720" y2="1050"/>
-
+  <!-- Footer mini-map link -->
+  <text class="edge-label" x="40" y="1010" fill="var(--soft)">→ See system-overview.html for the producer side, ogham-architecture.html for the full Ogham detail view.</text>
 </svg>
 </main>
 
 <footer>
-  Stride Distribution Topology · Canonical Event Fan-Out · <code>storytelling.content.rendered</code> + <code>storytelling.content.retracted</code>
+  Stride Distribution Topology · Push vs Pull · <code>storytelling.content.rendered</code> + <code>storytelling.content.retracted</code> · TA Engineering · June 2026
 </footer>
 </body>
 </html>
